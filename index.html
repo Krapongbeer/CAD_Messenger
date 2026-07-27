@@ -189,8 +189,15 @@
                 const res = await fetch('./data/documents.json?t=' + new Date().getTime());
                 if (!res.ok) throw new Error("ไม่พบไฟล์ข้อมูล");
 
-                let data = await res.json();
-                globalData = Array.isArray(data) ? data : [data];
+                                let data = await res.json();
+                
+                // ดักจับโครงสร้างข้อมูล ให้แปลงเป็น Array เสมอไม่ว่าจะส่งมาแบบไหน
+                if (!Array.isArray(data)) {
+                    globalData = [data];
+                } else {
+                    globalData = data;
+                }
+
 
                 // อัปเดตการ์ด + กราฟ + ตาราง
                 updateCards(globalData);

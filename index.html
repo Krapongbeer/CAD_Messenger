@@ -1,1 +1,177 @@
-test
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบติดตามสถานะเอกสาร - CAD Messenger</title>
+    <!-- Tailwind CSS สำหรับจัดสไตล์ -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Sarabun', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800">
+
+    <!-- Header / Navbar -->
+    <header class="bg-indigo-600 text-white shadow-lg">
+        <div class="max-w-5xl mx-auto px-4 py-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-truck-fast text-3xl"></i>
+                <div>
+                    <h1 class="text-2xl font-bold">CAD Messenger Tracking</h1>
+                    <p class="text-indigo-200 text-sm">ระบบติดตามสถานะการรับ-ส่งเอกสาร</p>
+                </div>
+            </div>
+            <button onclick="loadTrackingData()" class="bg-indigo-500 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition">
+                <i class="fa-solid fa-rotate"></i> รีเฟรชข้อมูล
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="max-w-5xl mx-auto px-4 py-8">
+        
+        <!-- Search Bar -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <div class="relative">
+                <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="searchInput" onkeyup="filterData()" 
+                    placeholder="พิมพ์เลข Tracking, ผู้ส่ง, ผู้รับ หรือ Job ID เพื่อค้นหา..." 
+                    class="w-full pl-11 pr-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-base">
+            </div>
+        </div>
+
+        <!-- Status Card Result -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+                <h2 class="text-lg font-bold text-slate-700 flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-indigo-600"></i> รายการสถานะเอกสารล่าสุด
+                </h2>
+                <span id="dataCount" class="text-xs font-semibold bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full">กำลังโหลด...</span>
+            </div>
+
+            <!-- Table Result -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-100">
+                            <th class="py-3 px-4">วันที่</th>
+                            <th class="py-3 px-4">เลข Tracking</th>
+                            <th class="py-3 px-4">ผู้ส่ง</th>
+                            <th class="py-3 px-4">ผู้รับ</th>
+                            <th class="py-3 px-4">รายละเอียด</th>
+                            <th class="py-3 px-4 text-center">สถานะ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trackingTableBody" class="divide-y divide-slate-100 text-sm">
+                        <!-- Data will be loaded here dynamically -->
+                        <tr>
+                            <td colspan="6" class="text-center py-8 text-slate-400">
+                                <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-indigo-500"></i>
+                                <p>กำลังดึงข้อมูลล่าสุด...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        let rawData = [];
+
+        // ฟังก์ชันดึงข้อมูลจากไฟล์ JSON บน GitHub
+        async function loadTrackingData() {
+            const tableBody = document.getElementById('trackingTableBody');
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-8 text-slate-400">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl mb-2 text-indigo-500"></i>
+                        <p>กำลังดึงข้อมูลล่าสุด...</p>
+                    </td>
+                </tr>`;
+
+            try {
+                // ดึงไฟล์ JSON พร้อมติด Cache Busting
+                const response = await fetch('./data/documents.json?t=' + new Date().getTime());
+                
+                if (!response.ok) {
+                    throw new Error('ไม่พบไฟล์ข้อมูล');
+                }
+
+                let data = await response.json();
+                
+                // ตรวจสอบโครงสร้างข้อมูล ปรับให้เป็น Array เสมอ
+                if (!Array.isArray(data)) {
+                    rawData = [data];
+                } else {
+                    rawData = data;
+                }
+
+                renderTable(rawData);
+
+            } catch (error) {
+                console.error(error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-8 text-red-500">
+                            <i class="fa-solid fa-triangle-exclamation text-2xl mb-2"></i>
+                            <p>ไม่สามารถดึงข้อมูลได้ หรือยังไม่มีข้อมูลล่าสุด</p>
+                        </td>
+                    </tr>`;
+                document.getElementById('dataCount').innerText = '0 รายการ';
+            }
+        }
+
+        // ฟังก์ชันแสดงผลลงตาราง
+        function renderTable(items) {
+            const tableBody = document.getElementById('trackingTableBody');
+            document.getElementById('dataCount').innerText = `${items.length} รายการ`;
+
+            if (items.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-8 text-slate-400">
+                            <p>ไม่พบข้อมูลที่ค้นหา</p>
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            tableBody.innerHTML = items.map(item => `
+                <tr class="hover:bg-slate-50/80 transition">
+                    <td class="py-4 px-4 font-medium text-slate-600">${item.Date || '-'}</td>
+                    <td class="py-4 px-4 font-bold text-indigo-600">${item.Tracking_NO || item.Job_ID || '-'}</td>
+                    <td class="py-4 px-4">${item.Sender || '-'}</td>
+                    <td class="py-4 px-4">${item.Receiver || '-'}</td>
+                    <td class="py-4 px-4 text-slate-500">${item.Detail || '-'}</td>
+                    <td class="py-4 px-4 text-center">
+                        <span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1">
+                            <i class="fa-solid fa-circle-check"></i> บันทึกแล้ว
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // ฟังก์ชันค้นหา
+        function filterData() {
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = rawData.filter(item => {
+                return (item.Tracking_NO && item.Tracking_NO.toLowerCase().includes(keyword)) ||
+                       (item.Job_ID && item.Job_ID.toLowerCase().includes(keyword)) ||
+                       (item.Sender && item.Sender.toLowerCase().includes(keyword)) ||
+                       (item.Receiver && item.Receiver.toLowerCase().includes(keyword)) ||
+                       (item.Detail && item.Detail.toLowerCase().includes(keyword));
+            });
+            renderTable(filtered);
+        }
+
+        // โหลดข้อมูลทันทีเมื่อเปิดหน้าเว็บ
+        window.onload = loadTrackingData;
+    </script>
+</body>
+</html>

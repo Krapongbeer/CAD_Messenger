@@ -199,8 +199,8 @@
                 textData = textData.trim();
                 if (textData.startsWith('=')) textData = textData.substring(1).trim();
                 
-                let parsed = JSON.parse(textData);
-                globalData = Array.isArray(parsed) ? parsed : [parsed];
+                let parsed = textData ? JSON.parse(textData) : [];
+                globalData = Array.isArray(parsed) ? parsed : (parsed ? [parsed] : []);
 
                 // Render ส่วนต่างๆ
                 updateCards(globalData);
@@ -230,14 +230,23 @@
             document.getElementById('statTotal').innerText = data.length;
             
             if (data.length > 0) {
+                // ดึงรายการล่าสุดจาก Array (อ้างอิงรายการท้ายสุดในไฟล์)
                 const last = data[data.length - 1];
                 document.getElementById('statSender').innerText = escapeHtml(last.Sender || '-');
             } else {
                 document.getElementById('statSender').innerText = '-';
             }
 
-            const todayStr = new Date().toLocaleDateString('th-TH');
-            const todayCount = data.filter(i => i.Date === todayStr || (i.Date && i.Date.includes(new Date().getDate()))).length;
+            // เช็กรายการวันนี้อย่างแม่นยำ
+            const now = new Date();
+            const day = String(now.getDate());
+            const month = String(now.getMonth() + 1);
+            
+            const todayCount = data.filter(i => {
+                if (!i.Date) return false;
+                return i.Date.includes(`${day}/${month}`) || i.Date.includes(`${day}/${month.padStart(2, '0')}`);
+            }).length;
+
             document.getElementById('statToday').innerText = todayCount;
         }
 
@@ -273,11 +282,11 @@
             searchTimeout = setTimeout(() => {
                 const kw = document.getElementById('searchInput').value.toLowerCase().trim();
                 const filtered = globalData.filter(i => 
-                    (i.Tracking_NO && i.Tracking_NO.toLowerCase().includes(kw)) ||
-                    (i.Job_ID && i.Job_ID.toLowerCase().includes(kw)) ||
-                    (i.Sender && i.Sender.toLowerCase().includes(kw)) ||
-                    (i.Receiver && i.Receiver.toLowerCase().includes(kw)) ||
-                    (i.Detail && i.Detail.toLowerCase().includes(kw))
+                    (i.Tracking_NO && String(i.Tracking_NO).toLowerCase().includes(kw)) ||
+                    (i.Job_ID && String(i.Job_ID).toLowerCase().includes(kw)) ||
+                    (i.Sender && String(i.Sender).toLowerCase().includes(kw)) ||
+                    (i.Receiver && String(i.Receiver).toLowerCase().includes(kw)) ||
+                    (i.Detail && String(i.Detail).toLowerCase().includes(kw))
                 );
                 renderTable(filtered);
             }, 200);

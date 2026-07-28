@@ -1,1 +1,15 @@
-=[]
+=[
+  {
+    "Job_ID": "[Job_ID]",
+    "Tracking_NO": "[Tracking_NO]",
+    "Date": "[Date]",
+    "Sender": "[Sender]",
+    "Receiver": "[Receiver]",
+    "Detail": "[Detail]",
+    "Record_By": "[Record_By]",
+    "Photo": "[Photo]",
+    "Signature": "[Signature]",
+    "Timestamp": "[Timestamp]",
+    "Last_Timestamp": "[Last_Timestamp]"
+  }
+]

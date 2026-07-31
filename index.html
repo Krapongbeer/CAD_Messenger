@@ -40,7 +40,7 @@
 
 body{font-family:'Sarabun',sans-serif;background:var(--bg-main);color:var(--text-main);font-size:14px;min-height:100vh;-webkit-font-smoothing:antialiased}
 
-/* ── Auth Page (Login & Register) ── */
+/* ── Auth Page (Login & Register - Method 2) ── */
 #auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg, #2a0b42 0%, #5c2483 50%, #8c42c2 100%);padding:20px;position:relative;overflow:hidden}
 #auth-page::before{content:'';position:absolute;width:400px;height:400px;background:radial-gradient(circle, rgba(224, 159, 25, 0.15) 0%, transparent 70%);top:-100px;right:-100px;border-radius:50%}
 #auth-page::after{content:'';position:absolute;width:300px;height:300px;background:radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);bottom:-80px;left:-80px;border-radius:50%}
@@ -51,7 +51,7 @@ body{font-family:'Sarabun',sans-serif;background:var(--bg-main);color:var(--text
 .auth-sub{font-size:13px;color:var(--text-muted);margin-bottom:24px;text-align:center}
 
 .auth-tabs{display:flex;background:var(--cmu-purple-subtle);border-radius:12px;padding:4px;margin-bottom:24px}
-.auth-tab{flex:1;text-align:center;padding:10px 14px;font-weight:600;font-size:13px;color:var(--text-muted);cursor:pointer;transition:all .25s ease;border-radius:9px}
+.auth-tab{flex:1;text-align:center;padding:10px 14px;font-weight:600;font-size:13px;color:var(--text-muted);cursor:pointer;transition:all .25s ease;border-radius:99px}
 .auth-tab.active{background:#fff;color:var(--cmu-purple);box-shadow:0 2px 8px rgba(92,36,131,0.12)}
 
 .form-group{margin-bottom:16px}
@@ -179,7 +179,14 @@ tr:hover td{background:var(--cmu-purple-bg)}
 .result-ok{background:#dcfce7;color:#15803d;border:1px solid #bbf7d0}
 .result-err{background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5}
 
-/* ── PDF Overlay ── */
+/* ── Modal (Force Change Password) ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(42,11,66,0.7);backdrop-filter:blur(4px);z-index:9999;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal-box{background:#fff;border-radius:20px;padding:32px;width:100%;max-width:400px;box-shadow:var(--shadow-lg);position:relative}
+.modal-title{font-size:18px;font-weight:700;color:var(--cmu-purple-dark);margin-bottom:6px;text-align:center}
+.modal-sub{font-size:13px;color:var(--text-muted);margin-bottom:20px;text-align:center;line-height:1.4}
+
+/* ── PDF Overlay & Spinner ── */
 #pdf-overlay{display:none;position:fixed;inset:0;background:rgba(42,11,66,0.6);backdrop-filter:blur(3px);z-index:999;align-items:center;justify-content:center}
 #pdf-overlay.show{display:flex}
 .pdf-box{background:#fff;border-radius:16px;padding:32px 40px;text-align:center;box-shadow:var(--shadow-lg)}
@@ -187,12 +194,11 @@ tr:hover td{background:var(--cmu-purple-bg)}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* ── Toast ── */
-#toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:10px;font-size:13px;z-index:9999;display:none;align-items:center;gap:10px;max-width:360px;box-shadow:0 8px 24px rgba(0,0,0,0.18);font-weight:600}
+#toast{position:fixed;bottom:24px;right:24px;padding:12px 20px;border-radius:10px;font-size:13px;z-index:9999;display:none;align-items:center;gap:10px;max-width:380px;box-shadow:0 8px 24px rgba(0,0,0,0.18);font-weight:600}
 #toast.show{display:flex}
 #toast.ok{background:var(--cmu-purple-dark);color:var(--cmu-gold);border-left:4px solid var(--cmu-gold)}
 #toast.err{background:var(--danger);color:#fff}
 
-/* ── Checkbox / Switch UI ── */
 .chk-label{display:inline-flex;align-items:center;gap:10px;font-size:13px;cursor:pointer;user-select:none;margin-bottom:18px;color:var(--text-main);font-weight:500}
 .chk-label input[type=checkbox]{width:18px;height:18px;accent-color:var(--cmu-purple);border-radius:4px}
 
@@ -206,7 +212,7 @@ tr:hover td{background:var(--cmu-purple-bg)}
 </head>
 <body>
 
-<!-- AUTH PAGE (LOGIN & REGISTER) -->
+<!-- AUTH PAGE (LOGIN & REGISTER - METHOD 2) -->
 <div id="auth-page">
   <div class="auth-box">
     <div class="auth-logo">CAD<em>-Messenger</em></div>
@@ -224,14 +230,14 @@ tr:hover td{background:var(--cmu-purple-bg)}
         <input class="f-input" id="inp-u" placeholder="username" autocomplete="username"/>
       </div>
       <div class="form-group">
-        <label class="f-label">รหัสผ่าน (Password)</label>
+        <label class="f-label">รหัสผ่าน (Password / Temporary Password)</label>
         <input class="f-input" id="inp-p" type="password" placeholder="••••••••" autocomplete="current-password"/>
       </div>
       <div class="f-err" id="login-err"></div>
       <button class="auth-btn" id="login-btn" onclick="doLogin()">เข้าสู่ระบบ</button>
     </div>
 
-    <!-- Register Form -->
+    <!-- Register Form (Method 2: Email Verification & Temporary Password) -->
     <div id="form-register" style="display:none">
       <div class="form-group">
         <label class="f-label">ชื่อ-นามสกุล</label>
@@ -242,21 +248,43 @@ tr:hover td{background:var(--cmu-purple-bg)}
         <input class="f-input" id="reg-u" placeholder="somchai_j"/>
       </div>
       <div class="form-group">
+        <label class="f-label">อีเมลสำหรับรับรหัสผ่านชั่วคราว (Email)</label>
+        <input class="f-input" id="reg-email" type="email" placeholder="somchai@cmu.ac.th"/>
+      </div>
+      <div class="form-group">
         <label class="f-label">แผนก / สังกัด</label>
         <input class="f-input" id="reg-dept" placeholder="เช่น ฝ่ายบริหารงานทั่วไป"/>
       </div>
-      <div class="form-group">
-        <label class="f-label">รหัสผ่าน (Password)</label>
-        <input class="f-input" id="reg-p" type="password" placeholder="อย่างน้อย 6 ตัวอักษร"/>
+      
+      <div style="background:var(--cmu-purple-subtle);border-left:3px solid var(--cmu-purple);padding:10px 12px;border-radius:8px;font-size:12px;color:var(--cmu-purple-dark);margin-bottom:16px;line-height:1.4">
+        🔒 <strong>ระบบยืนยันตัวตนปลอดภัยสูงสุด (Method 2):</strong><br>
+        เมื่อส่งข้อมูลลงทะเบียนแล้ว ผู้ดูแลระบบจะทำการอนุมัติสิทธิ์ และระบบจะจัดส่ง <strong>รหัสผ่านชั่วคราว (Temporary Password)</strong> ไปยังอีเมลของคุณโดยอัตโนมัติ
       </div>
-      <div class="form-group">
-        <label class="f-label">ยืนยันรหัสผ่าน</label>
-        <input class="f-input" id="reg-confirm-p" type="password" placeholder="พิมพ์รหัสผ่านซ้ำอีกครั้ง"/>
-      </div>
+
       <div class="f-err" id="reg-err"></div>
       <div class="f-msg" id="reg-msg"></div>
       <button class="auth-btn" id="reg-btn" onclick="doRegister()">ส่งข้อมูลลงทะเบียน</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL: FORCE CHANGE PASSWORD -->
+<div class="modal-overlay" id="modal-change-pass">
+  <div class="modal-box">
+    <div class="modal-title">ตั้งรหัสผ่านใหม่</div>
+    <div class="modal-sub">คุณกำลังเข้าสู่ระบบด้วย <strong>รหัสผ่านชั่วคราว</strong> กรุณาตั้งรหัสผ่านใหม่เพื่อความปลอดภัยในการใช้งาน</div>
+    
+    <div class="form-group">
+      <label class="f-label">รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)</label>
+      <input class="f-input" id="new-p" type="password" placeholder="••••••••"/>
+    </div>
+    <div class="form-group">
+      <label class="f-label">ยืนยันรหัสผ่านใหม่</label>
+      <input class="f-input" id="confirm-new-p" type="password" placeholder="••••••••"/>
+    </div>
+    
+    <div class="f-err" id="change-pass-err"></div>
+    <button class="auth-btn" id="change-pass-btn" onclick="doChangePassword()">บันทึกรหัสผ่านใหม่</button>
   </div>
 </div>
 
@@ -431,8 +459,8 @@ tr:hover td{background:var(--cmu-purple-bg)}
         <div class="tbl-wrap">
           <div class="tbl-head">
             <div>
-              <div class="tbl-title">จัดการสิทธิ์และผู้ใช้งานระบบ</div>
-              <div style="font-size:12px;color:var(--text-muted)">อนุมัติการสมัครสมาชิก กำหนดระดับสิทธิ์ และจัดการสถานะการใช้งาน</div>
+              <div class="tbl-title">จัดการสิทธิ์และอนุมัติผู้ใช้งาน (Method 2)</div>
+              <div style="font-size:12px;color:var(--text-muted)">เมื่ออนุมัติสมัครสมาชิก ระบบจะสุ่มรหัสผ่านชั่วคราวและส่งไปที่อีเมลของผู้ใช้โดยอัตโนมัติ</div>
             </div>
             <button class="btn btn-primary btn-sm" onclick="loadUsers()">รีเฟรชรายชื่อ</button>
           </div>
@@ -441,7 +469,7 @@ tr:hover td{background:var(--cmu-purple-bg)}
               <thead>
                 <tr>
                   <th>ชื่อ-นามสกุล</th>
-                  <th>Username</th>
+                  <th>Username / Email</th>
                   <th>แผนก/สังกัด</th>
                   <th>สิทธิ์ปัจจุบัน</th>
                   <th>สถานะ</th>
@@ -517,25 +545,25 @@ tr:hover td{background:var(--cmu-purple-bg)}
 // ══════════════════════════════════════════════
 //  CONFIG — กำหนด Web App URL
 // ══════════════════════════════════════════════
-var API = "https://script.google.com/macros/s/AKfycbw1MpaF9KlhUxSEQwwSkfre9QocFXpnUirqEssthjTx2xXXCP0PZ_Zst-JPf0L85bFA/exec";
+var API = "https://script.google.com/macros/s/AKfycbxf5RtHqTyb53FuhZzrrXbvYEHmfgmBo27bjrXfIydsxj6bGUyj4IgrQdBTRR-mzRu7jA/exec";
 
 // ══════════════════════════════════════════════
-//  GLOBAL STATE & VARIABLES (CMU Color Palette)
+//  GLOBAL STATE & VARIABLES (CMU Theme)
 // ══════════════════════════════════════════════
-var ME = null;          // { username, role, name }
-var charts = {};        // chart instances
-var recData = [];       // cached records data
+var ME = null;          
+var tempUserPassHash = ""; // เก็บ SHA-256 ของรหัสชั่วคราวตอนบังคับเปลี่ยนรหัสผ่าน
+var charts = {};        
+var recData = [];       
 var recMode = "ym";     
 var rptMode = "ym";
 var arcMode = "ym";
-var currentYear = new Date().getFullYear(); // ปี ค.ศ. ปัจจุบันอัตโนมัติ
+var currentYear = new Date().getFullYear(); 
 
 var MONTHS = ["","ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
-// ชุดสีโทนมหาวิทยาลัยเชียงใหม่ (CMU Theme: Purple & Gold accents)
 var COLORS  = ["#5c2483","#e09f19","#8c42c2","#0284c7","#10b981","#f59e0b","#ec4899","#6366f1"];
 
 // ══════════════════════════════════════════════
-//  DYNAMIC YEAR SELECTOR & INIT
+//  DYNAMIC SELECTS & ENTER KEY HANDLER
 // ══════════════════════════════════════════════
 document.addEventListener("DOMContentLoaded", function() {
   document.addEventListener("keydown", function(e){ 
@@ -582,7 +610,7 @@ function initDynamicSelects() {
 }
 
 // ══════════════════════════════════════════════
-//  SECURITY: SHA-256 PASSWORD HASHING
+//  SECURITY: SHA-256 HASHING
 // ══════════════════════════════════════════════
 async function hashPassword(str) {
   if (!str) return "";
@@ -593,7 +621,7 @@ async function hashPassword(str) {
 }
 
 // ══════════════════════════════════════════════
-//  AUTHENTICATION & REGISTER SWITCHING
+//  AUTH & REGISTER SWITCHING (METHOD 2)
 // ══════════════════════════════════════════════
 function switchAuthTab(type) {
   document.getElementById("tab-login").classList.toggle("active", type === "login");
@@ -607,6 +635,7 @@ function hideAuthErr() {
   document.getElementById("login-err").style.display = "none";
   document.getElementById("reg-err").style.display = "none";
   document.getElementById("reg-msg").style.display = "none";
+  document.getElementById("change-pass-err").style.display = "none";
 }
 
 async function doLogin() {
@@ -625,7 +654,14 @@ async function doLogin() {
     var res = await apiFetch({action: "login", username: u, passwordHash: passHash, password: p});
     if(res.status === "ok"){
       ME = res; 
-      startApp();
+      tempUserPassHash = passHash;
+
+      if (res.forceChangePass) {
+        document.getElementById("modal-change-pass").classList.add("show");
+        btn.textContent = "เข้าสู่ระบบ"; btn.disabled = false;
+      } else {
+        startApp();
+      }
     } else {
       showLoginErr(res.message || "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
       btn.textContent = "เข้าสู่ระบบ"; btn.disabled = false;
@@ -639,39 +675,35 @@ async function doLogin() {
 async function doRegister() {
   var name = document.getElementById("reg-fullname").value.trim();
   var u = document.getElementById("reg-u").value.trim();
+  var email = document.getElementById("reg-email").value.trim();
   var dept = document.getElementById("reg-dept").value.trim();
-  var p = document.getElementById("reg-p").value;
-  var pConfirm = document.getElementById("reg-confirm-p").value;
   var btn = document.getElementById("reg-btn");
   var err = document.getElementById("reg-err");
   var msg = document.getElementById("reg-msg");
 
   err.style.display = "none"; msg.style.display = "none";
 
-  if(!name || !u || !p){ showRegErr("กรุณากรอกข้อมูลสำคัญให้ครบถ้วน"); return; }
-  if(p.length < 6){ showRegErr("รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร"); return; }
-  if(p !== pConfirm){ showRegErr("รหัสผ่านยืนยันไม่ตรงกัน"); return; }
+  if(!name || !u || !email){ showRegErr("กรุณากรอกชื่อ-นามสกุล, Username และ Email ให้ครบถ้วน"); return; }
+  if(email.indexOf("@") === -1){ showRegErr("กรุณากรอกรูปแบบอีเมลให้ถูกต้อง"); return; }
 
   btn.textContent = "กำลังส่งข้อมูล..."; btn.disabled = true;
 
   try {
-    var passHash = await hashPassword(p);
     var res = await apiFetch({
       action: "register",
       username: u,
-      passwordHash: passHash,
       fullname: name,
+      email: email,
       department: dept
     });
 
     if(res.status === "ok"){
-      msg.textContent = "ลงทะเบียนสำเร็จ! กรุณารอผู้ดูแลระบบ (Admin) อนุมัติสิทธิ์การใช้งาน";
+      msg.textContent = res.message;
       msg.style.display = "block";
       document.getElementById("reg-fullname").value = "";
       document.getElementById("reg-u").value = "";
+      document.getElementById("reg-email").value = "";
       document.getElementById("reg-dept").value = "";
-      document.getElementById("reg-p").value = "";
-      document.getElementById("reg-confirm-p").value = "";
     } else {
       showRegErr(res.message || "ไม่สามารถลงทะเบียนได้");
     }
@@ -679,6 +711,49 @@ async function doRegister() {
     showRegErr("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ");
   } finally {
     btn.textContent = "ส่งข้อมูลลงทะเบียน"; btn.disabled = false;
+  }
+}
+
+async function doChangePassword() {
+  var newP = document.getElementById("new-p").value;
+  var confirmP = document.getElementById("confirm-new-p").value;
+  var err = document.getElementById("change-pass-err");
+  var btn = document.getElementById("change-pass-btn");
+
+  err.style.display = "none";
+  if(!newP || newP.length < 6){
+    err.textContent = "รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 6 ตัวอักษร";
+    err.style.display = "block"; return;
+  }
+  if(newP !== confirmP){
+    err.textContent = "รหัสผ่านยืนยันไม่ตรงกัน";
+    err.style.display = "block"; return;
+  }
+
+  btn.textContent = "กำลังบันทึก..."; btn.disabled = true;
+
+  try {
+    var newHash = await hashPassword(newP);
+    var res = await apiFetch({
+      action: "changePassword",
+      username: ME.username,
+      currentPasswordHash: tempUserPassHash,
+      newPasswordHash: newHash
+    });
+
+    if(res.status === "ok"){
+      toast("ตั้งรหัสผ่านใหม่เรียบร้อยแล้ว", "ok");
+      document.getElementById("modal-change-pass").classList.remove("show");
+      document.getElementById("inp-p").value = "";
+      startApp();
+    } else {
+      err.textContent = res.message || "เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน";
+      err.style.display = "block";
+    }
+  } catch(e) {
+    err.textContent = "ไม่สามารถเชื่อมต่อระบบได้"; err.style.display = "block";
+  } finally {
+    btn.textContent = "บันทึกรหัสผ่านใหม่"; btn.disabled = false;
   }
 }
 
@@ -711,7 +786,7 @@ function startApp() {
 }
 
 function doLogout() {
-  ME = null; recData = [];
+  ME = null; recData = []; tempUserPassHash = "";
   Object.keys(charts).forEach(function(k){ if(charts[k]){ charts[k].destroy(); delete charts[k]; } });
   
   document.getElementById("app").style.display = "none";
@@ -856,7 +931,7 @@ function renderOverview(sum, records, month) {
   }).join("") || '<div style="color:#aaa;padding:16px;text-align:center;font-size:13px">ไม่มีข้อมูลผู้รับในปีที่เลือก</div>';
 
   document.getElementById("recent-tb").innerHTML = records.slice(-10).reverse().map(function(r){
-    return '<tr><td><code style="font-size:11px;color:var(--cmu-purple)">'+esc(r.Job_ID)+'</code></td><td>'+esc(r.Tracking_NO)+'</td><td>'+esc(r.Date)+'</td><td>'+esc(r.Sender)+'</td><td>'+esc(r.Receiver)+'</td><td style="white-space:pre-wrap;font-size:11px">'+esc(r.Detail)+'</td></tr>';
+    return '<tr><td><code style="font-size:11px;color:var(--cmu-purple)">'+esc(r.Job_ID || r["Job ID"])+'</code></td><td>'+esc(r.Tracking_NO || r["Tracking NO"])+'</td><td>'+esc(r.Date)+'</td><td>'+esc(r.Sender)+'</td><td>'+esc(r.Receiver)+'</td><td style="white-space:pre-wrap;font-size:11px">'+esc(r.Detail)+'</td></tr>';
   }).join("") || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">ไม่มีข้อมูลจัดส่งในปีที่เลือก</td></tr>';
 }
 
@@ -929,19 +1004,25 @@ function loadRecords() {
 function filterRec() {
   var q = (document.getElementById("rec-search").value || "").toLowerCase();
   var filtered = recData.filter(function(r){
-    return !q || [r.Tracking_NO, r.Job_ID, r.Sender, r.Receiver, r.Record_By].some(function(v){ 
+    var track = r.Tracking_NO || r["Tracking NO"] || "";
+    var jobId = r.Job_ID || r["Job ID"] || "";
+    var recordBy = r.Record_By || r["Record By"] || "";
+    return !q || [track, jobId, r.Sender, r.Receiver, recordBy].some(function(v){ 
       return String(v||"").toLowerCase().includes(q); 
     });
   });
   
   document.getElementById("rec-count").textContent = filtered.length + " รายการ";
   document.getElementById("rec-tb").innerHTML = filtered.map(function(r){
-    return '<tr><td><code style="font-size:11px;color:var(--cmu-purple)">'+esc(r.Job_ID)+'</code></td><td>'+esc(r.Record_By)+'</td><td>'+esc(r.Tracking_NO)+'</td><td>'+esc(r.Date)+'</td><td>'+esc(r.Sender)+'</td><td>'+esc(r.Receiver)+'</td><td style="white-space:pre-wrap;font-size:11px">'+esc(r.Detail)+'</td><td style="font-size:11px;color:#aaa;white-space:nowrap">'+esc(r.Timestamp)+'</td></tr>';
+    var jobId = r.Job_ID || r["Job ID"] || "";
+    var track = r.Tracking_NO || r["Tracking NO"] || "";
+    var recBy = r.Record_By || r["Record By"] || "";
+    return '<tr><td><code style="font-size:11px;color:var(--cmu-purple)">'+esc(jobId)+'</code></td><td>'+esc(recBy)+'</td><td>'+esc(track)+'</td><td>'+esc(r.Date)+'</td><td>'+esc(r.Sender)+'</td><td>'+esc(r.Receiver)+'</td><td style="white-space:pre-wrap;font-size:11px">'+esc(r.Detail)+'</td><td style="font-size:11px;color:#aaa;white-space:nowrap">'+esc(r.Timestamp)+'</td></tr>';
   }).join("") || '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:24px">ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา</td></tr>';
 }
 
 // ══════════════════════════════════════════════
-//  PAGE: USER MANAGEMENT (Admin Rights)
+//  PAGE: USER MANAGEMENT (METHOD 2 APPROVAL)
 // ══════════════════════════════════════════════
 function loadUsers() {
   if(ME.role !== "admin") return;
@@ -956,12 +1037,12 @@ function loadUsers() {
 
     document.getElementById("users-tb").innerHTML = users.map(function(u){
       var statusTag = u.status === "active" ? '<span class="tag tag-active">ใช้งานปกติ</span>' :
-                      u.status === "pending" ? '<span class="tag tag-pending">รออนุมัติ</span>' :
+                      u.status === "pending" ? '<span class="tag tag-pending">รออนุมัติ / รอส่งรหัส</span>' :
                       '<span class="tag tag-disabled">ระงับการใช้</span>';
 
       return '<tr>'
         +'<td><strong>'+esc(u.fullname||u.username)+'</strong></td>'
-        +'<td><code>'+esc(u.username)+'</code></td>'
+        +'<td><code>'+esc(u.username)+'</code><br><span style="font-size:11px;color:var(--text-muted)">'+esc(u.email||'-')+'</span></td>'
         +'<td>'+esc(u.department||'-')+'</td>'
         +'<td>'
           +'<select onchange="updateUserRole(\''+esc(u.username)+'\', this.value)" style="padding:4px 8px;font-size:12px">'
@@ -972,7 +1053,7 @@ function loadUsers() {
         +'</td>'
         +'<td>'+statusTag+'</td>'
         +'<td>'
-          +(u.status === "pending" ? '<button class="btn btn-success btn-sm" onclick="setUserStatus(\''+esc(u.username)+'\', \'active\')">อนุมัติ</button> ' : '')
+          +(u.status === "pending" ? '<button class="btn btn-success btn-sm" onclick="setUserStatus(\''+esc(u.username)+'\', \'active\')">อนุมัติ & ส่งรหัสผ่าน</button> ' : '')
           +(u.status === "active" ? '<button class="btn btn-danger btn-sm" onclick="setUserStatus(\''+esc(u.username)+'\', \'disabled\')">ระงับ</button> ' : '')
           +(u.status === "disabled" ? '<button class="btn btn-primary btn-sm" onclick="setUserStatus(\''+esc(u.username)+'\', \'active\')">เปิดใช้งาน</button> ' : '')
         +'</td>'
@@ -982,10 +1063,15 @@ function loadUsers() {
 }
 
 function setUserStatus(targetUser, status) {
-  if(!confirm("ยืนยันการเปลี่ยนสถานะผู้ใช้ "+targetUser+" เป็น "+status+" ?")) return;
+  var confirmMsg = "ยืนยันการเปลี่ยนสถานะผู้ใช้ " + targetUser + " เป็น " + status + " ?";
+  if (status === "active") {
+    confirmMsg = "ยืนยันการอนุมัติสิทธิ์ใช้งานผู้ใช้ " + targetUser + " ?\nระบบจะสุ่มรหัสผ่านชั่วคราวและส่งไปที่อีเมลของผู้สมัครโดยอัตโนมัติ";
+  }
+  if(!confirm(confirmMsg)) return;
+
   apiFetch({action:"updateUserStatus", adminUser:ME.username, targetUser:targetUser, status:status}).then(function(res){
     if(res.status === "ok"){
-      toast("อัปเดตสถานะสำเร็จ", "ok");
+      toast(res.message || "อัปเดตสถานะสำเร็จ", "ok");
       loadUsers();
     } else {
       toast(res.message || "เกิดข้อผิดพลาด", "err");
@@ -1181,7 +1267,7 @@ function toast(msg,type){
   var t=document.getElementById("toast"); 
   t.textContent=msg; 
   t.className="show "+(type||"ok"); 
-  setTimeout(function(){ t.className=""; }, 3500); 
+  setTimeout(function(){ t.className=""; }, 4500); 
 }
 </script>
 </body>

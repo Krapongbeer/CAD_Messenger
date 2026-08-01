@@ -30,10 +30,10 @@
   
   --danger: #d93838;
   --danger-light: #fde8e8;
-  --warning: #f59e0b;
+  --warning: #d97706;
   --warning-light: #fef3c7;
-  --success: #10b981;
-  --success-light: #e6f4ea;
+  --success: #059669;
+  --success-light: #d1fae5;
   
   --chart-grid: rgba(0, 0, 0, 0.06);
   --chart-text: #2d2930;
@@ -84,6 +84,32 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* ── Status Badges & Tag Styles ── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.tag-active  { background: var(--success-light); color: var(--success); }
+.tag-pending { background: var(--warning-light); color: var(--warning); }
+.tag-disabled{ background: var(--danger-light); color: var(--danger); }
+
+.tag-delivered {
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+.tag-transit {
+  background: var(--warning-light);
+  color: var(--warning);
+  border: 1px solid var(--warning);
 }
 
 /* ── Theme Switcher Selector ── */
@@ -622,9 +648,9 @@ select:focus, input[type=date]:focus {
   height: 100%;
   background: var(--cmu-purple);
 }
-.kpi:nth-child(2)::before { background: var(--cmu-gold); }
-.kpi:nth-child(3)::before { background: #10b981; }
-.kpi:nth-child(4)::before { background: #6366f1; }
+.kpi:nth-child(2)::before { background: var(--success); }
+.kpi:nth-child(3)::before { background: var(--warning); }
+.kpi:nth-child(4)::before { background: var(--cmu-gold); }
 .kpi-label {
   font-size: 11px;
   color: var(--text-muted);
@@ -780,17 +806,6 @@ td {
 tr:last-child td { border: none; }
 tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
 tr:hover td { background: var(--cmu-purple-bg); }
-
-.tag {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 99px;
-  font-size: 11px;
-  font-weight: 700;
-}
-.tag-active  { background: var(--success-light); color: var(--success); }
-.tag-pending { background: var(--warning-light); color: var(--warning); }
-.tag-disabled{ background: var(--danger-light); color: var(--danger); }
 
 /* ── Admin Box ── */
 .admin-box {
@@ -1136,7 +1151,22 @@ tr:hover td { background: var(--cmu-purple-bg); }
         <div class="chart-card" style="margin-bottom:20px"><div class="chart-title">ผู้รับพัสดุสูงสุด</div><div class="bar-list" id="receiver-bars"></div></div>
         <div class="tbl-wrap">
           <div class="tbl-head"><div class="tbl-title">รายการล่าสุด (10 รายการ)</div></div>
-          <div class="tbl-scroll"><table><thead><tr><th>Job ID</th><th>Tracking NO</th><th>วันที่</th><th>ผู้ส่ง</th><th>ผู้รับ</th><th>รายละเอียด</th></tr></thead><tbody id="recent-tb"></tbody></table></div>
+          <div class="tbl-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Job ID</th>
+                  <th>Tracking NO</th>
+                  <th>วันที่</th>
+                  <th>ผู้ส่ง</th>
+                  <th>ผู้รับ</th>
+                  <th>สถานะจัดส่ง</th>
+                  <th>รายละเอียด</th>
+                </tr>
+              </thead>
+              <tbody id="recent-tb"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -1188,7 +1218,24 @@ tr:hover td { background: var(--cmu-purple-bg); }
         </div>
         <div class="tbl-wrap">
           <div class="tbl-head"><div class="tbl-title">รายการจัดส่ง</div><div class="tbl-count" id="rec-count">0 รายการ</div></div>
-          <div class="tbl-scroll"><table><thead><tr><th>Job ID</th><th>Record By</th><th>Tracking NO</th><th>วันที่</th><th>ผู้ส่ง</th><th>ผู้รับ</th><th>รายละเอียด</th><th>Timestamp</th></tr></thead><tbody id="rec-tb"></tbody></table></div>
+          <div class="tbl-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Job ID</th>
+                  <th>Record By</th>
+                  <th>Tracking NO</th>
+                  <th>วันที่</th>
+                  <th>ผู้ส่ง</th>
+                  <th>ผู้รับ</th>
+                  <th>สถานะจัดส่ง</th>
+                  <th>รายละเอียด</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody id="rec-tb"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -1321,7 +1368,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 // ══════════════════════════════════════════════
 //  CONFIG & GLOBAL STATE
 // ══════════════════════════════════════════════
-var API = "https://script.google.com/macros/s/AKfycbzRSzLlJ9KLamZzHCrNt470MZg87kWRuWjvTxkKw6FFOSgdg5cSqrtrSyY0Ai5znAw5eQ/exec";
+var API = "https://script.google.com/macros/s/AKfycbzZjUB3TrQF_TaUjvYpMHWny3t4EoAAloK6sEivBO6-Fnpp6WEdDsM2i_e2uffP0Rvnbg/exec";
 
 var ME = null;          
 var tempUserPassHash = ""; 
@@ -1335,6 +1382,30 @@ var debounceTimer = null;
 
 var MONTHS = ["","ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
 var COLORS  = ["#5c2483","#e09f19","#8c42c2","#0284c7","#10b981","#f59e0b","#ec4899","#6366f1"];
+
+// ══════════════════════════════════════════════
+//  RECORD UTILS & STATUS CHECKER
+// ══════════════════════════════════════════════
+function getRecVal(r, key) {
+  if (!r) return "";
+  if (r[key] !== undefined && r[key] !== null) return String(r[key]).trim();
+  var target = String(key).toLowerCase().replace(/_/g, "");
+  for (var k in r) {
+    if (String(k).toLowerCase().replace(/_/g, "") === target) {
+      return String(r[k] || "").trim();
+    }
+  }
+  return "";
+}
+
+function getDeliveryStatusTag(r) {
+  var sig = getRecVal(r, "Signature");
+  if (sig && sig.length > 0) {
+    return '<span class="tag tag-delivered">✓ จัดส่งสำเร็จ</span>';
+  } else {
+    return '<span class="tag tag-transit">⏳ กำลังจัดส่ง</span>';
+  }
+}
 
 // ══════════════════════════════════════════════
 //  DAY & NIGHT THEME ENGINE
@@ -1771,19 +1842,17 @@ function renderOverview(sum, records, month) {
 
   var periodTotal = month ? (sum.monthly[parseInt(month)] || 0) : records.length;
   var senders = sum.bySender, receivers = sum.byReceiver;
-  var topS = topOf(senders), topR = topOf(receivers);
+  
+  // นับสถิติสถานะการจัดส่ง (จากลายเซ็น)
+  var completedCount = records.filter(function(r){ return getRecVal(r, "Signature").length > 0; }).length;
+  var pendingCount = records.length - completedCount;
 
   var kpis = [
-    {label:"งานทั้งหมด (ปีที่เลือก)", value: sum.total || 0},
-    {label:"ช่วงเวลาที่เลือก", value: periodTotal},
-    {label:"จำนวนผู้ส่ง (คน)", value: Object.keys(senders).length},
-    {label:"จำนวนผู้รับ (คน)", value: Object.keys(receivers).length}
+    {label:"งานทั้งหมด (ช่วงที่เลือก)", value: periodTotal},
+    {label:"จัดส่งสำเร็จแล้ว", value: completedCount, sub: "มีลายเซ็นรับเรียบร้อย"},
+    {label:"อยู่ระหว่างจัดส่ง", value: pendingCount, sub: "รอลายเซ็นผู้รับ"},
+    {label:"จำนวนผู้ส่ง / ผู้รับ", value: Object.keys(senders).length + " / " + Object.keys(receivers).length + " คน"}
   ];
-  
-  if(ME.role !== "staff"){
-    kpis.push({label:"ผู้ส่งสูงสุด", value: topS ? topS[1] : 0, sub: topS ? topS[0] : "-"});
-    kpis.push({label:"ผู้รับสูงสุด", value: topR ? topR[1] : 0, sub: topR ? topR[0] : "-"});
-  }
 
   document.getElementById("ov-kpi").innerHTML = kpis.map(function(k){
     return '<div class="kpi"><div class="kpi-label">'+k.label+'</div><div class="kpi-value">'+k.value+'</div>'+(k.sub?'<div class="kpi-sub" title="'+esc(k.sub)+'">'+esc(k.sub)+'</div>':'')+'</div>';
@@ -1809,8 +1878,18 @@ function renderOverview(sum, records, month) {
   }).join("") || '<div style="color:#aaa;padding:16px;text-align:center;font-size:13px">ไม่มีข้อมูลผู้รับในปีที่เลือก</div>';
 
   document.getElementById("recent-tb").innerHTML = records.slice(-10).reverse().map(function(r){
-    return '<tr><td><code style="font-size:11px;color:var(--cmu-purple)">'+esc(r.Job_ID || r["Job ID"])+'</code></td><td>'+esc(r.Tracking_NO || r["Tracking NO"])+'</td><td>'+esc(r.Date)+'</td><td>'+esc(r.Sender)+'</td><td>'+esc(r.Receiver)+'</td><td style="white-space:pre-wrap;font-size:11px">'+esc(r.Detail)+'</td></tr>';
-  }).join("") || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">ไม่มีข้อมูลจัดส่งในปีที่เลือก</td></tr>';
+    var jobId = getRecVal(r, "Job_ID");
+    var track = getRecVal(r, "Tracking_NO");
+    return '<tr>'
+      +'<td><code style="font-size:11px;color:var(--cmu-purple)">'+esc(jobId)+'</code></td>'
+      +'<td>'+esc(track)+'</td>'
+      +'<td>'+esc(getRecVal(r, "Date"))+'</td>'
+      +'<td>'+esc(getRecVal(r, "Sender"))+'</td>'
+      +'<td>'+esc(getRecVal(r, "Receiver"))+'</td>'
+      +'<td>'+getDeliveryStatusTag(r)+'</td>'
+      +'<td style="white-space:pre-wrap;font-size:11px">'+esc(getRecVal(r, "Detail"))+'</td>'
+      +'</tr>';
+  }).join("") || '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">ไม่มีข้อมูลจัดส่งในปีที่เลือก</td></tr>';
 }
 
 // ══════════════════════════════════════════════
@@ -1887,21 +1966,33 @@ function debouncedFilterRec() {
 function filterRec() {
   var q = (document.getElementById("rec-search").value || "").toLowerCase();
   var filtered = recData.filter(function(r){
-    var track = r.Tracking_NO || r["Tracking NO"] || "";
-    var jobId = r.Job_ID || r["Job ID"] || "";
-    var recordBy = r.Record_By || r["Record By"] || "";
-    return !q || [track, jobId, r.Sender, r.Receiver, recordBy].some(function(v){ 
+    var track = getRecVal(r, "Tracking_NO");
+    var jobId = getRecVal(r, "Job_ID");
+    var recordBy = getRecVal(r, "Record_By");
+    var sender = getRecVal(r, "Sender");
+    var receiver = getRecVal(r, "Receiver");
+    return !q || [track, jobId, sender, receiver, recordBy].some(function(v){ 
       return String(v||"").toLowerCase().includes(q); 
     });
   });
   
   document.getElementById("rec-count").textContent = filtered.length + " รายการ";
   document.getElementById("rec-tb").innerHTML = filtered.map(function(r){
-    var jobId = r.Job_ID || r["Job ID"] || "";
-    var track = r.Tracking_NO || r["Tracking NO"] || "";
-    var recBy = r.Record_By || r["Record By"] || "";
-    return '<tr><td><code style="font-size:11px;color:var(--cmu-purple)">'+esc(jobId)+'</code></td><td>'+esc(recBy)+'</td><td>'+esc(track)+'</td><td>'+esc(r.Date)+'</td><td>'+esc(r.Sender)+'</td><td>'+esc(r.Receiver)+'</td><td style="white-space:pre-wrap;font-size:11px">'+esc(r.Detail)+'</td><td style="font-size:11px;color:#aaa;white-space:nowrap">'+esc(r.Timestamp)+'</td></tr>';
-  }).join("") || '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:24px">ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา</td></tr>';
+    var jobId = getRecVal(r, "Job_ID");
+    var track = getRecVal(r, "Tracking_NO");
+    var recBy = getRecVal(r, "Record_By");
+    return '<tr>'
+      +'<td><code style="font-size:11px;color:var(--cmu-purple)">'+esc(jobId)+'</code></td>'
+      +'<td>'+esc(recBy)+'</td>'
+      +'<td>'+esc(track)+'</td>'
+      +'<td>'+esc(getRecVal(r, "Date"))+'</td>'
+      +'<td>'+esc(getRecVal(r, "Sender"))+'</td>'
+      +'<td>'+esc(getRecVal(r, "Receiver"))+'</td>'
+      +'<td>'+getDeliveryStatusTag(r)+'</td>'
+      +'<td style="white-space:pre-wrap;font-size:11px">'+esc(getRecVal(r, "Detail"))+'</td>'
+      +'<td style="font-size:11px;color:#aaa;white-space:nowrap">'+esc(getRecVal(r, "Timestamp"))+'</td>'
+      +'</tr>';
+  }).join("") || '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:24px">ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา</td></tr>';
 }
 
 // ══════════════════════════════════════════════
@@ -2062,7 +2153,7 @@ function doArchive() {
   }
 
   var msgConfirm = "ยืนยันการ Archive ย้ายข้อมูลเก่าออก?\n- ข้อมูลจะถูกย้ายจาก Sheet หลักไปยัง Sheet Archive";
-  if(archiveFiles) msgConfirm += "\n- รูปภาพและไฟล์แนบใน Google Drive จะถูกย้ายไปยังโฟลเดอร์ Archive";
+  if(archiveFiles) msgConfirm += "\n- รูปภาพและไฟล์แนบใน Google Drive ที่เกี่ยวข้องไปยังโฟลเดอร์ Archive";
   
   if(!confirm(msgConfirm)) return;
 

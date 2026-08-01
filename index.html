@@ -841,7 +841,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
   border-radius: 20px;
   padding: 32px;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
   box-shadow: var(--shadow-lg);
   position: relative;
   border: 1px solid var(--border-color);
@@ -1031,6 +1031,25 @@ tr:hover td { background: var(--cmu-purple-bg); }
     
     <div class="f-err" id="change-pass-err"></div>
     <button class="auth-btn" id="change-pass-btn" onclick="doChangePassword()">บันทึกรหัสผ่านใหม่</button>
+  </div>
+</div>
+
+<!-- MODAL: PDF SUCCESS / DOWNLOAD -->
+<div class="modal-overlay" id="modal-pdf-success">
+  <div class="modal-box" style="text-align:center;max-width:440px">
+    <div style="font-size:38px;margin-bottom:8px">📄</div>
+    <div class="modal-title">สร้างเอกสาร PDF สำเร็จ!</div>
+    <div class="modal-sub" id="pdf-modal-sub">รายงานสรุปข้อมูลจัดส่งพร้อมดาวน์โหลดและเปิดดูแล้ว</div>
+    
+    <div style="background:var(--cmu-purple-subtle);border-radius:12px;padding:12px 16px;margin-bottom:20px;text-align:left;font-size:12.5px;color:var(--text-main);border:1px solid var(--border-color)">
+      <div><strong>ชื่อไฟล์:</strong> <span id="pdf-modal-name" style="word-break:break-all;color:var(--cmu-purple)">-</span></div>
+      <div style="margin-top:4px"><strong>จำนวนรายการ:</strong> <span id="pdf-modal-count" style="font-weight:700;color:var(--cmu-gold)">0</span> รายการ</div>
+    </div>
+
+    <a id="pdf-modal-btn" href="#" target="_blank" class="auth-btn" style="display:inline-block;text-decoration:none;margin-bottom:10px;line-height:22px;text-align:center">
+      🚀 คลิกเปิดดู / ดาวน์โหลดเอกสาร PDF
+    </a>
+    <button class="btn" style="width:100%" onclick="document.getElementById('modal-pdf-success').classList.remove('show')">ปิดหน้าต่าง</button>
   </div>
 </div>
 
@@ -1302,7 +1321,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 // ══════════════════════════════════════════════
 //  CONFIG & GLOBAL STATE
 // ══════════════════════════════════════════════
-var API = "https://script.google.com/macros/s/AKfycbzRSzLlJ9KLamZzHCrNt470MZg87kWRuWjvTxkKw6FFOSgdg5cSqrtrSyY0Ai5znAw5eQ/exec";
+var API = "https://script.google.com/macros/s/AKfycbyudCftrydBEgYfkB-rcsy3a8Fx37VkfCzNQkjZagxa5qu7oaM5mdG1wixQ_yW030v4_A/exec";
 
 var ME = null;          
 var tempUserPassHash = ""; 
@@ -1957,7 +1976,7 @@ function updateUserRole(targetUser, newRole) {
 }
 
 // ══════════════════════════════════════════════
-//  EXPORT PDF
+//  EXPORT PDF (SAFARI POP-UP BLOCKER SAFE & MODAL DIALOG)
 // ══════════════════════════════════════════════
 function exportPDF(ctx) {
   var params = {action:"exportPDF", role:ME.role, username:ME.username};
@@ -1975,22 +1994,46 @@ function exportPDF(ctx) {
     else { params.dateFrom = document.getElementById("rpt-from").value; params.dateTo = document.getElementById("rpt-to").value; }
   }
 
+  // เปิดแท็บใหม่รอก่อนชั่วคราวเพื่อป้องกัน Safari/Chrome บล็อกป๊อปอัปอัตโนมัติ
+  var win = null;
+  try {
+    win = window.open('', '_blank');
+    if(win && win.document) {
+      win.document.write('<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#3b1359;color:#fff;text-align:center}</style><div><h2>📄 กำลังสร้างเอกสาร PDF...</h2><p>โปรดรอสักครู่ ระบบกำลังประมวลผลข้อมูล</p></div>');
+    }
+  } catch(e) {
+    console.warn("Pop-up blocker active");
+  }
+
   document.getElementById("pdf-overlay").classList.add("show");
   
   apiFetch(params).then(function(res){
     document.getElementById("pdf-overlay").classList.remove("show");
-    if(res.status === "ok"){
-      window.open(res.url, "_blank");
-      toast("สร้างเอกสาร PDF สำเร็จ ("+res.count+" รายการ)", "ok");
+    if(res && res.status === "ok"){
+      if(win && !win.closed) {
+        win.location.href = res.url;
+      }
+      
+      // แสดง Modal ปุ่มเปิด/ดาวน์โหลดไฟล์บนหน้าจอเสมอ
+      document.getElementById("pdf-modal-name").textContent = res.name || "รายงาน.pdf";
+      document.getElementById("pdf-modal-count").textContent = res.count || 0;
+      var linkBtn = document.getElementById("pdf-modal-btn");
+      linkBtn.href = res.url;
+      document.getElementById("modal-pdf-success").classList.add("show");
+
+      toast("สร้างเอกสาร PDF สำเร็จ (" + res.count + " รายการ)", "ok");
+
       if(ctx === "report"){
         var el = document.getElementById("rpt-result");
-        el.innerHTML = '<a href="'+res.url+'" target="_blank" style="color:var(--cmu-purple);font-weight:700;text-decoration:none">📄 ดาวน์โหลดรายงาน PDF: '+esc(res.name||'Report')+'</a>';
+        el.innerHTML = '<a href="' + res.url + '" target="_blank" style="color:var(--cmu-purple);font-weight:700;text-decoration:none">📄 ดาวน์โหลดรายงาน PDF: ' + esc(res.name||'Report') + '</a>';
         el.style.display = "block";
       }
     } else { 
-      toast("เกิดข้อผิดพลาด: " + res.message, "err"); 
+      if(win && !win.closed) win.close();
+      toast("เกิดข้อผิดพลาด: " + (res ? res.message : "ไม่สามารถประมวลผลได้"), "err"); 
     }
-  }).catch(function(){ 
+  }).catch(function(err){ 
+    if(win && !win.closed) win.close();
     document.getElementById("pdf-overlay").classList.remove("show"); 
     toast("ไม่สามารถสร้าง PDF ได้เนื่องจากเกิดปัญหาการเชื่อมต่อ", "err"); 
   });

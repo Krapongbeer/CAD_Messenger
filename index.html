@@ -1022,7 +1022,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
       </div>
       
       <div style="background:var(--cmu-purple-subtle);border-left:3px solid var(--cmu-purple);padding:10px 12px;border-radius:8px;font-size:12px;color:var(--text-main);margin-bottom:16px;line-height:1.4">
-        🔒 <strong>ระบบยืนยันตัวตนปลอดภัยสูงสุด:</strong><br>
+        🔒 <strong>ระบบยืนยันตัวตนปลอดภัยสูง:</strong><br>
         เมื่อส่งข้อมูลลงทะเบียนแล้ว ผู้ดูแลระบบจะทำการอนุมัติสิทธิ์ และระบบจะจัดส่ง <strong>รหัสผ่านชั่วคราว</strong> ไปยังอีเมลของคุณโดยอัตโนมัติ
       </div>
 
@@ -1437,7 +1437,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 // ══════════════════════════════════════════════
 //  CONFIG & GLOBAL STATE
 // ══════════════════════════════════════════════
-var API = "https://script.google.com/macros/s/AKfycbzoZm2LcWzEtYw-AvExo51uzdnDWN2yv0ciJZFjlnANBk9866z6xkGDlZbDLEl27NM5lQ/exec";
+var API = "https://script.google.com/macros/s/AKfycbzSR4wPZRHoLd_5do7OFVj6mce8WrK3hb5R02qeHUflm-Rp9qpfOgX4rL8qwWXWV__7nw/exec";
 
 var ME = null;          
 var tempUserPassHash = ""; 
@@ -1454,7 +1454,7 @@ var MONTHS = ["","ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","�
 var COLORS  = ["#5c2483","#e09f19","#8c42c2","#0284c7","#10b981","#f59e0b","#ec4899","#6366f1"];
 
 // ══════════════════════════════════════════════
-//  RECORD UTILS & STATUS CHECKER
+//  RECORD UTILS & STATUS CHECKER (ROBUST REGEX)
 // ══════════════════════════════════════════════
 function getRecVal(r, key) {
   if (!r) return "";
@@ -1482,34 +1482,35 @@ function getDeliveryStatusTag(r) {
 function parseDate(val) {
   if (!val) return null;
   if (val instanceof Date) {
-    var y = val.getFullYear();
-    if (y > 2500) {
-      return new Date(y - 543, val.getMonth(), val.getDate(), val.getHours(), val.getMinutes(), val.getSeconds());
-    }
-    return val;
+    var d = new Date(val.getTime());
+    if (d.getFullYear() > 2500) d.setFullYear(d.getFullYear() - 543);
+    return d;
   }
   var s = String(val).trim();
   if (!s) return null;
 
-  var isoMatch = s.match(/^(\d{4})-(.*)$/);
+  var isoMatch = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[T\s](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
   if (isoMatch) {
-    var yr = parseInt(isoMatch[1], 10);
-    if (yr > 2500) {
-      yr -= 543;
-      s = yr + "-" + isoMatch[2];
-    }
-    var dtIso = new Date(s);
-    if (!isNaN(dtIso.getTime())) return dtIso;
+    var y = parseInt(isoMatch[1], 10);
+    var m = parseInt(isoMatch[2], 10) - 1;
+    var d = parseInt(isoMatch[3], 10);
+    var hh = parseInt(isoMatch[4] || "0", 10);
+    var mm = parseInt(isoMatch[5] || "0", 10);
+    var ss = parseInt(isoMatch[6] || "0", 10);
+    if (y > 2500) y -= 543;
+    return new Date(y, m, d, hh, mm, ss);
   }
 
-  var parts = s.split(/[\s,]+/);
-  var dp = parts[0].split("/");
-  if (dp.length >= 3) {
-    var d = parseInt(dp[0], 10), m = parseInt(dp[1], 10) - 1, y = parseInt(dp[2], 10);
+  var dmyMatch = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (dmyMatch) {
+    var d = parseInt(dmyMatch[1], 10);
+    var m = parseInt(dmyMatch[2], 10) - 1;
+    var y = parseInt(dmyMatch[3], 10);
+    var hh = parseInt(dmyMatch[4] || "0", 10);
+    var mm = parseInt(dmyMatch[5] || "0", 10);
+    var ss = parseInt(dmyMatch[6] || "0", 10);
     if (y > 2500) y -= 543;
-    var tp = parts[1] ? parts[1].split(":") : ["0", "0"];
-    var dt = new Date(y, m, d, parseInt(tp[0] || "0", 10), parseInt(tp[1] || "0", 10));
-    if (!isNaN(dt.getTime())) return dt;
+    return new Date(y, m, d, hh, mm, ss);
   }
 
   var fallbackDt = new Date(s);
@@ -1523,12 +1524,10 @@ function parseDate(val) {
 }
 
 function isSameDay(d1, d2) {
-  var dt1 = parseDate(d1);
-  var dt2 = parseDate(d2);
-  if (!dt1 || !dt2) return false;
-  return dt1.getFullYear() === dt2.getFullYear() &&
-         dt1.getMonth() === dt2.getMonth() &&
-         dt1.getDate() === dt2.getDate();
+  if (!d1 || !d2) return false;
+  return d1.getFullYear() === d2.getFullYear() &&
+         d1.getMonth() === d2.getMonth() &&
+         d1.getDate() === d2.getDate();
 }
 
 function formatThaiDate(val) {
@@ -1537,7 +1536,7 @@ function formatThaiDate(val) {
   var day = dt.getDate();
   var monthList = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
   var month = monthList[dt.getMonth()];
-  var year = (dt.getFullYear() > 2500 ? dt.getFullYear() : dt.getFullYear() + 543);
+  var year = (dt.getFullYear() < 2500 ? dt.getFullYear() + 543 : dt.getFullYear());
   return day + " " + month + " " + year;
 }
 
@@ -1551,49 +1550,63 @@ function formatThaiFullDate(val) {
   var dayName = days[dt.getDay()];
   var dayNum = dt.getDate();
   var monthName = months[dt.getMonth()];
-  var yearBE = (dt.getFullYear() > 2500 ? dt.getFullYear() : dt.getFullYear() + 543);
+  var yearBE = (dt.getFullYear() < 2500 ? dt.getFullYear() + 543 : dt.getFullYear());
   
   return dayName + "ที่ " + dayNum + " " + monthName + " พ.ศ. " + yearBE;
 }
 
 // ══════════════════════════════════════════════
-//  PASSWORD INPUT HANDLER & STRENGTH CHECKER
+//  PASSWORD STRENGTH & LIVE ERROR CLEARING
 // ══════════════════════════════════════════════
 function onPasswordInput() {
+  var newP = document.getElementById("new-p").value;
+  var confirmP = document.getElementById("confirm-new-p").value;
   var err = document.getElementById("change-pass-err");
-  if (err) err.style.display = "none";
-  checkNistPasswordStrength(document.getElementById("new-p").value);
+  
+  err.style.display = "none";
+  checkPasswordStrength(newP);
+  
+  if (confirmP.length > 0 && newP !== confirmP) {
+    err.textContent = "รหัสผ่านยืนยันไม่ตรงกัน";
+    err.style.display = "block";
+  }
 }
 
-function checkNistPasswordStrength(pass) {
+function checkPasswordStrength(pass) {
   var fill = document.getElementById("pass-meter-fill");
   var text = document.getElementById("pass-meter-text");
-  if(!fill || !text) return;
+  if (!fill || !text) return;
 
-  if(!pass) {
+  if (!pass) {
     fill.style.width = "0%";
     text.textContent = "ความแรงรหัสผ่าน: -";
     return;
   }
 
-  var score = 0;
-  if(pass.length >= 8) score += 25;
-  if(pass.length >= 10) score += 25;
-  if(/[A-Z]/.test(pass) && /[a-z]/.test(pass)) score += 25;
-  if(/[0-9]/.test(pass) && /[^A-Za-z0-9]/.test(pass)) score += 25;
+  if (pass.length < 8) {
+    fill.style.width = "30%";
+    fill.style.background = "var(--danger)";
+    text.textContent = "ความแรงรหัสผ่าน: ไม่ปลอดภัย (ต้องมีอย่างน้อย 8 ตัวอักษร)";
+    return;
+  }
 
-  var blacklisted = ["123456", "12345678", "password", "admin123", "qwerty", "staff123"];
-  if(blacklisted.indexOf(pass.toLowerCase()) !== -1) {
-    score = 10;
+  var score = 50;
+  if (pass.length >= 10) score += 20;
+  if (/[A-Z]/.test(pass) && /[a-z]/.test(pass)) score += 15;
+  if (/[0-9]/.test(pass) && /[^A-Za-z0-9]/.test(pass)) score += 15;
+
+  var blacklisted = ["123456", "12345678", "password", "admin123", "qwerty", "staff123", "phongphana"];
+  if (blacklisted.indexOf(pass.toLowerCase()) !== -1) {
+    fill.style.width = "20%";
+    fill.style.background = "var(--danger)";
+    text.textContent = "ความแรงรหัสผ่าน: เดาง่ายเกินไป กรุณาเปลี่ยนรหัสผ่าน";
+    return;
   }
 
   fill.style.width = score + "%";
-  if(score < 50) {
-    fill.style.background = "var(--danger)";
-    text.textContent = "ความแรงรหัสผ่าน: ไม่ปลอดภัย (ต้องมีอย่างน้อย 8 ตัวอักษร)";
-  } else if(score < 75) {
+  if (score < 70) {
     fill.style.background = "var(--warning)";
-    text.textContent = "ความแรงรหัสผ่าน: ปานกลาง";
+    text.textContent = "ความแรงรหัสผ่าน: ปานกลาง (ใช้งานได้)";
   } else {
     fill.style.background = "var(--success)";
     text.textContent = "ความแรงรหัสผ่าน: ปลอดภัยสูง";
@@ -1653,10 +1666,21 @@ function refreshChartTheme() {
 }
 
 // ══════════════════════════════════════════════
-//  INIT HANDLER
+//  INIT HANDLER & SESSION PERSISTENCE
 // ══════════════════════════════════════════════
 document.addEventListener("DOMContentLoaded", function() {
   initTheme();
+
+  // Restore cached user session for instant loading
+  var savedUser = sessionStorage.getItem("cmu_user");
+  if (savedUser) {
+    try {
+      ME = JSON.parse(savedUser);
+      if (ME && ME.username) {
+        startApp();
+      }
+    } catch(e) {}
+  }
 
   document.addEventListener("keydown", function(e){ 
     var authPage = document.getElementById("auth-page");
@@ -1715,7 +1739,7 @@ async function hashPassword(str) {
 }
 
 // ══════════════════════════════════════════════
-//  AUTH, REGISTER & FORGOT PASSWORD SWITCHING
+//  AUTH, REGISTER & FORGOT PASSWORD
 // ══════════════════════════════════════════════
 function switchAuthTab(type) {
   document.getElementById("tab-login").classList.toggle("active", type === "login");
@@ -1751,9 +1775,10 @@ async function doLogin() {
   try {
     var passHash = await hashPassword(p);
     var res = await apiFetch({action: "login", username: u, passwordHash: passHash, password: p});
-    if(res.status === "ok"){
+    if(res && res.status === "ok"){
       ME = res; 
       tempUserPassHash = passHash;
+      sessionStorage.setItem("cmu_user", JSON.stringify(ME));
 
       if (res.forceChangePass) {
         document.getElementById("modal-change-pass").classList.add("show");
@@ -1762,7 +1787,7 @@ async function doLogin() {
         startApp();
       }
     } else {
-      showLoginErr(res.message || "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
+      showLoginErr((res && res.message) ? res.message : "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
       btn.textContent = "เข้าสู่ระบบ"; btn.disabled = false;
     }
   } catch(e) {
@@ -1796,7 +1821,7 @@ async function doRegister() {
       department: dept
     });
 
-    if(res.status === "ok"){
+    if(res && res.status === "ok"){
       msg.textContent = res.message;
       msg.style.display = "block";
       document.getElementById("reg-fullname").value = "";
@@ -1804,7 +1829,7 @@ async function doRegister() {
       document.getElementById("reg-email").value = "";
       document.getElementById("reg-dept").value = "";
     } else {
-      showRegErr(res.message || "ไม่สามารถลงทะเบียนได้");
+      showRegErr((res && res.message) ? res.message : "ไม่สามารถลงทะเบียนได้");
     }
   } catch(e) {
     showRegErr("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ");
@@ -1897,6 +1922,7 @@ async function doChangePassword() {
     document.getElementById("modal-change-pass").classList.remove("show");
     document.getElementById("inp-p").value = "";
     if (ME) ME.forceChangePass = false;
+    sessionStorage.setItem("cmu_user", JSON.stringify(ME));
     startApp();
   }
 }
@@ -1931,6 +1957,7 @@ function startApp() {
 
 function doLogout() {
   ME = null; recData = []; usersData = []; tempUserPassHash = "";
+  sessionStorage.removeItem("cmu_user");
   Object.keys(charts).forEach(function(k){ if(charts[k]){ charts[k].destroy(); delete charts[k]; } });
   
   document.getElementById("app").style.display = "none";
@@ -1952,7 +1979,7 @@ function doLogout() {
 function checkRowsStatus() {
   if(ME.role === "staff") return;
   apiFetch({action:"checkRows"}).then(function(res){
-    if(res.status !== "ok") return;
+    if(!res || res.status !== "ok") return;
     var s = res.rowStatus, warn = document.getElementById("row-warn");
     var bar = document.getElementById("row-bar");
     if(s.warn || s.limit){
@@ -2013,24 +2040,26 @@ function setArcMode(m) {
 }
 
 // ══════════════════════════════════════════════
-//  PAGE: OVERVIEW (SHOW 2 SEPARATE TABLES)
+//  PAGE: OVERVIEW (OPTIMIZED FAST SINGLE API CALL)
 // ══════════════════════════════════════════════
 function loadOverview() {
   var year = document.getElementById("ov-year").value;
   var month = document.getElementById("ov-month").value;
 
-  Promise.all([
-    apiFetch({action:"getSummary", role:ME.role, username:ME.username, year:year}),
-    apiFetch({action:"getData", role:ME.role, username:ME.username, year:year, month:month})
-  ]).then(function(r){ 
-    renderOverview(r[0], r[1].data || [], month); 
-  }).catch(function(){
-    renderOverview({total:0, todayCount:0, monthly:{}, bySender:{}, byReceiver:{}}, [], month);
+  // Single optimized API request returning summary, todayRecords, and records data
+  apiFetch({action:"getSummary", role:ME.role, username:ME.username, year:year, month:month}).then(function(res){
+    renderOverview(res, month); 
+  }).catch(function(err){
+    console.error("loadOverview error:", err);
+    renderOverview({status:"ok", total:0, todayCount:0, todayRecords:[], monthly:{}, bySender:{}, byReceiver:{}, data:[]}, month);
   });
 }
 
-function renderOverview(sum, records, month) {
-  sum = sum || {total:0, todayCount:0, monthly:{}, bySender:{}, byReceiver:{}};
+function renderOverview(res, month) {
+  res = res || {};
+  var records = res.data || [];
+  var todayRecords = res.todayRecords || [];
+  var sum = res || {total:0, todayCount:0, monthly:{}, bySender:{}, byReceiver:{}};
   sum.monthly = sum.monthly || {};
   sum.bySender = sum.bySender || {};
   sum.byReceiver = sum.byReceiver || {};
@@ -2038,12 +2067,11 @@ function renderOverview(sum, records, month) {
   var periodTotal = month ? (sum.monthly[parseInt(month)] || 0) : records.length;
   var senders = sum.bySender, receivers = sum.byReceiver;
   
-  // นับสถิติสถานะการจัดส่ง (จากลายเซ็น)
   var completedCount = records.filter(function(r){ return getRecVal(r, "Signature").length > 0; }).length;
   var pendingCount = records.length - completedCount;
 
   var kpis = [
-    {label:"รายการวันนี้", value: sum.todayCount || 0, sub: "ข้อมูลของวันปัจจุบัน"},
+    {label:"รายการวันนี้", value: sum.todayCount || todayRecords.length || 0, sub: "ข้อมูลของวันปัจจุบัน"},
     {label:"จัดส่งสำเร็จแล้ว", value: completedCount, sub: "มีลายเซ็นรับเรียบร้อย"},
     {label:"อยู่ระหว่างจัดส่ง", value: pendingCount, sub: "รอลายเซ็นผู้รับ"},
     {label:"งานรวมช่วงที่เลือก", value: periodTotal, sub: "ผู้ส่ง " + Object.keys(senders).length + " | ผู้รับ " + Object.keys(receivers).length + " คน"}
@@ -2076,10 +2104,12 @@ function renderOverview(sum, records, month) {
   var now = new Date();
   document.getElementById("today-date-text").textContent = formatThaiFullDate(now);
 
-  var todayRecords = records.filter(function(r) {
-    var dt = parseDate(getRecVal(r, "Timestamp") || getRecVal(r, "Date"));
-    return dt && isSameDay(dt, now);
-  });
+  if ((!todayRecords || todayRecords.length === 0) && records.length > 0) {
+    todayRecords = records.filter(function(r) {
+      var dt = parseDate(getRecVal(r, "Timestamp") || getRecVal(r, "Date"));
+      return dt && isSameDay(dt, now);
+    });
+  }
 
   document.getElementById("today-count-lbl").textContent = todayRecords.length + " รายการ";
   document.getElementById("today-tb").innerHTML = todayRecords.map(function(r){
@@ -2218,7 +2248,7 @@ function filterRec() {
 function loadUsers() {
   if(ME.role !== "admin") return;
   apiFetch({action:"getUsers", username:ME.username}).then(function(res){
-    if(res.status !== "ok"){ toast(res.message || "ไม่สามารถโหลดผู้ใช้ได้", "err"); return; }
+    if(!res || res.status !== "ok"){ toast((res && res.message) ? res.message : "ไม่สามารถโหลดผู้ใช้ได้", "err"); return; }
     
     usersData = res.users || [];
     renderUsersTable(usersData);
@@ -2297,12 +2327,12 @@ function saveUserInfo() {
 
   if (!targetUser) return;
   apiFetch({action:"updateUserInfo", adminUser:ME.username, targetUser:targetUser, fullname:newName, department:newDept}).then(function(res){
-    if(res.status === "ok"){
+    if(res && res.status === "ok"){
       toast(res.message, "ok");
       document.getElementById("modal-edit-user").classList.remove("show");
       loadUsers();
     } else {
-      err.textContent = res.message || "เกิดข้อผิดพลาด";
+      err.textContent = (res && res.message) ? res.message : "เกิดข้อผิดพลาด";
       err.style.display = "block";
     }
   });
@@ -2318,21 +2348,21 @@ function setUserStatus(targetUser, status) {
   if(!confirm(confirmMsg)) return;
 
   apiFetch({action:"updateUserStatus", adminUser:ME.username, targetUser:targetUser, status:status}).then(function(res){
-    if(res.status === "ok"){
+    if(res && res.status === "ok"){
       toast(res.message || "อัปเดตสถานะสำเร็จ", "ok");
       loadUsers();
     } else {
-      toast(res.message || "เกิดข้อผิดพลาด", "err");
+      toast((res && res.message) ? res.message : "เกิดข้อผิดพลาด", "err");
     }
   });
 }
 
 function updateUserRole(targetUser, newRole) {
   apiFetch({action:"updateUserRole", adminUser:ME.username, targetUser:targetUser, role:newRole}).then(function(res){
-    if(res.status === "ok"){
+    if(res && res.status === "ok"){
       toast("เปลี่ยนสิทธิ์เรียบร้อยแล้ว", "ok");
     } else {
-      toast(res.message || "ไม่สามารถเปลี่ยนสิทธิ์ได้", "err");
+      toast((res && res.message) ? res.message : "ไม่สามารถเปลี่ยนสิทธิ์ได้", "err");
       loadUsers();
     }
   });
@@ -2434,114 +2464,5 @@ function doArchive() {
     btn.textContent = "เริ่มย้ายข้อมูล (Archive)"; btn.disabled = false;
     var el = document.getElementById("arc-result");
     el.style.display = "block";
-    if(res.status === "ok"){
-      el.className = "archive-result result-ok";
-      el.textContent = "✓ " + res.message;
-      toast(res.message, "ok");
-      checkRowsStatus();
-    } else {
-      el.className = "archive-result result-err";
-      el.textContent = "✗ " + res.message;
-      toast(res.message, "err");
-    }
-  }).catch(function(){ 
-    btn.textContent = "เริ่มย้ายข้อมูล (Archive)"; btn.disabled = false; 
-    toast("เกิดข้อผิดพลาดในการ Archive ข้อมูล", "err"); 
-  });
-}
-
-// ══════════════════════════════════════════════
-//  CHART HELPER FUNCTIONS
-// ══════════════════════════════════════════════
-function renderChart(id, type, labels, vals, label, color) {
-  if(charts[id]) {
-    charts[id].destroy();
-    delete charts[id];
-  }
-  var el = document.getElementById(id); 
-  if(!el) return;
-
-  var isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  var gridColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)";
-  var textColor = isDark ? "#f3eefa" : "#2d2930";
-
-  charts[id] = new Chart(el, {
-    type: type,
-    data: {
-      labels: labels,
-      datasets: [{
-        label: label,
-        data: vals,
-        backgroundColor: Array.isArray(color) ? color : (type === "line" ? "rgba(157, 78, 221, 0.18)" : color),
-        borderColor: Array.isArray(color) ? undefined : "#9d4edd",
-        fill: type === "line",
-        tension: 0.35,
-        borderRadius: type === "bar" ? 6 : 0,
-        pointRadius: type === "line" ? 4 : 0,
-        pointBackgroundColor: "#f5b027"
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { 
-          beginAtZero: true, 
-          ticks: { stepSize: 1, color: textColor },
-          grid: { color: gridColor }
-        },
-        x: {
-          ticks: { color: textColor },
-          grid: { display: false }
-        }
-      }
-    }
-  });
-}
-
-function renderDoughnut(id, labels, vals) {
-  if(charts[id]) {
-    charts[id].destroy();
-    delete charts[id];
-  }
-  var el = document.getElementById(id); 
-  if(!el) return;
-
-  var isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  var textColor = isDark ? "#f3eefa" : "#2d2930";
-
-  charts[id] = new Chart(el, {
-    type: "doughnut",
-    data: {
-      labels: labels,
-      datasets: [{
-        data: vals,
-        backgroundColor: COLORS.slice(0, Math.max(labels.length, 1))
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "right",
-          labels: { font: { size: 11, family: 'Sarabun' }, boxWidth: 12, color: textColor }
-        }
-      }
-    }
-  });
-}
-
-// ══════════════════════════════════════════════
-//  UTILITY FUNCTIONS
-// ══════════════════════════════════════════════
-function apiFetch(params) {
-  var qs = Object.entries(params).map(function(kv){ 
-    return encodeURIComponent(kv[0]) + "=" + encodeURIComponent(kv[1] !== undefined && kv[1] !== null ? kv[1] : ""); 
-  }).join("&");
-  
-  return fetch(API + "?" + qs).then(function(r){ return r.json(); });
-}
-
-function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&
+    if(res && res.status === "ok"){
+      el.className = "archive-

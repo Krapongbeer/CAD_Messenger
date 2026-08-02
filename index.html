@@ -1183,8 +1183,33 @@ tr:hover td { background: var(--cmu-purple-bg); }
           <div class="chart-card"><div class="chart-title">สัดส่วนผู้ส่งสูงสุด (Top 5)</div><div class="chart-wrap"><canvas id="ch-sender"></canvas></div></div>
         </div>
         <div class="chart-card" style="margin-bottom:20px"><div class="chart-title">ผู้รับพัสดุสูงสุด</div><div class="bar-list" id="receiver-bars"></div></div>
+
+        <!-- ตารางที่ 1: รายการเอกสารและพัสดุ ประจำวันนี้ -->
+        <div class="tbl-wrap" style="margin-bottom:20px">
+          <div class="tbl-head">
+            <div class="tbl-title">รายการเอกสารและพัสดุ ประจำ<span id="today-date-text" style="color:var(--cmu-gold);margin-left:6px"></span></div>
+            <div class="tbl-count" id="today-count-lbl">0 รายการ</div>
+          </div>
+          <div class="tbl-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>เลขที่จดหมาย/พัสดุ (Tracking No.)</th>
+                  <th>วันที่</th>
+                  <th>ผู้ส่ง</th>
+                  <th>ผู้รับ</th>
+                  <th>สถานะจัดส่ง</th>
+                  <th>รายละเอียด</th>
+                </tr>
+              </thead>
+              <tbody id="today-tb"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ตารางที่ 2: รายการล่าสุด 10 รายการ -->
         <div class="tbl-wrap">
-          <div class="tbl-head"><div class="tbl-title">รายการจัดส่งวันนี้ / ล่าสุด (เรียงลำดับล่าสุดขึ้นก่อน)</div></div>
+          <div class="tbl-head"><div class="tbl-title">รายการล่าสุด (10 รายการ)</div></div>
           <div class="tbl-scroll">
             <table>
               <thead>
@@ -1412,7 +1437,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 // ══════════════════════════════════════════════
 //  CONFIG & GLOBAL STATE
 // ══════════════════════════════════════════════
-var API = "https://script.google.com/macros/s/AKfycbxiBh8P7t7Eaw7jfD8qRupTcYWRLP0lr8XhHsnXgrKkUVMnWlRtPJxjxhr0Ckz_DrD2Ng/exec";
+var API = "https://script.google.com/macros/s/AKfycbwHIN0aBlLWSqQ2TS-2aTMK3ocodNMkS1kQVI4cxXq1p-71j_pet2obIHREPtPVaP4OIg/exec";
 
 var ME = null;          
 var tempUserPassHash = ""; 
@@ -1429,14 +1454,17 @@ var MONTHS = ["","ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","�
 var COLORS  = ["#5c2483","#e09f19","#8c42c2","#0284c7","#10b981","#f59e0b","#ec4899","#6366f1"];
 
 // ══════════════════════════════════════════════
-//  RECORD UTILS & STATUS CHECKER
+//  RECORD UTILS & STATUS CHECKER (FIXED REGEX PATTERN)
 // ══════════════════════════════════════════════
 function getRecVal(r, key) {
   if (!r) return "";
-  if (r[key] !== undefined && r[key] !== null) return String(r[key]).trim();
-  var target = String(key).toLowerCase().replace(/_/g, "");
+  if (r[key] !== undefined && r[key] !== null && String(r[key]).trim() !== "") {
+    return String(r[key]).trim();
+  }
+  // ปรับปรุงการเปรียบเทียบชื่อคีย์ให้รองรับทั้งเครื่องหมาย _ และช่องว่าง Space
+  var target = String(key).toLowerCase().replace(/[\s_]/g, "");
   for (var k in r) {
-    if (String(k).toLowerCase().replace(/_/g, "") === target) {
+    if (String(k).toLowerCase().replace(/[\s_]/g, "") === target) {
       return String(r[k] || "").trim();
     }
   }
@@ -1450,6 +1478,63 @@ function getDeliveryStatusTag(r) {
   } else {
     return '<span class="tag tag-transit">⏳ กำลังจัดส่ง</span>';
   }
+}
+
+function parseDate(val) {
+  if (!val) return null;
+  if (val instanceof Date) return val;
+  var s = String(val).trim();
+  if (!s) return null;
+
+  if (s.indexOf("-") !== -1) {
+    var dtIso = new Date(s);
+    if (!isNaN(dtIso.getTime())) return dtIso;
+  }
+
+  var parts = s.split(/[\s,]+/);
+  var dp = parts[0].split("/");
+  if (dp.length >= 3) {
+    var d = parseInt(dp[0], 10), m = parseInt(dp[1], 10) - 1, y = parseInt(dp[2], 10);
+    if (y > 2500) y -= 543;
+    var tp = parts[1] ? parts[1].split(":") : ["0", "0"];
+    var dt = new Date(y, m, d, parseInt(tp[0] || "0", 10), parseInt(tp[1] || "0", 10));
+    if (!isNaN(dt.getTime())) return dt;
+  }
+
+  var fallbackDt = new Date(s);
+  return isNaN(fallbackDt.getTime()) ? null : fallbackDt;
+}
+
+function isSameDay(d1, d2) {
+  if (!d1 || !d2) return false;
+  return d1.getFullYear() === d2.getFullYear() &&
+         d1.getMonth() === d2.getMonth() &&
+         d1.getDate() === d2.getDate();
+}
+
+function formatThaiDate(val) {
+  var dt = parseDate(val);
+  if (!dt) return "-";
+  var day = dt.getDate();
+  var monthList = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+  var month = monthList[dt.getMonth()];
+  var year = (dt.getFullYear() > 2500 ? dt.getFullYear() : dt.getFullYear() + 543);
+  return day + " " + month + " " + year;
+}
+
+function formatThaiFullDate(val) {
+  var dt = val ? parseDate(val) : new Date();
+  if (!dt) dt = new Date();
+  
+  var days = ["วันอาทิตย์", "วันจันทร์", "วันอังคาร", "วันพุธ", "วันพฤหัสบดี", "วันศุกร์", "วันเสาร์"];
+  var months = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+  
+  var dayName = days[dt.getDay()];
+  var dayNum = dt.getDate();
+  var monthName = months[dt.getMonth()];
+  var yearBE = (dt.getFullYear() > 2500 ? dt.getFullYear() : dt.getFullYear() + 543);
+  
+  return dayName + "ที่ " + dayNum + " " + monthName + " พ.ศ. " + yearBE;
 }
 
 // ══════════════════════════════════════════════
@@ -1530,11 +1615,11 @@ function refreshChartTheme() {
       var gridColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)";
       var textColor = isDark ? "#f3eefa" : "#2d2930";
 
-      if (charts[k].options.scales && charts[k].options.scales.y) {
+      if (charts[k].options && charts[k].options.scales && charts[k].options.scales.y) {
         charts[k].options.scales.y.grid.color = gridColor;
         charts[k].options.scales.y.ticks.color = textColor;
       }
-      if (charts[k].options.scales && charts[k].options.scales.x) {
+      if (charts[k].options && charts[k].options.scales && charts[k].options.scales.x) {
         charts[k].options.scales.x.ticks.color = textColor;
       }
       charts[k].update();
@@ -1549,7 +1634,8 @@ document.addEventListener("DOMContentLoaded", function() {
   initTheme();
 
   document.addEventListener("keydown", function(e){ 
-    if(e.key === "Enter" && document.getElementById("auth-page").style.display !== "none"){
+    var authPage = document.getElementById("auth-page");
+    if(e.key === "Enter" && authPage && window.getComputedStyle(authPage).display !== "none"){
       if(document.getElementById("form-login").style.display !== "none") doLogin();
       else if(document.getElementById("form-register").style.display !== "none") doRegister();
       else if(document.getElementById("form-forgot").style.display !== "none") doForgotPassword();
@@ -1902,7 +1988,7 @@ function setArcMode(m) {
 }
 
 // ══════════════════════════════════════════════
-//  PAGE: OVERVIEW
+//  PAGE: OVERVIEW (SHOW 2 SEPARATE TABLES)
 // ══════════════════════════════════════════════
 function loadOverview() {
   var year = document.getElementById("ov-year").value;
@@ -1961,10 +2047,33 @@ function renderOverview(sum, records, month) {
       +'<div class="bar-n">'+e[1]+'</div></div>';
   }).join("") || '<div style="color:#aaa;padding:16px;text-align:center;font-size:13px">ไม่มีข้อมูลผู้รับในปีที่เลือก</div>';
 
-  // แสดงผลตารางเรียงลำดับล่าสุดขึ้นก่อน (ไม่แสดง Job ID)
+  // 1. ตารางบน: รายการเอกสารและพัสดุ ประจำวันนี้
+  var now = new Date();
+  document.getElementById("today-date-text").textContent = formatThaiFullDate(now);
+
+  var todayRecords = records.filter(function(r) {
+    var dt = parseDate(getRecVal(r, "Timestamp") || getRecVal(r, "Date"));
+    return dt && isSameDay(dt, now);
+  });
+
+  document.getElementById("today-count-lbl").textContent = todayRecords.length + " รายการ";
+  document.getElementById("today-tb").innerHTML = todayRecords.map(function(r){
+    var track = getRecVal(r, "Tracking_NO");
+    var dateFormatted = r.DateFormatted || formatThaiDate(getRecVal(r, "Date") || getRecVal(r, "Timestamp"));
+    return '<tr>'
+      +'<td><strong>'+esc(track)+'</strong></td>'
+      +'<td>'+esc(dateFormatted)+'</td>'
+      +'<td>'+esc(getRecVal(r, "Sender"))+'</td>'
+      +'<td>'+esc(getRecVal(r, "Receiver"))+'</td>'
+      +'<td>'+getDeliveryStatusTag(r)+'</td>'
+      +'<td style="white-space:pre-wrap;font-size:11px">'+esc(getRecVal(r, "Detail"))+'</td>'
+      +'</tr>';
+  }).join("") || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">ไม่มีรายการเอกสารและพัสดุประจำวันนี้</td></tr>';
+
+  // 2. ตารางล่าง: รายการล่าสุด (10 รายการ)
   document.getElementById("recent-tb").innerHTML = records.slice(0, 10).map(function(r){
     var track = getRecVal(r, "Tracking_NO");
-    var dateFormatted = r.DateFormatted || getRecVal(r, "Date");
+    var dateFormatted = r.DateFormatted || formatThaiDate(getRecVal(r, "Date") || getRecVal(r, "Timestamp"));
     return '<tr>'
       +'<td><strong>'+esc(track)+'</strong></td>'
       +'<td>'+esc(dateFormatted)+'</td>'
@@ -2054,8 +2163,9 @@ function filterRec() {
     var recordBy = getRecVal(r, "Record_By");
     var sender = getRecVal(r, "Sender");
     var receiver = getRecVal(r, "Receiver");
-    return !q || [track, sender, receiver, recordBy].some(function(v){ 
-      return String(v||"").toLowerCase().includes(q); 
+    var detail = getRecVal(r, "Detail");
+    return !q || [track, sender, receiver, recordBy, detail].some(function(v){ 
+      return String(v||"").toLowerCase().indexOf(q) !== -1; 
     });
   });
   
@@ -2063,7 +2173,7 @@ function filterRec() {
   document.getElementById("rec-tb").innerHTML = filtered.map(function(r){
     var track = getRecVal(r, "Tracking_NO");
     var recBy = getRecVal(r, "Record_By");
-    var dateFormatted = r.DateFormatted || getRecVal(r, "Date");
+    var dateFormatted = r.DateFormatted || formatThaiDate(getRecVal(r, "Date") || getRecVal(r, "Timestamp"));
     return '<tr>'
       +'<td>'+esc(recBy)+'</td>'
       +'<td><strong>'+esc(track)+'</strong></td>'
@@ -2238,7 +2348,7 @@ function exportPDF(ctx) {
     document.getElementById("pdf-overlay").classList.remove("show");
     if(res && res.status === "ok"){
       if(win && !win.closed) {
-        win.location.href = res.url;
+        try { win.location.href = res.url; } catch(errLoc) {}
       }
       
       document.getElementById("pdf-modal-name").textContent = res.name || "รายงาน.pdf";

@@ -112,7 +112,7 @@ body {
   border: 1px solid var(--warning);
 }
 
-/* ── NIST Password Strength Meter ── */
+/* ── Password Strength Meter ── */
 .pass-meter-wrap { margin-top: 6px; }
 .pass-meter-bar { height: 6px; background: var(--border-color); border-radius: 99px; overflow: hidden; }
 .pass-meter-fill { height: 100%; width: 0%; transition: all 0.3s ease; border-radius: 99px; }
@@ -1022,7 +1022,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
       </div>
       
       <div style="background:var(--cmu-purple-subtle);border-left:3px solid var(--cmu-purple);padding:10px 12px;border-radius:8px;font-size:12px;color:var(--text-main);margin-bottom:16px;line-height:1.4">
-        🔒 <strong>ระบบยืนยันตัวตนปลอดภัยสูงสุด (Method 2 - NIST Standard):</strong><br>
+        🔒 <strong>ระบบยืนยันตัวตนปลอดภัยสูงสุด:</strong><br>
         เมื่อส่งข้อมูลลงทะเบียนแล้ว ผู้ดูแลระบบจะทำการอนุมัติสิทธิ์ และระบบจะจัดส่ง <strong>รหัสผ่านชั่วคราว</strong> ไปยังอีเมลของคุณโดยอัตโนมัติ
       </div>
 
@@ -1033,15 +1033,15 @@ tr:hover td { background: var(--cmu-purple-bg); }
   </div>
 </div>
 
-<!-- MODAL: FORCE CHANGE PASSWORD (WITH NIST STRENGTH METER) -->
+<!-- MODAL: FORCE CHANGE PASSWORD -->
 <div class="modal-overlay" id="modal-change-pass">
   <div class="modal-box">
-    <div class="modal-title">ตั้งรหัสผ่านใหม่ (NIST Standard)</div>
+    <div class="modal-title">ตั้งรหัสผ่านใหม่</div>
     <div class="modal-sub">คุณกำลังเข้าสู่ระบบด้วย <strong>รหัสผ่านชั่วคราว</strong> กรุณาตั้งรหัสผ่านใหม่เพื่อความปลอดภัยในการใช้งาน</div>
     
     <div class="form-group">
       <label class="f-label">รหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)</label>
-      <input class="f-input" id="new-p" type="password" placeholder="••••••••" oninput="checkNistPasswordStrength(this.value)"/>
+      <input class="f-input" id="new-p" type="password" placeholder="••••••••" oninput="onPasswordInput()"/>
       <div class="pass-meter-wrap">
         <div class="pass-meter-bar"><div class="pass-meter-fill" id="pass-meter-fill"></div></div>
         <div class="pass-meter-text" id="pass-meter-text">ความแรงรหัสผ่าน: -</div>
@@ -1049,7 +1049,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
     </div>
     <div class="form-group">
       <label class="f-label">ยืนยันรหัสผ่านใหม่</label>
-      <input class="f-input" id="confirm-new-p" type="password" placeholder="••••••••"/>
+      <input class="f-input" id="confirm-new-p" type="password" placeholder="••••••••" oninput="onPasswordInput()"/>
     </div>
     
     <div class="f-err" id="change-pass-err"></div>
@@ -1437,7 +1437,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 // ══════════════════════════════════════════════
 //  CONFIG & GLOBAL STATE
 // ══════════════════════════════════════════════
-var API = "https://script.google.com/macros/s/AKfycbyHMotSiK1hYp4vTgVL6XFuWmqjx1FKGwkMhzOSHi_Koffp6-a0zFKIG_1hwE_25g5k1g/exec";
+var API = "https://script.google.com/macros/s/AKfycbzoZm2LcWzEtYw-AvExo51uzdnDWN2yv0ciJZFjlnANBk9866z6xkGDlZbDLEl27NM5lQ/exec";
 
 var ME = null;          
 var tempUserPassHash = ""; 
@@ -1454,14 +1454,13 @@ var MONTHS = ["","ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","�
 var COLORS  = ["#5c2483","#e09f19","#8c42c2","#0284c7","#10b981","#f59e0b","#ec4899","#6366f1"];
 
 // ══════════════════════════════════════════════
-//  RECORD UTILS & STATUS CHECKER (FIXED REGEX PATTERN)
+//  RECORD UTILS & STATUS CHECKER
 // ══════════════════════════════════════════════
 function getRecVal(r, key) {
   if (!r) return "";
   if (r[key] !== undefined && r[key] !== null && String(r[key]).trim() !== "") {
     return String(r[key]).trim();
   }
-  // ปรับปรุงการเปรียบเทียบชื่อคีย์ให้รองรับทั้งเครื่องหมาย _ และช่องว่าง Space
   var target = String(key).toLowerCase().replace(/[\s_]/g, "");
   for (var k in r) {
     if (String(k).toLowerCase().replace(/[\s_]/g, "") === target) {
@@ -1482,11 +1481,23 @@ function getDeliveryStatusTag(r) {
 
 function parseDate(val) {
   if (!val) return null;
-  if (val instanceof Date) return val;
+  if (val instanceof Date) {
+    var y = val.getFullYear();
+    if (y > 2500) {
+      return new Date(y - 543, val.getMonth(), val.getDate(), val.getHours(), val.getMinutes(), val.getSeconds());
+    }
+    return val;
+  }
   var s = String(val).trim();
   if (!s) return null;
 
-  if (s.indexOf("-") !== -1) {
+  var isoMatch = s.match(/^(\d{4})-(.*)$/);
+  if (isoMatch) {
+    var yr = parseInt(isoMatch[1], 10);
+    if (yr > 2500) {
+      yr -= 543;
+      s = yr + "-" + isoMatch[2];
+    }
     var dtIso = new Date(s);
     if (!isNaN(dtIso.getTime())) return dtIso;
   }
@@ -1502,14 +1513,22 @@ function parseDate(val) {
   }
 
   var fallbackDt = new Date(s);
-  return isNaN(fallbackDt.getTime()) ? null : fallbackDt;
+  if (!isNaN(fallbackDt.getTime())) {
+    if (fallbackDt.getFullYear() > 2500) {
+      fallbackDt.setFullYear(fallbackDt.getFullYear() - 543);
+    }
+    return fallbackDt;
+  }
+  return null;
 }
 
 function isSameDay(d1, d2) {
-  if (!d1 || !d2) return false;
-  return d1.getFullYear() === d2.getFullYear() &&
-         d1.getMonth() === d2.getMonth() &&
-         d1.getDate() === d2.getDate();
+  var dt1 = parseDate(d1);
+  var dt2 = parseDate(d2);
+  if (!dt1 || !dt2) return false;
+  return dt1.getFullYear() === dt2.getFullYear() &&
+         dt1.getMonth() === dt2.getMonth() &&
+         dt1.getDate() === dt2.getDate();
 }
 
 function formatThaiDate(val) {
@@ -1538,8 +1557,14 @@ function formatThaiFullDate(val) {
 }
 
 // ══════════════════════════════════════════════
-//  NIST PASSWORD STRENGTH CHECKER
+//  PASSWORD INPUT HANDLER & STRENGTH CHECKER
 // ══════════════════════════════════════════════
+function onPasswordInput() {
+  var err = document.getElementById("change-pass-err");
+  if (err) err.style.display = "none";
+  checkNistPasswordStrength(document.getElementById("new-p").value);
+}
+
 function checkNistPasswordStrength(pass) {
   var fill = document.getElementById("pass-meter-fill");
   var text = document.getElementById("pass-meter-text");
@@ -1571,7 +1596,7 @@ function checkNistPasswordStrength(pass) {
     text.textContent = "ความแรงรหัสผ่าน: ปานกลาง";
   } else {
     fill.style.background = "var(--success)";
-    text.textContent = "ความแรงรหัสผ่าน: ปลอดภัยสูง (NIST Compliant)";
+    text.textContent = "ความแรงรหัสผ่าน: ปลอดภัยสูง";
   }
 }
 
@@ -1833,7 +1858,7 @@ async function doChangePassword() {
 
   err.style.display = "none";
   if(!newP || newP.length < 8){
-    err.textContent = "รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 8 ตัวอักษรตามมาตรฐาน NIST";
+    err.textContent = "รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 8 ตัวอักษร";
     err.style.display = "block"; return;
   }
   if(newP !== confirmP){
@@ -2519,17 +2544,4 @@ function apiFetch(params) {
   return fetch(API + "?" + qs).then(function(r){ return r.json(); });
 }
 
-function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
-function fmtDate(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
-function pad(n){ return n<10?"0"+n:String(n); }
-function sortTop(obj,n){ return Object.entries(obj||{}).sort(function(a,b){return b[1]-a[1];}).slice(0,n); }
-function topOf(obj){ var e=Object.entries(obj||{}); return e.length ? e.sort(function(a,b){return b[1]-a[1];})[0] : null; }
-function toast(msg,type){ 
-  var t=document.getElementById("toast"); 
-  t.textContent=msg; 
-  t.className="show "+(type||"ok"); 
-  setTimeout(function(){ t.className=""; }, 4500); 
-}
-</script>
-</body>
-</html>
+function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&

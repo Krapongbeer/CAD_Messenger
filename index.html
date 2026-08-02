@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CAD-Messenger Dashboard & Management System</title>
+<title>SmartCAD-Messenger</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -112,19 +112,20 @@ body {
   border: 1px solid var(--warning);
 }
 
-/* ── Version Badge ── */
-.ver-badge {
-  font-size: 11px;
-  background: rgba(224, 159, 25, 0.18);
-  color: var(--cmu-gold);
-  padding: 2px 8px;
+/* ── Version Badge Below Subtitle ── */
+.version-badge {
+  display: inline-block;
+  background: var(--cmu-gold-light);
+  color: var(--cmu-gold-hover);
+  border: 1px solid rgba(224, 159, 25, 0.3);
+  padding: 3px 12px;
   border-radius: 99px;
+  font-size: 11px;
   font-weight: 700;
-  border: 1px solid rgba(224, 159, 25, 0.35);
-  letter-spacing: 0.3px;
+  margin-top: 8px;
 }
 
-/* ── Password Strength Meter ── */
+/* ── NIST Password Strength Meter ── */
 .pass-meter-wrap { margin-top: 6px; }
 .pass-meter-bar { height: 6px; background: var(--border-color); border-radius: 99px; overflow: hidden; }
 .pass-meter-fill { height: 100%; width: 0%; transition: all 0.3s ease; border-radius: 99px; }
@@ -192,34 +193,29 @@ body {
   border-radius: 20px;
   padding: 36px 40px;
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   box-shadow: var(--shadow-lg);
   position: relative;
   z-index: 10;
   border: 1px solid var(--border-color);
+  text-align: center;
 }
 .auth-logo {
-  font-size: 26px;
-  font-weight: 700;
+  font-size: 28px;
+  font-weight: 800;
   color: var(--cmu-purple-dark);
-  margin-bottom: 4px;
-  text-align: center;
+  margin-bottom: 2px;
   letter-spacing: -0.5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
 }
 .auth-logo em {
   color: var(--cmu-gold);
   font-style: normal;
-  font-weight: 800;
 }
 .auth-sub {
   font-size: 13px;
   color: var(--text-muted);
-  margin-bottom: 24px;
-  text-align: center;
+  line-height: 1.4;
+  margin-top: 4px;
 }
 
 .auth-tabs {
@@ -227,7 +223,7 @@ body {
   background: var(--cmu-purple-subtle);
   border-radius: 12px;
   padding: 4px;
-  margin-bottom: 24px;
+  margin: 20px 0 24px;
 }
 .auth-tab {
   flex: 1;
@@ -248,6 +244,7 @@ body {
 
 .form-group {
   margin-bottom: 16px;
+  text-align: left;
 }
 .f-label {
   font-size: 12px;
@@ -281,6 +278,7 @@ body {
   padding: 8px 12px;
   border-radius: 8px;
   font-weight: 500;
+  text-align: left;
 }
 .f-msg {
   color: var(--cmu-purple);
@@ -292,6 +290,7 @@ body {
   border-radius: 8px;
   font-weight: 500;
   border-left: 3px solid var(--cmu-purple);
+  text-align: left;
 }
 
 .auth-btn {
@@ -361,6 +360,16 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+.t-logo em {
+  color: var(--cmu-gold);
+  font-style: normal;
+  font-size: 11px;
+  background: rgba(224, 159, 25, 0.18);
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-weight: 600;
+  border: 1px solid rgba(224, 159, 25, 0.3);
 }
 .t-spacer { flex: 1; }
 .t-user {
@@ -968,8 +977,9 @@ tr:hover td { background: var(--cmu-purple-bg); }
 <!-- AUTH PAGE -->
 <div id="auth-page">
   <div class="auth-box">
-    <div class="auth-logo">SmartCAD<em>-Messenger</em><span class="ver-badge">v3.5.2</span></div>
-    <div class="auth-sub">ระบบติดตามเอกสารและพัสดุกองบริหารงานกลาง (SmartCAD-Messengeer)</div>
+    <div class="auth-logo">SmartCAD<em>-Messenger</em></div>
+    <div class="auth-sub">ระบบติดตามเอกสารและพัสดุกองบริหารงานกลาง (SmartCAD)</div>
+    <div class="version-badge">v3.5.2</div>
     
     <div class="auth-tabs">
       <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">เข้าสู่ระบบ</div>
@@ -1027,7 +1037,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
         <input class="f-input" id="reg-dept" placeholder="เช่น ฝ่ายบริหารงานทั่วไป"/>
       </div>
       
-      <div style="background:var(--cmu-purple-subtle);border-left:3px solid var(--cmu-purple);padding:10px 12px;border-radius:8px;font-size:12px;color:var(--text-main);margin-bottom:16px;line-height:1.4">
+      <div style="background:var(--cmu-purple-subtle);border-left:3px solid var(--cmu-purple);padding:10px 12px;border-radius:8px;font-size:12px;color:var(--text-main);margin-bottom:16px;line-height:1.4;text-align:left">
         🔒 <strong>ระบบยืนยันตัวตนปลอดภัยสูงสุด:</strong><br>
         เมื่อส่งข้อมูลลงทะเบียนแล้ว ผู้ดูแลระบบจะทำการอนุมัติสิทธิ์ และระบบจะจัดส่ง <strong>รหัสผ่านชั่วคราว</strong> ไปยังอีเมลของคุณโดยอัตโนมัติ
       </div>
@@ -1111,10 +1121,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 <!-- MAIN APP -->
 <div id="app">
   <div class="topbar">
-    <div class="t-logo">
-      CAD-Messenger
-      <span class="ver-badge">v3.5.2</span>
-    </div>
+    <div class="t-logo">SmartCAD-Messenger <em id="role-lbl">CMU</em></div>
     <div class="t-spacer"></div>
     
     <!-- Theme Selector -->
@@ -1446,7 +1453,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 // ══════════════════════════════════════════════
 //  CONFIG & GLOBAL STATE
 // ══════════════════════════════════════════════
-var API = "https://script.google.com/macros/s/AKfycbxZTHYkfqJKnBwFYjCHRoAqYIGwLnWORxdty2ySNw05_8vVv0aPznKJuDRzCZGtcKVTAg/exec";
+var API = "https://script.google.com/macros/s/AKfycbwUY5RLvyAe8fTNMtGi4ZbP6zbHifTIUYgyMRY2ztJkxop_FgMuVassBmj7nsNiVUcEYw/exec";
 
 var ME = null;          
 var tempUserPassHash = ""; 
@@ -1463,7 +1470,7 @@ var MONTHS = ["","ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","�
 var COLORS  = ["#5c2483","#e09f19","#8c42c2","#0284c7","#10b981","#f59e0b","#ec4899","#6366f1"];
 
 // ══════════════════════════════════════════════
-//  RECORD UTILS & STATUS CHECKER (SAFE REGEX LOOKUP)
+//  RECORD UTILS & STATUS CHECKER
 // ══════════════════════════════════════════════
 function getRecVal(r, key) {
   if (!r) return "";
@@ -1707,14 +1714,93 @@ function initDynamicSelects() {
 }
 
 // ══════════════════════════════════════════════
-//  SECURITY: SHA-256 HASHING
+//  PURE JS SHA-256 FALLBACK (NEVER FREEZE)
 // ══════════════════════════════════════════════
+function sha256PureJS(ascii) {
+  function rightRotate(value, amount) {
+    return (value >>> amount) | (value << (32 - amount));
+  }
+  var mathPow = Math.pow;
+  var maxWord = mathPow(2, 32);
+  var lengthProperty = 'length';
+  var i, j;
+  var result = '';
+  var words = [];
+  var asciiBitLength = ascii[lengthProperty] * 8;
+  var hash = sha256PureJS.h = sha256PureJS.h || [];
+  var k = sha256PureJS.k = sha256PureJS.k || [];
+  var primeCounter = k[lengthProperty];
+
+  var isComposite = {};
+  for (var candidate = 2; primeCounter < 64; candidate++) {
+    if (!isComposite[candidate]) {
+      for (i = 0; i < 300; i += candidate) {
+        isComposite[i] = true;
+      }
+      hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;
+      k[primeCounter++] = (mathPow(candidate, 1/3) * maxWord) | 0;
+    }
+  }
+  ascii += '\x80';
+  while (ascii[lengthProperty] % 64 - 56) ascii += '\x00';
+  for (i = 0; i < ascii[lengthProperty]; i++) {
+    j = ascii.charCodeAt(i);
+    if (j >> 8) return ""; 
+    words[i >> 2] |= j << ((3 - i % 4) * 8);
+  }
+  words[words[lengthProperty]] = ((asciiBitLength / maxWord) | 0);
+  words[words[lengthProperty]] = (asciiBitLength | 0);
+
+  for (j = 0; j < words[lengthProperty];) {
+    var w = words.slice(j, j += 16);
+    var oldHash = hash;
+    hash = hash.slice(0, 8);
+    for (i = 0; i < 64; i++) {
+      var w15 = w[i - 15], w2 = w[i - 2];
+      var a = hash[0], e = hash[4];
+      var temp1 = hash[7]
+        + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
+        + ((e & hash[5]) ^ (~e & hash[6]))
+        + k[i]
+        + (w[i] = (i < 16) ? w[i] : (
+            w[i - 16]
+            + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
+            + w[i - 7]
+            + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
+          ) | 0
+        );
+      var temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
+        + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+
+      hash = [(temp1 + temp2) | 0].concat(hash);
+      hash[4] = (hash[4] + temp1) | 0;
+    }
+    for (i = 0; i < 8; i++) {
+      hash[i] = (hash[i] + oldHash[i]) | 0;
+    }
+  }
+  for (i = 0; i < 8; i++) {
+    for (j = 3; j >= 0; j--) {
+      var b = (hash[i] >> (j * 8)) & 255;
+      result += (b < 16 ? '0' : '') + b.toString(16);
+    }
+  }
+  return result;
+}
+
 async function hashPassword(str) {
   if (!str) return "";
-  const msgUint8 = new TextEncoder().encode(str);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  try {
+    if (window.crypto && window.crypto.subtle && window.crypto.subtle.digest) {
+      const msgUint8 = new TextEncoder().encode(str);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+  } catch(e) {
+    console.warn("Crypto.subtle fallback trigger", e);
+  }
+  return sha256PureJS(str);
 }
 
 // ══════════════════════════════════════════════
@@ -1754,7 +1840,7 @@ async function doLogin() {
   try {
     var passHash = await hashPassword(p);
     var res = await apiFetch({action: "login", username: u, passwordHash: passHash, password: p});
-    if(res.status === "ok"){
+    if(res && res.status === "ok"){
       ME = res; 
       tempUserPassHash = passHash;
 
@@ -1765,11 +1851,12 @@ async function doLogin() {
         startApp();
       }
     } else {
-      showLoginErr(res.message || "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
+      showLoginErr((res && res.message) ? res.message : "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
       btn.textContent = "เข้าสู่ระบบ"; btn.disabled = false;
     }
   } catch(e) {
-    showLoginErr("ไม่สามารถเชื่อมต่อระบบได้ กรุณาตรวจสอบการเชื่อมต่อ");
+    console.error("Login Error:", e);
+    showLoginErr("ไม่สามารถเชื่อมต่อระบบได้ กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต");
     btn.textContent = "เข้าสู่ระบบ"; btn.disabled = false;
   }
 }
@@ -1799,7 +1886,7 @@ async function doRegister() {
       department: dept
     });
 
-    if(res.status === "ok"){
+    if(res && res.status === "ok"){
       msg.textContent = res.message;
       msg.style.display = "block";
       document.getElementById("reg-fullname").value = "";
@@ -1807,7 +1894,7 @@ async function doRegister() {
       document.getElementById("reg-email").value = "";
       document.getElementById("reg-dept").value = "";
     } else {
-      showRegErr(res.message || "ไม่สามารถลงทะเบียนได้");
+      showRegErr((res && res.message) ? res.message : "ไม่สามารถลงทะเบียนได้");
     }
   } catch(e) {
     showRegErr("เกิดข้อผิดพลาดในการเชื่อมต่อระบบ");
@@ -1955,7 +2042,7 @@ function doLogout() {
 function checkRowsStatus() {
   if(ME.role === "staff") return;
   apiFetch({action:"checkRows"}).then(function(res){
-    if(res.status !== "ok") return;
+    if(!res || res.status !== "ok") return;
     var s = res.rowStatus, warn = document.getElementById("row-warn");
     var bar = document.getElementById("row-bar");
     if(s.warn || s.limit){
@@ -2016,25 +2103,23 @@ function setArcMode(m) {
 }
 
 // ══════════════════════════════════════════════
-//  PAGE: OVERVIEW (OPTIMIZED SINGLE-REQUEST)
+//  PAGE: OVERVIEW (SHOW 2 SEPARATE TABLES)
 // ══════════════════════════════════════════════
 function loadOverview() {
   var year = document.getElementById("ov-year").value;
   var month = document.getElementById("ov-month").value;
 
-  // เรียกใช้ getOverview เพียงคำขอเดียวเพื่อความเร็วสูงสุด
-  apiFetch({action:"getOverview", role:ME.role, username:ME.username, year:year, month:month}).then(function(res){
-    if (res && res.status === "ok") {
-      renderOverview(res.summary, res.data || [], res.todayRecords || [], month);
-    } else {
-      renderOverview({total:0, todayCount:0, monthly:{}, bySender:{}, byReceiver:{}}, [], [], month);
-    }
+  Promise.all([
+    apiFetch({action:"getSummary", role:ME.role, username:ME.username, year:year}),
+    apiFetch({action:"getData", role:ME.role, username:ME.username, year:year, month:month})
+  ]).then(function(r){ 
+    renderOverview(r[0], (r[1] && r[1].data) ? r[1].data : [], month); 
   }).catch(function(){
-    renderOverview({total:0, todayCount:0, monthly:{}, bySender:{}, byReceiver:{}}, [], [], month);
+    renderOverview({total:0, todayCount:0, monthly:{}, bySender:{}, byReceiver:{}}, [], month);
   });
 }
 
-function renderOverview(sum, records, todayRecords, month) {
+function renderOverview(sum, records, month) {
   sum = sum || {total:0, todayCount:0, monthly:{}, bySender:{}, byReceiver:{}};
   sum.monthly = sum.monthly || {};
   sum.bySender = sum.bySender || {};
@@ -2047,7 +2132,7 @@ function renderOverview(sum, records, todayRecords, month) {
   var pendingCount = records.length - completedCount;
 
   var kpis = [
-    {label:"รายการวันนี้", value: sum.todayCount || (todayRecords ? todayRecords.length : 0), sub: "ข้อมูลของวันปัจจุบัน"},
+    {label:"รายการวันนี้", value: sum.todayCount || 0, sub: "ข้อมูลของวันปัจจุบัน"},
     {label:"จัดส่งสำเร็จแล้ว", value: completedCount, sub: "มีลายเซ็นรับเรียบร้อย"},
     {label:"อยู่ระหว่างจัดส่ง", value: pendingCount, sub: "รอลายเซ็นผู้รับ"},
     {label:"งานรวมช่วงที่เลือก", value: periodTotal, sub: "ผู้ส่ง " + Object.keys(senders).length + " | ผู้รับ " + Object.keys(receivers).length + " คน"}
@@ -2080,8 +2165,13 @@ function renderOverview(sum, records, todayRecords, month) {
   var now = new Date();
   document.getElementById("today-date-text").textContent = formatThaiFullDate(now);
 
-  document.getElementById("today-count-lbl").textContent = (todayRecords ? todayRecords.length : 0) + " รายการ";
-  document.getElementById("today-tb").innerHTML = (todayRecords && todayRecords.length) ? todayRecords.map(function(r){
+  var todayRecords = records.filter(function(r) {
+    var dt = parseDate(getRecVal(r, "Timestamp") || getRecVal(r, "Date"));
+    return dt && isSameDay(dt, now);
+  });
+
+  document.getElementById("today-count-lbl").textContent = todayRecords.length + " รายการ";
+  document.getElementById("today-tb").innerHTML = todayRecords.map(function(r){
     var track = getRecVal(r, "Tracking_NO");
     var dateFormatted = r.DateFormatted || formatThaiDate(getRecVal(r, "Date") || getRecVal(r, "Timestamp"));
     return '<tr>'
@@ -2092,10 +2182,10 @@ function renderOverview(sum, records, todayRecords, month) {
       +'<td>'+getDeliveryStatusTag(r)+'</td>'
       +'<td style="white-space:pre-wrap;font-size:11px">'+esc(getRecVal(r, "Detail"))+'</td>'
       +'</tr>';
-  }).join("") : '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">ไม่มีรายการเอกสารและพัสดุประจำวันนี้</td></tr>';
+  }).join("") || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">ไม่มีรายการเอกสารและพัสดุประจำวันนี้</td></tr>';
 
   // 2. ตารางล่าง: รายการล่าสุด (10 รายการ)
-  document.getElementById("recent-tb").innerHTML = (records && records.length) ? records.slice(0, 10).map(function(r){
+  document.getElementById("recent-tb").innerHTML = records.slice(0, 10).map(function(r){
     var track = getRecVal(r, "Tracking_NO");
     var dateFormatted = r.DateFormatted || formatThaiDate(getRecVal(r, "Date") || getRecVal(r, "Timestamp"));
     return '<tr>'
@@ -2106,7 +2196,7 @@ function renderOverview(sum, records, todayRecords, month) {
       +'<td>'+getDeliveryStatusTag(r)+'</td>'
       +'<td style="white-space:pre-wrap;font-size:11px">'+esc(getRecVal(r, "Detail"))+'</td>'
       +'</tr>';
-  }).join("") : '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">ไม่มีข้อมูลจัดส่งในเงื่อนไขที่เลือก</td></tr>';
+  }).join("") || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">ไม่มีข้อมูลจัดส่งในเงื่อนไขที่เลือก</td></tr>';
 }
 
 // ══════════════════════════════════════════════
@@ -2170,7 +2260,7 @@ function loadRecords() {
   }
   
   apiFetch(params).then(function(res){ 
-    recData = res.data || []; 
+    recData = (res && res.data) ? res.data : []; 
     filterRec(); 
   });
 }
@@ -2217,7 +2307,7 @@ function filterRec() {
 function loadUsers() {
   if(ME.role !== "admin") return;
   apiFetch({action:"getUsers", username:ME.username}).then(function(res){
-    if(res.status !== "ok"){ toast(res.message || "ไม่สามารถโหลดผู้ใช้ได้", "err"); return; }
+    if(!res || res.status !== "ok"){ toast((res && res.message) || "ไม่สามารถโหลดผู้ใช้ได้", "err"); return; }
     
     usersData = res.users || [];
     renderUsersTable(usersData);
@@ -2296,12 +2386,12 @@ function saveUserInfo() {
 
   if (!targetUser) return;
   apiFetch({action:"updateUserInfo", adminUser:ME.username, targetUser:targetUser, fullname:newName, department:newDept}).then(function(res){
-    if(res.status === "ok"){
+    if(res && res.status === "ok"){
       toast(res.message, "ok");
       document.getElementById("modal-edit-user").classList.remove("show");
       loadUsers();
     } else {
-      err.textContent = res.message || "เกิดข้อผิดพลาด";
+      err.textContent = (res && res.message) ? res.message : "เกิดข้อผิดพลาด";
       err.style.display = "block";
     }
   });
@@ -2317,21 +2407,21 @@ function setUserStatus(targetUser, status) {
   if(!confirm(confirmMsg)) return;
 
   apiFetch({action:"updateUserStatus", adminUser:ME.username, targetUser:targetUser, status:status}).then(function(res){
-    if(res.status === "ok"){
+    if(res && res.status === "ok"){
       toast(res.message || "อัปเดตสถานะสำเร็จ", "ok");
       loadUsers();
     } else {
-      toast(res.message || "เกิดข้อผิดพลาด", "err");
+      toast((res && res.message) || "เกิดข้อผิดพลาด", "err");
     }
   });
 }
 
 function updateUserRole(targetUser, newRole) {
   apiFetch({action:"updateUserRole", adminUser:ME.username, targetUser:targetUser, role:newRole}).then(function(res){
-    if(res.status === "ok"){
+    if(res && res.status === "ok"){
       toast("เปลี่ยนสิทธิ์เรียบร้อยแล้ว", "ok");
     } else {
-      toast(res.message || "ไม่สามารถเปลี่ยนสิทธิ์ได้", "err");
+      toast((res && res.message) || "ไม่สามารถเปลี่ยนสิทธิ์ได้", "err");
       loadUsers();
     }
   });
@@ -2433,15 +2523,15 @@ function doArchive() {
     btn.textContent = "เริ่มย้ายข้อมูล (Archive)"; btn.disabled = false;
     var el = document.getElementById("arc-result");
     el.style.display = "block";
-    if(res.status === "ok"){
+    if(res && res.status === "ok"){
       el.className = "archive-result result-ok";
       el.textContent = "✓ " + res.message;
       toast(res.message, "ok");
       checkRowsStatus();
     } else {
       el.className = "archive-result result-err";
-      el.textContent = "✗ " + res.message;
-      toast(res.message, "err");
+      el.textContent = "✗ " + ((res && res.message) || "เกิดข้อผิดพลาด");
+      toast((res && res.message) || "เกิดข้อผิดพลาด", "err");
     }
   }).catch(function(){ 
     btn.textContent = "เริ่มย้ายข้อมูล (Archive)"; btn.disabled = false; 
@@ -2483,41 +2573,4 @@ function renderChart(id, type, labels, vals, label, color) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { 
-          beginAtZero: true, 
-          ticks: { stepSize: 1, color: textColor },
-          grid: { color: gridColor }
-        },
-        x: {
-          ticks: { color: textColor },
-          grid: { display: false }
-        }
-      }
-    }
-  });
-}
-
-function renderDoughnut(id, labels, vals) {
-  if(charts[id]) {
-    charts[id].destroy();
-    delete charts[id];
-  }
-  var el = document.getElementById(id); 
-  if(!el) return;
-
-  var isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  var textColor = isDark ? "#f3eefa" : "#2d2930";
-
-  charts[id] = new Chart(el, {
-    type: "doughnut",
-    data: {
-      labels: labels,
-      datasets: [{
-        data: vals,
-        backgroundColor: COLORS.slice(0, Math.max(labels.length, 1))
-      }]
-    },
-    options: {
-      responsive: true,
+      plugins: { legend: { display:

@@ -112,7 +112,19 @@ body {
   border: 1px solid var(--warning);
 }
 
-/* ── NIST Password Strength Meter ── */
+/* ── Version Badge ── */
+.ver-badge {
+  font-size: 11px;
+  background: rgba(224, 159, 25, 0.18);
+  color: var(--cmu-gold);
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-weight: 700;
+  border: 1px solid rgba(224, 159, 25, 0.35);
+  letter-spacing: 0.3px;
+}
+
+/* ── Password Strength Meter ── */
 .pass-meter-wrap { margin-top: 6px; }
 .pass-meter-bar { height: 6px; background: var(--border-color); border-radius: 99px; overflow: hidden; }
 .pass-meter-fill { height: 100%; width: 0%; transition: all 0.3s ease; border-radius: 99px; }
@@ -193,6 +205,10 @@ body {
   margin-bottom: 4px;
   text-align: center;
   letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 .auth-logo em {
   color: var(--cmu-gold);
@@ -345,16 +361,6 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.t-logo em {
-  color: var(--cmu-gold);
-  font-style: normal;
-  font-size: 11px;
-  background: rgba(224, 159, 25, 0.18);
-  padding: 3px 10px;
-  border-radius: 99px;
-  font-weight: 600;
-  border: 1px solid rgba(224, 159, 25, 0.3);
 }
 .t-spacer { flex: 1; }
 .t-user {
@@ -962,8 +968,8 @@ tr:hover td { background: var(--cmu-purple-bg); }
 <!-- AUTH PAGE -->
 <div id="auth-page">
   <div class="auth-box">
-    <div class="auth-logo">CAD<em>-Messenger</em></div>
-    <div class="auth-sub">ระบบติดตามเอกสารและพัสดุ (CMU Theme)</div>
+    <div class="auth-logo">SmartCAD<em>-Messenger</em><span class="ver-badge">v3.5.2</span></div>
+    <div class="auth-sub">ระบบติดตามเอกสารและพัสดุกองบริหารงานกลาง (SmartCAD-Messengeer)</div>
     
     <div class="auth-tabs">
       <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">เข้าสู่ระบบ</div>
@@ -1105,7 +1111,10 @@ tr:hover td { background: var(--cmu-purple-bg); }
 <!-- MAIN APP -->
 <div id="app">
   <div class="topbar">
-    <div class="t-logo">CAD-Messenger <em id="role-lbl">CMU</em></div>
+    <div class="t-logo">
+      CAD-Messenger
+      <span class="ver-badge">v3.5.2</span>
+    </div>
     <div class="t-spacer"></div>
     
     <!-- Theme Selector -->
@@ -1437,7 +1446,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 // ══════════════════════════════════════════════
 //  CONFIG & GLOBAL STATE
 // ══════════════════════════════════════════════
-var API = "https://script.google.com/macros/s/AKfycbytt-JI-mz4ABd0OSR0j6ie6pdRFGorz0iQrCTJXQuJghXPGt1ADEQ381D1VjGEpD8-Hg/exec";
+var API = "https://script.google.com/macros/s/AKfycbxZTHYkfqJKnBwFYjCHRoAqYIGwLnWORxdty2ySNw05_8vVv0aPznKJuDRzCZGtcKVTAg/exec";
 
 var ME = null;          
 var tempUserPassHash = ""; 
@@ -2007,23 +2016,25 @@ function setArcMode(m) {
 }
 
 // ══════════════════════════════════════════════
-//  PAGE: OVERVIEW (SHOW 2 SEPARATE TABLES)
+//  PAGE: OVERVIEW (OPTIMIZED SINGLE-REQUEST)
 // ══════════════════════════════════════════════
 function loadOverview() {
   var year = document.getElementById("ov-year").value;
   var month = document.getElementById("ov-month").value;
 
-  Promise.all([
-    apiFetch({action:"getSummary", role:ME.role, username:ME.username, year:year}),
-    apiFetch({action:"getData", role:ME.role, username:ME.username, year:year, month:month})
-  ]).then(function(r){ 
-    renderOverview(r[0], r[1].data || [], month); 
+  // เรียกใช้ getOverview เพียงคำขอเดียวเพื่อความเร็วสูงสุด
+  apiFetch({action:"getOverview", role:ME.role, username:ME.username, year:year, month:month}).then(function(res){
+    if (res && res.status === "ok") {
+      renderOverview(res.summary, res.data || [], res.todayRecords || [], month);
+    } else {
+      renderOverview({total:0, todayCount:0, monthly:{}, bySender:{}, byReceiver:{}}, [], [], month);
+    }
   }).catch(function(){
-    renderOverview({total:0, todayCount:0, monthly:{}, bySender:{}, byReceiver:{}}, [], month);
+    renderOverview({total:0, todayCount:0, monthly:{}, bySender:{}, byReceiver:{}}, [], [], month);
   });
 }
 
-function renderOverview(sum, records, month) {
+function renderOverview(sum, records, todayRecords, month) {
   sum = sum || {total:0, todayCount:0, monthly:{}, bySender:{}, byReceiver:{}};
   sum.monthly = sum.monthly || {};
   sum.bySender = sum.bySender || {};
@@ -2036,7 +2047,7 @@ function renderOverview(sum, records, month) {
   var pendingCount = records.length - completedCount;
 
   var kpis = [
-    {label:"รายการวันนี้", value: sum.todayCount || 0, sub: "ข้อมูลของวันปัจจุบัน"},
+    {label:"รายการวันนี้", value: sum.todayCount || (todayRecords ? todayRecords.length : 0), sub: "ข้อมูลของวันปัจจุบัน"},
     {label:"จัดส่งสำเร็จแล้ว", value: completedCount, sub: "มีลายเซ็นรับเรียบร้อย"},
     {label:"อยู่ระหว่างจัดส่ง", value: pendingCount, sub: "รอลายเซ็นผู้รับ"},
     {label:"งานรวมช่วงที่เลือก", value: periodTotal, sub: "ผู้ส่ง " + Object.keys(senders).length + " | ผู้รับ " + Object.keys(receivers).length + " คน"}
@@ -2069,13 +2080,8 @@ function renderOverview(sum, records, month) {
   var now = new Date();
   document.getElementById("today-date-text").textContent = formatThaiFullDate(now);
 
-  var todayRecords = records.filter(function(r) {
-    var dt = parseDate(getRecVal(r, "Timestamp") || getRecVal(r, "Date"));
-    return dt && isSameDay(dt, now);
-  });
-
-  document.getElementById("today-count-lbl").textContent = todayRecords.length + " รายการ";
-  document.getElementById("today-tb").innerHTML = todayRecords.map(function(r){
+  document.getElementById("today-count-lbl").textContent = (todayRecords ? todayRecords.length : 0) + " รายการ";
+  document.getElementById("today-tb").innerHTML = (todayRecords && todayRecords.length) ? todayRecords.map(function(r){
     var track = getRecVal(r, "Tracking_NO");
     var dateFormatted = r.DateFormatted || formatThaiDate(getRecVal(r, "Date") || getRecVal(r, "Timestamp"));
     return '<tr>'
@@ -2086,10 +2092,10 @@ function renderOverview(sum, records, month) {
       +'<td>'+getDeliveryStatusTag(r)+'</td>'
       +'<td style="white-space:pre-wrap;font-size:11px">'+esc(getRecVal(r, "Detail"))+'</td>'
       +'</tr>';
-  }).join("") || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">ไม่มีรายการเอกสารและพัสดุประจำวันนี้</td></tr>';
+  }).join("") : '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">ไม่มีรายการเอกสารและพัสดุประจำวันนี้</td></tr>';
 
   // 2. ตารางล่าง: รายการล่าสุด (10 รายการ)
-  document.getElementById("recent-tb").innerHTML = records.slice(0, 10).map(function(r){
+  document.getElementById("recent-tb").innerHTML = (records && records.length) ? records.slice(0, 10).map(function(r){
     var track = getRecVal(r, "Tracking_NO");
     var dateFormatted = r.DateFormatted || formatThaiDate(getRecVal(r, "Date") || getRecVal(r, "Timestamp"));
     return '<tr>'
@@ -2100,7 +2106,7 @@ function renderOverview(sum, records, month) {
       +'<td>'+getDeliveryStatusTag(r)+'</td>'
       +'<td style="white-space:pre-wrap;font-size:11px">'+esc(getRecVal(r, "Detail"))+'</td>'
       +'</tr>';
-  }).join("") || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">ไม่มีข้อมูลจัดส่งในเงื่อนไขที่เลือก</td></tr>';
+  }).join("") : '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">ไม่มีข้อมูลจัดส่งในเงื่อนไขที่เลือก</td></tr>';
 }
 
 // ══════════════════════════════════════════════
@@ -2515,39 +2521,3 @@ function renderDoughnut(id, labels, vals) {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "right",
-          labels: { font: { size: 11, family: 'Sarabun' }, boxWidth: 12, color: textColor }
-        }
-      }
-    }
-  });
-}
-
-// ══════════════════════════════════════════════
-//  UTILITY FUNCTIONS
-// ══════════════════════════════════════════════
-function apiFetch(params) {
-  var qs = Object.entries(params).map(function(kv){ 
-    return encodeURIComponent(kv[0]) + "=" + encodeURIComponent(kv[1] !== undefined && kv[1] !== null ? kv[1] : ""); 
-  }).join("&");
-  
-  return fetch(API + "?" + qs).then(function(r){ return r.json(); });
-}
-
-function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
-function fmtDate(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
-function pad(n){ return n<10?"0"+n:String(n); }
-function sortTop(obj,n){ return Object.entries(obj||{}).sort(function(a,b){return b[1]-a[1];}).slice(0,n); }
-function topOf(obj){ var e=Object.entries(obj||{}); return e.length ? e.sort(function(a,b){return b[1]-a[1];})[0] : null; }
-function toast(msg,type){ 
-  var t=document.getElementById("toast"); 
-  t.textContent=msg; 
-  t.className="show "+(type||"ok"); 
-  setTimeout(function(){ t.className=""; }, 4500); 
-}
-</script>
-</body>
-</html>

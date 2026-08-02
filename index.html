@@ -112,6 +112,12 @@ body {
   border: 1px solid var(--warning);
 }
 
+/* ── NIST Password Strength Meter ── */
+.pass-meter-wrap { margin-top: 6px; }
+.pass-meter-bar { height: 6px; background: var(--border-color); border-radius: 99px; overflow: hidden; }
+.pass-meter-fill { height: 100%; width: 0%; transition: all 0.3s ease; border-radius: 99px; }
+.pass-meter-text { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 600; text-align: right; }
+
 /* ── Theme Switcher Selector ── */
 .theme-switch-wrap {
   display: flex;
@@ -350,9 +356,7 @@ body {
   font-weight: 600;
   border: 1px solid rgba(224, 159, 25, 0.3);
 }
-.t-spacer {
-  flex: 1;
-}
+.t-spacer { flex: 1; }
 .t-user {
   display: flex;
   align-items: center;
@@ -856,7 +860,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
   border-radius: 20px;
   padding: 32px;
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   box-shadow: var(--shadow-lg);
   position: relative;
   border: 1px solid var(--border-color);
@@ -1018,8 +1022,8 @@ tr:hover td { background: var(--cmu-purple-bg); }
       </div>
       
       <div style="background:var(--cmu-purple-subtle);border-left:3px solid var(--cmu-purple);padding:10px 12px;border-radius:8px;font-size:12px;color:var(--text-main);margin-bottom:16px;line-height:1.4">
-        🔒 <strong>ระบบยืนยันตัวตนปลอดภัยสูงสุด (Method 2):</strong><br>
-        เมื่อส่งข้อมูลลงทะเบียนแล้ว ผู้ดูแลระบบจะทำการอนุมัติสิทธิ์ และระบบจะจัดส่ง <strong>รหัสผ่านชั่วคราว (Temporary Password)</strong> ไปยังอีเมลของคุณโดยอัตโนมัติ
+        🔒 <strong>ระบบยืนยันตัวตนปลอดภัยสูงสุด (Method 2 - NIST Standard):</strong><br>
+        เมื่อส่งข้อมูลลงทะเบียนแล้ว ผู้ดูแลระบบจะทำการอนุมัติสิทธิ์ และระบบจะจัดส่ง <strong>รหัสผ่านชั่วคราว</strong> ไปยังอีเมลของคุณโดยอัตโนมัติ
       </div>
 
       <div class="f-err" id="reg-err"></div>
@@ -1029,15 +1033,19 @@ tr:hover td { background: var(--cmu-purple-bg); }
   </div>
 </div>
 
-<!-- MODAL: FORCE CHANGE PASSWORD -->
+<!-- MODAL: FORCE CHANGE PASSWORD (WITH NIST STRENGTH METER) -->
 <div class="modal-overlay" id="modal-change-pass">
   <div class="modal-box">
-    <div class="modal-title">ตั้งรหัสผ่านใหม่</div>
+    <div class="modal-title">ตั้งรหัสผ่านใหม่ (NIST Standard)</div>
     <div class="modal-sub">คุณกำลังเข้าสู่ระบบด้วย <strong>รหัสผ่านชั่วคราว</strong> กรุณาตั้งรหัสผ่านใหม่เพื่อความปลอดภัยในการใช้งาน</div>
     
     <div class="form-group">
-      <label class="f-label">รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)</label>
-      <input class="f-input" id="new-p" type="password" placeholder="••••••••"/>
+      <label class="f-label">รหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)</label>
+      <input class="f-input" id="new-p" type="password" placeholder="••••••••" oninput="checkNistPasswordStrength(this.value)"/>
+      <div class="pass-meter-wrap">
+        <div class="pass-meter-bar"><div class="pass-meter-fill" id="pass-meter-fill"></div></div>
+        <div class="pass-meter-text" id="pass-meter-text">ความแรงรหัสผ่าน: -</div>
+      </div>
     </div>
     <div class="form-group">
       <label class="f-label">ยืนยันรหัสผ่านใหม่</label>
@@ -1046,6 +1054,32 @@ tr:hover td { background: var(--cmu-purple-bg); }
     
     <div class="f-err" id="change-pass-err"></div>
     <button class="auth-btn" id="change-pass-btn" onclick="doChangePassword()">บันทึกรหัสผ่านใหม่</button>
+  </div>
+</div>
+
+<!-- MODAL: EDIT USER INFO (ADMIN) -->
+<div class="modal-overlay" id="modal-edit-user">
+  <div class="modal-box">
+    <div class="modal-title">แก้ไขข้อมูลผู้ใช้งาน</div>
+    <div class="modal-sub">แก้ไขชื่อ-นามสกุล และแผนกสังกัดสำหรับบัญชีผู้ใช้งาน</div>
+    
+    <input type="hidden" id="edit-user-target"/>
+    <div class="form-group">
+      <label class="f-label">Username</label>
+      <input class="f-input" id="edit-user-u" disabled style="opacity:0.7"/>
+    </div>
+    <div class="form-group">
+      <label class="f-label">ชื่อ-นามสกุล</label>
+      <input class="f-input" id="edit-user-name" placeholder="ชื่อ-นามสกุล"/>
+    </div>
+    <div class="form-group">
+      <label class="f-label">แผนก / สังกัด</label>
+      <input class="f-input" id="edit-user-dept" placeholder="แผนก/สังกัด"/>
+    </div>
+    
+    <div class="f-err" id="edit-user-err"></div>
+    <button class="auth-btn" style="margin-bottom:8px" onclick="saveUserInfo()">บันทึกการแก้ไข</button>
+    <button class="btn" style="width:100%" onclick="document.getElementById('modal-edit-user').classList.remove('show')">ยกเลิก</button>
   </div>
 </div>
 
@@ -1150,13 +1184,12 @@ tr:hover td { background: var(--cmu-purple-bg); }
         </div>
         <div class="chart-card" style="margin-bottom:20px"><div class="chart-title">ผู้รับพัสดุสูงสุด</div><div class="bar-list" id="receiver-bars"></div></div>
         <div class="tbl-wrap">
-          <div class="tbl-head"><div class="tbl-title">รายการล่าสุด (10 รายการ)</div></div>
+          <div class="tbl-head"><div class="tbl-title">รายการจัดส่งวันนี้ / ล่าสุด (เรียงลำดับล่าสุดขึ้นก่อน)</div></div>
           <div class="tbl-scroll">
             <table>
               <thead>
                 <tr>
-                  <th>Job ID</th>
-                  <th>Tracking NO</th>
+                  <th>เลขที่จดหมาย/พัสดุ (Tracking No.)</th>
                   <th>วันที่</th>
                   <th>ผู้ส่ง</th>
                   <th>ผู้รับ</th>
@@ -1217,14 +1250,13 @@ tr:hover td { background: var(--cmu-purple-bg); }
           <button class="btn btn-success" onclick="exportPDF('records')">ออก PDF</button>
         </div>
         <div class="tbl-wrap">
-          <div class="tbl-head"><div class="tbl-title">รายการจัดส่ง</div><div class="tbl-count" id="rec-count">0 รายการ</div></div>
+          <div class="tbl-head"><div class="tbl-title">รายการจัดส่งทั้งหมด</div><div class="tbl-count" id="rec-count">0 รายการ</div></div>
           <div class="tbl-scroll">
             <table>
               <thead>
                 <tr>
-                  <th>Job ID</th>
                   <th>Record By</th>
-                  <th>Tracking NO</th>
+                  <th>เลขที่จดหมาย/พัสดุ (Tracking No.)</th>
                   <th>วันที่</th>
                   <th>ผู้ส่ง</th>
                   <th>ผู้รับ</th>
@@ -1285,8 +1317,20 @@ tr:hover td { background: var(--cmu-purple-bg); }
               <div class="tbl-title">จัดการสิทธิ์และอนุมัติผู้ใช้งาน (Method 2)</div>
               <div style="font-size:12px;color:var(--text-muted)">เมื่ออนุมัติสมัครสมาชิกหรือรีเซ็ตรหัสผ่าน ระบบจะสุ่มรหัสผ่านชั่วคราวและส่งไปที่อีเมลของผู้ใช้โดยอัตโนมัติ</div>
             </div>
-            <button class="btn btn-primary btn-sm" onclick="loadUsers()">รีเฟรชรายชื่อ</button>
+            <div style="display:flex;gap:10px;align-items:center">
+              <input id="user-search" placeholder="ค้นหาชื่อ / Username / แผนก..." style="padding:6px 12px;font-size:12px;border:1.5px solid var(--border-color);border-radius:8px" oninput="filterUsersTable()"/>
+              <button class="btn btn-primary btn-sm" onclick="loadUsers()">รีเฟรชรายชื่อ</button>
+            </div>
           </div>
+
+          <!-- User Summary Cards -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px,1fr));gap:10px;padding:12px 20px;border-bottom:1px solid var(--border-color);background:var(--cmu-purple-subtle)">
+            <div style="font-size:12px">ผู้ใช้งานทั้งหมด: <strong id="user-count-all" style="color:var(--cmu-purple)">0</strong></div>
+            <div style="font-size:12px">ใช้งานปกติ: <strong id="user-count-active" style="color:var(--success)">0</strong></div>
+            <div style="font-size:12px">รออนุมัติ: <strong id="user-count-pending" style="color:var(--warning)">0</strong></div>
+            <div style="font-size:12px">ระงับการใช้: <strong id="user-count-disabled" style="color:var(--danger)">0</strong></div>
+          </div>
+
           <div class="tbl-scroll">
             <table>
               <thead>
@@ -1368,12 +1412,13 @@ tr:hover td { background: var(--cmu-purple-bg); }
 // ══════════════════════════════════════════════
 //  CONFIG & GLOBAL STATE
 // ══════════════════════════════════════════════
-var API = "https://script.google.com/macros/s/AKfycbzZjUB3TrQF_TaUjvYpMHWny3t4EoAAloK6sEivBO6-Fnpp6WEdDsM2i_e2uffP0Rvnbg/exec";
+var API = "https://script.google.com/macros/s/AKfycbxiBh8P7t7Eaw7jfD8qRupTcYWRLP0lr8XhHsnXgrKkUVMnWlRtPJxjxhr0Ckz_DrD2Ng/exec";
 
 var ME = null;          
 var tempUserPassHash = ""; 
 var charts = {};        
 var recData = [];       
+var usersData = [];
 var recMode = "ym";     
 var rptMode = "ym";
 var arcMode = "ym";
@@ -1404,6 +1449,44 @@ function getDeliveryStatusTag(r) {
     return '<span class="tag tag-delivered">✓ จัดส่งสำเร็จ</span>';
   } else {
     return '<span class="tag tag-transit">⏳ กำลังจัดส่ง</span>';
+  }
+}
+
+// ══════════════════════════════════════════════
+//  NIST PASSWORD STRENGTH CHECKER
+// ══════════════════════════════════════════════
+function checkNistPasswordStrength(pass) {
+  var fill = document.getElementById("pass-meter-fill");
+  var text = document.getElementById("pass-meter-text");
+  if(!fill || !text) return;
+
+  if(!pass) {
+    fill.style.width = "0%";
+    text.textContent = "ความแรงรหัสผ่าน: -";
+    return;
+  }
+
+  var score = 0;
+  if(pass.length >= 8) score += 25;
+  if(pass.length >= 10) score += 25;
+  if(/[A-Z]/.test(pass) && /[a-z]/.test(pass)) score += 25;
+  if(/[0-9]/.test(pass) && /[^A-Za-z0-9]/.test(pass)) score += 25;
+
+  var blacklisted = ["123456", "12345678", "password", "admin123", "qwerty", "staff123"];
+  if(blacklisted.indexOf(pass.toLowerCase()) !== -1) {
+    score = 10;
+  }
+
+  fill.style.width = score + "%";
+  if(score < 50) {
+    fill.style.background = "var(--danger)";
+    text.textContent = "ความแรงรหัสผ่าน: ไม่ปลอดภัย (ต้องมีอย่างน้อย 8 ตัวอักษร)";
+  } else if(score < 75) {
+    fill.style.background = "var(--warning)";
+    text.textContent = "ความแรงรหัสผ่าน: ปานกลาง";
+  } else {
+    fill.style.background = "var(--success)";
+    text.textContent = "ความแรงรหัสผ่าน: ปลอดภัยสูง (NIST Compliant)";
   }
 }
 
@@ -1663,8 +1746,8 @@ async function doChangePassword() {
   var btn = document.getElementById("change-pass-btn");
 
   err.style.display = "none";
-  if(!newP || newP.length < 6){
-    err.textContent = "รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 6 ตัวอักษร";
+  if(!newP || newP.length < 8){
+    err.textContent = "รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 8 ตัวอักษรตามมาตรฐาน NIST";
     err.style.display = "block"; return;
   }
   if(newP !== confirmP){
@@ -1681,6 +1764,7 @@ async function doChangePassword() {
       action: "changePassword",
       username: ME.username,
       currentPasswordHash: tempUserPassHash,
+      newPassword: newP,
       newPasswordHash: newHash
     });
 
@@ -1735,7 +1819,7 @@ function startApp() {
 }
 
 function doLogout() {
-  ME = null; recData = []; tempUserPassHash = "";
+  ME = null; recData = []; usersData = []; tempUserPassHash = "";
   Object.keys(charts).forEach(function(k){ if(charts[k]){ charts[k].destroy(); delete charts[k]; } });
   
   document.getElementById("app").style.display = "none";
@@ -1830,12 +1914,12 @@ function loadOverview() {
   ]).then(function(r){ 
     renderOverview(r[0], r[1].data || [], month); 
   }).catch(function(){
-    renderOverview({total:0, monthly:{}, bySender:{}, byReceiver:{}}, [], month);
+    renderOverview({total:0, todayCount:0, monthly:{}, bySender:{}, byReceiver:{}}, [], month);
   });
 }
 
 function renderOverview(sum, records, month) {
-  sum = sum || {total:0, monthly:{}, bySender:{}, byReceiver:{}};
+  sum = sum || {total:0, todayCount:0, monthly:{}, bySender:{}, byReceiver:{}};
   sum.monthly = sum.monthly || {};
   sum.bySender = sum.bySender || {};
   sum.byReceiver = sum.byReceiver || {};
@@ -1848,10 +1932,10 @@ function renderOverview(sum, records, month) {
   var pendingCount = records.length - completedCount;
 
   var kpis = [
-    {label:"งานทั้งหมด (ช่วงที่เลือก)", value: periodTotal},
+    {label:"รายการวันนี้", value: sum.todayCount || 0, sub: "ข้อมูลของวันปัจจุบัน"},
     {label:"จัดส่งสำเร็จแล้ว", value: completedCount, sub: "มีลายเซ็นรับเรียบร้อย"},
     {label:"อยู่ระหว่างจัดส่ง", value: pendingCount, sub: "รอลายเซ็นผู้รับ"},
-    {label:"จำนวนผู้ส่ง / ผู้รับ", value: Object.keys(senders).length + " / " + Object.keys(receivers).length + " คน"}
+    {label:"งานรวมช่วงที่เลือก", value: periodTotal, sub: "ผู้ส่ง " + Object.keys(senders).length + " | ผู้รับ " + Object.keys(receivers).length + " คน"}
   ];
 
   document.getElementById("ov-kpi").innerHTML = kpis.map(function(k){
@@ -1877,19 +1961,19 @@ function renderOverview(sum, records, month) {
       +'<div class="bar-n">'+e[1]+'</div></div>';
   }).join("") || '<div style="color:#aaa;padding:16px;text-align:center;font-size:13px">ไม่มีข้อมูลผู้รับในปีที่เลือก</div>';
 
-  document.getElementById("recent-tb").innerHTML = records.slice(-10).reverse().map(function(r){
-    var jobId = getRecVal(r, "Job_ID");
+  // แสดงผลตารางเรียงลำดับล่าสุดขึ้นก่อน (ไม่แสดง Job ID)
+  document.getElementById("recent-tb").innerHTML = records.slice(0, 10).map(function(r){
     var track = getRecVal(r, "Tracking_NO");
+    var dateFormatted = r.DateFormatted || getRecVal(r, "Date");
     return '<tr>'
-      +'<td><code style="font-size:11px;color:var(--cmu-purple)">'+esc(jobId)+'</code></td>'
-      +'<td>'+esc(track)+'</td>'
-      +'<td>'+esc(getRecVal(r, "Date"))+'</td>'
+      +'<td><strong>'+esc(track)+'</strong></td>'
+      +'<td>'+esc(dateFormatted)+'</td>'
       +'<td>'+esc(getRecVal(r, "Sender"))+'</td>'
       +'<td>'+esc(getRecVal(r, "Receiver"))+'</td>'
       +'<td>'+getDeliveryStatusTag(r)+'</td>'
       +'<td style="white-space:pre-wrap;font-size:11px">'+esc(getRecVal(r, "Detail"))+'</td>'
       +'</tr>';
-  }).join("") || '<tr><td colspan="7" style="text-align:center;color:#aaa;padding:24px">ไม่มีข้อมูลจัดส่งในปีที่เลือก</td></tr>';
+  }).join("") || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">ไม่มีข้อมูลจัดส่งในเงื่อนไขที่เลือก</td></tr>';
 }
 
 // ══════════════════════════════════════════════
@@ -1967,72 +2051,125 @@ function filterRec() {
   var q = (document.getElementById("rec-search").value || "").toLowerCase();
   var filtered = recData.filter(function(r){
     var track = getRecVal(r, "Tracking_NO");
-    var jobId = getRecVal(r, "Job_ID");
     var recordBy = getRecVal(r, "Record_By");
     var sender = getRecVal(r, "Sender");
     var receiver = getRecVal(r, "Receiver");
-    return !q || [track, jobId, sender, receiver, recordBy].some(function(v){ 
+    return !q || [track, sender, receiver, recordBy].some(function(v){ 
       return String(v||"").toLowerCase().includes(q); 
     });
   });
   
   document.getElementById("rec-count").textContent = filtered.length + " รายการ";
   document.getElementById("rec-tb").innerHTML = filtered.map(function(r){
-    var jobId = getRecVal(r, "Job_ID");
     var track = getRecVal(r, "Tracking_NO");
     var recBy = getRecVal(r, "Record_By");
+    var dateFormatted = r.DateFormatted || getRecVal(r, "Date");
     return '<tr>'
-      +'<td><code style="font-size:11px;color:var(--cmu-purple)">'+esc(jobId)+'</code></td>'
       +'<td>'+esc(recBy)+'</td>'
-      +'<td>'+esc(track)+'</td>'
-      +'<td>'+esc(getRecVal(r, "Date"))+'</td>'
+      +'<td><strong>'+esc(track)+'</strong></td>'
+      +'<td>'+esc(dateFormatted)+'</td>'
       +'<td>'+esc(getRecVal(r, "Sender"))+'</td>'
       +'<td>'+esc(getRecVal(r, "Receiver"))+'</td>'
       +'<td>'+getDeliveryStatusTag(r)+'</td>'
       +'<td style="white-space:pre-wrap;font-size:11px">'+esc(getRecVal(r, "Detail"))+'</td>'
       +'<td style="font-size:11px;color:#aaa;white-space:nowrap">'+esc(getRecVal(r, "Timestamp"))+'</td>'
       +'</tr>';
-  }).join("") || '<tr><td colspan="9" style="text-align:center;color:#aaa;padding:24px">ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา</td></tr>';
+  }).join("") || '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:24px">ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา</td></tr>';
 }
 
 // ══════════════════════════════════════════════
-//  PAGE: USER MANAGEMENT
+//  PAGE: USER MANAGEMENT (ADMIN)
 // ══════════════════════════════════════════════
 function loadUsers() {
   if(ME.role !== "admin") return;
   apiFetch({action:"getUsers", username:ME.username}).then(function(res){
     if(res.status !== "ok"){ toast(res.message || "ไม่สามารถโหลดผู้ใช้ได้", "err"); return; }
     
-    var users = res.users || [];
-    if(users.length === 0){
-      document.getElementById("users-tb").innerHTML = '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px">ไม่มีรายชื่อผู้ใช้งาน</td></tr>';
-      return;
+    usersData = res.users || [];
+    renderUsersTable(usersData);
+  });
+}
+
+function renderUsersTable(users) {
+  var countActive = 0, countPending = 0, countDisabled = 0;
+  users.forEach(function(u){
+    if(u.status === "active" || u.status === "TRUE" || u.status === "true") countActive++;
+    else if(u.status === "pending") countPending++;
+    else countDisabled++;
+  });
+
+  document.getElementById("user-count-all").textContent = users.length;
+  document.getElementById("user-count-active").textContent = countActive;
+  document.getElementById("user-count-pending").textContent = countPending;
+  document.getElementById("user-count-disabled").textContent = countDisabled;
+
+  if(users.length === 0){
+    document.getElementById("users-tb").innerHTML = '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px">ไม่มีรายชื่อผู้ใช้งาน</td></tr>';
+    return;
+  }
+
+  document.getElementById("users-tb").innerHTML = users.map(function(u){
+    var statusTag = (u.status === "active" || u.status === "TRUE" || u.status === "true") ? '<span class="tag tag-active">ใช้งานปกติ</span>' :
+                    (u.status === "pending") ? '<span class="tag tag-pending">รออนุมัติ / รอส่งรหัส</span>' :
+                    '<span class="tag tag-disabled">ระงับการใช้</span>';
+
+    return '<tr>'
+      +'<td><strong>'+esc(u.fullname||u.username)+'</strong></td>'
+      +'<td><code>'+esc(u.username)+'</code><br><span style="font-size:11px;color:var(--text-muted)">'+esc(u.email||'-')+'</span></td>'
+      +'<td>'+esc(u.department||'-')+'</td>'
+      +'<td>'
+        +'<select onchange="updateUserRole(\''+esc(u.username)+'\', this.value)" style="padding:4px 8px;font-size:12px">'
+          +'<option value="staff" '+(u.role==='staff'?'selected':'')+'>Staff (พนักงาน)</option>'
+          +'<option value="exec" '+(u.role==='exec'?'selected':'')+'>Executive (ผู้บริหาร)</option>'
+          +'<option value="admin" '+(u.role==='admin'?'selected':'')+'>Admin (ผู้ดูแลระบบ)</option>'
+        +'</select>'
+      +'</td>'
+      +'<td>'+statusTag+'</td>'
+      +'<td>'
+        +'<button class="btn btn-sm" style="margin-right:4px" onclick="openEditUserModal(\''+esc(u.username)+'\', \''+esc(u.fullname)+'\', \''+esc(u.department)+'\')">แก้ไข</button>'
+        +(u.status === "pending" ? '<button class="btn btn-success btn-sm" onclick="setUserStatus(\''+esc(u.username)+'\', \'active\')">อนุมัติ & ส่งรหัสผ่าน</button> ' : '')
+        +((u.status === "active" || u.status === "TRUE" || u.status === "true") ? '<button class="btn btn-primary btn-sm" style="margin-right:4px" onclick="setUserStatus(\''+esc(u.username)+'\', \'reset_password\')">รีเซ็ตรหัส</button><button class="btn btn-danger btn-sm" onclick="setUserStatus(\''+esc(u.username)+'\', \'disabled\')">ระงับ</button> ' : '')
+        +(u.status === "disabled" ? '<button class="btn btn-primary btn-sm" onclick="setUserStatus(\''+esc(u.username)+'\', \'active\')">เปิดใช้งาน</button> ' : '')
+      +'</td>'
+      +'</tr>';
+  }).join("");
+}
+
+function filterUsersTable() {
+  var q = (document.getElementById("user-search").value || "").toLowerCase();
+  var filtered = usersData.filter(function(u){
+    return !q || [u.username, u.fullname, u.email, u.department].some(function(v){
+      return String(v||"").toLowerCase().indexOf(q) !== -1;
+    });
+  });
+  renderUsersTable(filtered);
+}
+
+function openEditUserModal(username, name, dept) {
+  document.getElementById("edit-user-target").value = username;
+  document.getElementById("edit-user-u").value = username;
+  document.getElementById("edit-user-name").value = name || "";
+  document.getElementById("edit-user-dept").value = dept || "";
+  document.getElementById("edit-user-err").style.display = "none";
+  document.getElementById("modal-edit-user").classList.add("show");
+}
+
+function saveUserInfo() {
+  var targetUser = document.getElementById("edit-user-target").value;
+  var newName = document.getElementById("edit-user-name").value.trim();
+  var newDept = document.getElementById("edit-user-dept").value.trim();
+  var err = document.getElementById("edit-user-err");
+
+  if (!targetUser) return;
+  apiFetch({action:"updateUserInfo", adminUser:ME.username, targetUser:targetUser, fullname:newName, department:newDept}).then(function(res){
+    if(res.status === "ok"){
+      toast(res.message, "ok");
+      document.getElementById("modal-edit-user").classList.remove("show");
+      loadUsers();
+    } else {
+      err.textContent = res.message || "เกิดข้อผิดพลาด";
+      err.style.display = "block";
     }
-
-    document.getElementById("users-tb").innerHTML = users.map(function(u){
-      var statusTag = (u.status === "active" || u.status === "TRUE" || u.status === "true") ? '<span class="tag tag-active">ใช้งานปกติ</span>' :
-                      (u.status === "pending") ? '<span class="tag tag-pending">รออนุมัติ / รอส่งรหัส</span>' :
-                      '<span class="tag tag-disabled">ระงับการใช้</span>';
-
-      return '<tr>'
-        +'<td><strong>'+esc(u.fullname||u.username)+'</strong></td>'
-        +'<td><code>'+esc(u.username)+'</code><br><span style="font-size:11px;color:var(--text-muted)">'+esc(u.email||'-')+'</span></td>'
-        +'<td>'+esc(u.department||'-')+'</td>'
-        +'<td>'
-          +'<select onchange="updateUserRole(\''+esc(u.username)+'\', this.value)" style="padding:4px 8px;font-size:12px">'
-            +'<option value="staff" '+(u.role==='staff'?'selected':'')+'>Staff (พนักงาน)</option>'
-            +'<option value="exec" '+(u.role==='exec'?'selected':'')+'>Executive (ผู้บริหาร)</option>'
-            +'<option value="admin" '+(u.role==='admin'?'selected':'')+'>Admin (ผู้ดูแลระบบ)</option>'
-          +'</select>'
-        +'</td>'
-        +'<td>'+statusTag+'</td>'
-        +'<td>'
-          +(u.status === "pending" ? '<button class="btn btn-success btn-sm" onclick="setUserStatus(\''+esc(u.username)+'\', \'active\')">อนุมัติ & ส่งรหัสผ่าน</button> ' : '')
-          +((u.status === "active" || u.status === "TRUE" || u.status === "true") ? '<button class="btn btn-primary btn-sm" style="margin-right:4px" onclick="setUserStatus(\''+esc(u.username)+'\', \'reset_password\')">รีเซ็ตรหัส</button><button class="btn btn-danger btn-sm" onclick="setUserStatus(\''+esc(u.username)+'\', \'disabled\')">ระงับ</button> ' : '')
-          +(u.status === "disabled" ? '<button class="btn btn-primary btn-sm" onclick="setUserStatus(\''+esc(u.username)+'\', \'active\')">เปิดใช้งาน</button> ' : '')
-        +'</td>'
-        +'</tr>';
-    }).join("");
   });
 }
 
@@ -2067,7 +2204,7 @@ function updateUserRole(targetUser, newRole) {
 }
 
 // ══════════════════════════════════════════════
-//  EXPORT PDF (SAFARI POP-UP BLOCKER SAFE & MODAL DIALOG)
+//  EXPORT PDF
 // ══════════════════════════════════════════════
 function exportPDF(ctx) {
   var params = {action:"exportPDF", role:ME.role, username:ME.username};
@@ -2085,7 +2222,6 @@ function exportPDF(ctx) {
     else { params.dateFrom = document.getElementById("rpt-from").value; params.dateTo = document.getElementById("rpt-to").value; }
   }
 
-  // เปิดแท็บใหม่รอก่อนชั่วคราวเพื่อป้องกัน Safari/Chrome บล็อกป๊อปอัปอัตโนมัติ
   var win = null;
   try {
     win = window.open('', '_blank');
@@ -2105,7 +2241,6 @@ function exportPDF(ctx) {
         win.location.href = res.url;
       }
       
-      // แสดง Modal ปุ่มเปิด/ดาวน์โหลดไฟล์บนหน้าจอเสมอ
       document.getElementById("pdf-modal-name").textContent = res.name || "รายงาน.pdf";
       document.getElementById("pdf-modal-count").textContent = res.count || 0;
       var linkBtn = document.getElementById("pdf-modal-btn");

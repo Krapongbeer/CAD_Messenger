@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CAD-Messenger Dashboard & Management System</title>
+<title>CAD-Messenger Dashboard & Management System v3.5.2</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -112,7 +112,7 @@ body {
   border: 1px solid var(--warning);
 }
 
-/* ── Password Strength Meter ── */
+/* ── NIST Password Strength Meter ── */
 .pass-meter-wrap { margin-top: 6px; }
 .pass-meter-bar { height: 6px; background: var(--border-color); border-radius: 99px; overflow: hidden; }
 .pass-meter-fill { height: 100%; width: 0%; transition: all 0.3s ease; border-radius: 99px; }
@@ -423,6 +423,8 @@ body {
   padding: 16px 0;
   flex-shrink: 0;
   transition: background 0.3s, border-color 0.3s;
+  display: flex;
+  flex-direction: column;
 }
 .nav-sec {
   font-size: 10px;
@@ -1022,7 +1024,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
       </div>
       
       <div style="background:var(--cmu-purple-subtle);border-left:3px solid var(--cmu-purple);padding:10px 12px;border-radius:8px;font-size:12px;color:var(--text-main);margin-bottom:16px;line-height:1.4">
-        🔒 <strong>ระบบยืนยันตัวตนปลอดภัยสูง:</strong><br>
+        🔒 <strong>ระบบยืนยันตัวตนปลอดภัยสูงสุด (Method 2 - NIST Standard):</strong><br>
         เมื่อส่งข้อมูลลงทะเบียนแล้ว ผู้ดูแลระบบจะทำการอนุมัติสิทธิ์ และระบบจะจัดส่ง <strong>รหัสผ่านชั่วคราว</strong> ไปยังอีเมลของคุณโดยอัตโนมัติ
       </div>
 
@@ -1030,18 +1032,20 @@ tr:hover td { background: var(--cmu-purple-bg); }
       <div class="f-msg" id="reg-msg"></div>
       <button class="auth-btn" id="reg-btn" onclick="doRegister()">ส่งข้อมูลลงทะเบียน</button>
     </div>
+
+    <div style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:18px;font-weight:600;opacity:0.85">CAD-Messenger v3.5.2 (NIST Standard)</div>
   </div>
 </div>
 
-<!-- MODAL: FORCE CHANGE PASSWORD -->
+<!-- MODAL: FORCE CHANGE PASSWORD (WITH NIST STRENGTH METER) -->
 <div class="modal-overlay" id="modal-change-pass">
   <div class="modal-box">
-    <div class="modal-title">ตั้งรหัสผ่านใหม่</div>
+    <div class="modal-title">ตั้งรหัสผ่านใหม่ (NIST Standard)</div>
     <div class="modal-sub">คุณกำลังเข้าสู่ระบบด้วย <strong>รหัสผ่านชั่วคราว</strong> กรุณาตั้งรหัสผ่านใหม่เพื่อความปลอดภัยในการใช้งาน</div>
     
     <div class="form-group">
       <label class="f-label">รหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)</label>
-      <input class="f-input" id="new-p" type="password" placeholder="••••••••" oninput="onPasswordInput()"/>
+      <input class="f-input" id="new-p" type="password" placeholder="••••••••" oninput="checkNistPasswordStrength(this.value)"/>
       <div class="pass-meter-wrap">
         <div class="pass-meter-bar"><div class="pass-meter-fill" id="pass-meter-fill"></div></div>
         <div class="pass-meter-text" id="pass-meter-text">ความแรงรหัสผ่าน: -</div>
@@ -1049,7 +1053,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
     </div>
     <div class="form-group">
       <label class="f-label">ยืนยันรหัสผ่านใหม่</label>
-      <input class="f-input" id="confirm-new-p" type="password" placeholder="••••••••" oninput="onPasswordInput()"/>
+      <input class="f-input" id="confirm-new-p" type="password" placeholder="••••••••"/>
     </div>
     
     <div class="f-err" id="change-pass-err"></div>
@@ -1105,7 +1109,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 <!-- MAIN APP -->
 <div id="app">
   <div class="topbar">
-    <div class="t-logo">CAD-Messenger <em id="role-lbl">CMU</em></div>
+    <div class="t-logo">CAD-Messenger <em id="role-lbl">CMU v3.5.2</em></div>
     <div class="t-spacer"></div>
     
     <!-- Theme Selector -->
@@ -1129,34 +1133,37 @@ tr:hover td { background: var(--cmu-purple-bg); }
   <div class="layout">
     <!-- Sidebar -->
     <div class="sidebar">
-      <div class="nav-sec">ภาพรวม</div>
-      <div class="nav-item active" data-page="overview" onclick="nav(this)">
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>ภาพรวม
-      </div>
-      <div class="nav-item" data-page="monthly" onclick="nav(this)">
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>รายเดือน
-      </div>
-      <div class="nav-item" data-page="yearly" onclick="nav(this)">
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>รายปี
-      </div>
-      <div class="nav-item" data-page="records" onclick="nav(this)">
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>รายการทั้งหมด
-      </div>
-      <div class="nav-sec">รายงาน</div>
-      <div class="nav-item" data-page="report" onclick="nav(this)">
-        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>ออกรายงาน PDF
-      </div>
-      
-      <!-- Admin Menu -->
-      <div id="nav-admin" style="display:none">
-        <div class="nav-sec">ผู้ดูแลระบบ</div>
-        <div class="nav-item" data-page="users" onclick="nav(this)">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>จัดการผู้ใช้งาน
+      <div style="flex:1">
+        <div class="nav-sec">ภาพรวม</div>
+        <div class="nav-item active" data-page="overview" onclick="nav(this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>ภาพรวม
         </div>
-        <div class="nav-item" data-page="archive" onclick="nav(this)">
-          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>Archive ข้อมูล
+        <div class="nav-item" data-page="monthly" onclick="nav(this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>รายเดือน
+        </div>
+        <div class="nav-item" data-page="yearly" onclick="nav(this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>รายปี
+        </div>
+        <div class="nav-item" data-page="records" onclick="nav(this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>รายการทั้งหมด
+        </div>
+        <div class="nav-sec">รายงาน</div>
+        <div class="nav-item" data-page="report" onclick="nav(this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>ออกรายงาน PDF
+        </div>
+        
+        <!-- Admin Menu -->
+        <div id="nav-admin" style="display:none">
+          <div class="nav-sec">ผู้ดูแลระบบ</div>
+          <div class="nav-item" data-page="users" onclick="nav(this)">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>จัดการผู้ใช้งาน
+          </div>
+          <div class="nav-item" data-page="archive" onclick="nav(this)">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg>Archive ข้อมูล
+          </div>
         </div>
       </div>
+      <div style="padding:16px 20px;font-size:11px;color:var(--text-muted);font-weight:600;border-top:1px solid var(--border-color);margin-top:auto">เวอร์ชันระบบ: v3.5.2</div>
     </div>
 
     <!-- Main Content Area -->
@@ -1437,7 +1444,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 // ══════════════════════════════════════════════
 //  CONFIG & GLOBAL STATE
 // ══════════════════════════════════════════════
-var API = "https://script.google.com/macros/s/AKfycbzSR4wPZRHoLd_5do7OFVj6mce8WrK3hb5R02qeHUflm-Rp9qpfOgX4rL8qwWXWV__7nw/exec";
+var API = "https://script.google.com/macros/s/AKfycbzxTrTIZtuFvQD2pALUyBDIsTqFYnPzYaKLXq6uWcbYhTp9L_ge9wPFETN6wlvFThi_qQ/exec";
 
 var ME = null;          
 var tempUserPassHash = ""; 
@@ -1454,13 +1461,14 @@ var MONTHS = ["","ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","�
 var COLORS  = ["#5c2483","#e09f19","#8c42c2","#0284c7","#10b981","#f59e0b","#ec4899","#6366f1"];
 
 // ══════════════════════════════════════════════
-//  RECORD UTILS & STATUS CHECKER (ROBUST REGEX)
+//  RECORD UTILS & STATUS CHECKER (FIXED REGEX PATTERN)
 // ══════════════════════════════════════════════
 function getRecVal(r, key) {
   if (!r) return "";
   if (r[key] !== undefined && r[key] !== null && String(r[key]).trim() !== "") {
     return String(r[key]).trim();
   }
+  // ปรับปรุงการเปรียบเทียบชื่อคีย์ให้รองรับทั้งเครื่องหมาย _ และช่องว่าง Space
   var target = String(key).toLowerCase().replace(/[\s_]/g, "");
   for (var k in r) {
     if (String(k).toLowerCase().replace(/[\s_]/g, "") === target) {
@@ -1481,46 +1489,27 @@ function getDeliveryStatusTag(r) {
 
 function parseDate(val) {
   if (!val) return null;
-  if (val instanceof Date) {
-    var d = new Date(val.getTime());
-    if (d.getFullYear() > 2500) d.setFullYear(d.getFullYear() - 543);
-    return d;
-  }
+  if (val instanceof Date) return val;
   var s = String(val).trim();
   if (!s) return null;
 
-  var isoMatch = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[T\s](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
-  if (isoMatch) {
-    var y = parseInt(isoMatch[1], 10);
-    var m = parseInt(isoMatch[2], 10) - 1;
-    var d = parseInt(isoMatch[3], 10);
-    var hh = parseInt(isoMatch[4] || "0", 10);
-    var mm = parseInt(isoMatch[5] || "0", 10);
-    var ss = parseInt(isoMatch[6] || "0", 10);
-    if (y > 2500) y -= 543;
-    return new Date(y, m, d, hh, mm, ss);
+  if (s.indexOf("-") !== -1) {
+    var dtIso = new Date(s);
+    if (!isNaN(dtIso.getTime())) return dtIso;
   }
 
-  var dmyMatch = s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
-  if (dmyMatch) {
-    var d = parseInt(dmyMatch[1], 10);
-    var m = parseInt(dmyMatch[2], 10) - 1;
-    var y = parseInt(dmyMatch[3], 10);
-    var hh = parseInt(dmyMatch[4] || "0", 10);
-    var mm = parseInt(dmyMatch[5] || "0", 10);
-    var ss = parseInt(dmyMatch[6] || "0", 10);
+  var parts = s.split(/[\s,]+/);
+  var dp = parts[0].split("/");
+  if (dp.length >= 3) {
+    var d = parseInt(dp[0], 10), m = parseInt(dp[1], 10) - 1, y = parseInt(dp[2], 10);
     if (y > 2500) y -= 543;
-    return new Date(y, m, d, hh, mm, ss);
+    var tp = parts[1] ? parts[1].split(":") : ["0", "0"];
+    var dt = new Date(y, m, d, parseInt(tp[0] || "0", 10), parseInt(tp[1] || "0", 10));
+    if (!isNaN(dt.getTime())) return dt;
   }
 
   var fallbackDt = new Date(s);
-  if (!isNaN(fallbackDt.getTime())) {
-    if (fallbackDt.getFullYear() > 2500) {
-      fallbackDt.setFullYear(fallbackDt.getFullYear() - 543);
-    }
-    return fallbackDt;
-  }
-  return null;
+  return isNaN(fallbackDt.getTime()) ? null : fallbackDt;
 }
 
 function isSameDay(d1, d2) {
@@ -1536,7 +1525,7 @@ function formatThaiDate(val) {
   var day = dt.getDate();
   var monthList = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
   var month = monthList[dt.getMonth()];
-  var year = (dt.getFullYear() < 2500 ? dt.getFullYear() + 543 : dt.getFullYear());
+  var year = (dt.getFullYear() > 2500 ? dt.getFullYear() : dt.getFullYear() + 543);
   return day + " " + month + " " + year;
 }
 
@@ -1550,66 +1539,46 @@ function formatThaiFullDate(val) {
   var dayName = days[dt.getDay()];
   var dayNum = dt.getDate();
   var monthName = months[dt.getMonth()];
-  var yearBE = (dt.getFullYear() < 2500 ? dt.getFullYear() + 543 : dt.getFullYear());
+  var yearBE = (dt.getFullYear() > 2500 ? dt.getFullYear() : dt.getFullYear() + 543);
   
   return dayName + "ที่ " + dayNum + " " + monthName + " พ.ศ. " + yearBE;
 }
 
 // ══════════════════════════════════════════════
-//  PASSWORD STRENGTH & LIVE ERROR CLEARING
+//  NIST PASSWORD STRENGTH CHECKER
 // ══════════════════════════════════════════════
-function onPasswordInput() {
-  var newP = document.getElementById("new-p").value;
-  var confirmP = document.getElementById("confirm-new-p").value;
-  var err = document.getElementById("change-pass-err");
-  
-  err.style.display = "none";
-  checkPasswordStrength(newP);
-  
-  if (confirmP.length > 0 && newP !== confirmP) {
-    err.textContent = "รหัสผ่านยืนยันไม่ตรงกัน";
-    err.style.display = "block";
-  }
-}
-
-function checkPasswordStrength(pass) {
+function checkNistPasswordStrength(pass) {
   var fill = document.getElementById("pass-meter-fill");
   var text = document.getElementById("pass-meter-text");
-  if (!fill || !text) return;
+  if(!fill || !text) return;
 
-  if (!pass) {
+  if(!pass) {
     fill.style.width = "0%";
     text.textContent = "ความแรงรหัสผ่าน: -";
     return;
   }
 
-  if (pass.length < 8) {
-    fill.style.width = "30%";
-    fill.style.background = "var(--danger)";
-    text.textContent = "ความแรงรหัสผ่าน: ไม่ปลอดภัย (ต้องมีอย่างน้อย 8 ตัวอักษร)";
-    return;
-  }
+  var score = 0;
+  if(pass.length >= 8) score += 25;
+  if(pass.length >= 10) score += 25;
+  if(/[A-Z]/.test(pass) && /[a-z]/.test(pass)) score += 25;
+  if(/[0-9]/.test(pass) && /[^A-Za-z0-9]/.test(pass)) score += 25;
 
-  var score = 50;
-  if (pass.length >= 10) score += 20;
-  if (/[A-Z]/.test(pass) && /[a-z]/.test(pass)) score += 15;
-  if (/[0-9]/.test(pass) && /[^A-Za-z0-9]/.test(pass)) score += 15;
-
-  var blacklisted = ["123456", "12345678", "password", "admin123", "qwerty", "staff123", "phongphana"];
-  if (blacklisted.indexOf(pass.toLowerCase()) !== -1) {
-    fill.style.width = "20%";
-    fill.style.background = "var(--danger)";
-    text.textContent = "ความแรงรหัสผ่าน: เดาง่ายเกินไป กรุณาเปลี่ยนรหัสผ่าน";
-    return;
+  var blacklisted = ["123456", "12345678", "password", "admin123", "qwerty", "staff123"];
+  if(blacklisted.indexOf(pass.toLowerCase()) !== -1) {
+    score = 10;
   }
 
   fill.style.width = score + "%";
-  if (score < 70) {
+  if(score < 50) {
+    fill.style.background = "var(--danger)";
+    text.textContent = "ความแรงรหัสผ่าน: ไม่ปลอดภัย (ต้องมีอย่างน้อย 8 ตัวอักษร)";
+  } else if(score < 75) {
     fill.style.background = "var(--warning)";
-    text.textContent = "ความแรงรหัสผ่าน: ปานกลาง (ใช้งานได้)";
+    text.textContent = "ความแรงรหัสผ่าน: ปานกลาง";
   } else {
     fill.style.background = "var(--success)";
-    text.textContent = "ความแรงรหัสผ่าน: ปลอดภัยสูง";
+    text.textContent = "ความแรงรหัสผ่าน: ปลอดภัยสูง (NIST Compliant)";
   }
 }
 
@@ -1666,21 +1635,10 @@ function refreshChartTheme() {
 }
 
 // ══════════════════════════════════════════════
-//  INIT HANDLER & SESSION PERSISTENCE
+//  INIT HANDLER
 // ══════════════════════════════════════════════
 document.addEventListener("DOMContentLoaded", function() {
   initTheme();
-
-  // Restore cached user session for instant loading
-  var savedUser = sessionStorage.getItem("cmu_user");
-  if (savedUser) {
-    try {
-      ME = JSON.parse(savedUser);
-      if (ME && ME.username) {
-        startApp();
-      }
-    } catch(e) {}
-  }
 
   document.addEventListener("keydown", function(e){ 
     var authPage = document.getElementById("auth-page");
@@ -1739,7 +1697,7 @@ async function hashPassword(str) {
 }
 
 // ══════════════════════════════════════════════
-//  AUTH, REGISTER & FORGOT PASSWORD
+//  AUTH, REGISTER & FORGOT PASSWORD SWITCHING
 // ══════════════════════════════════════════════
 function switchAuthTab(type) {
   document.getElementById("tab-login").classList.toggle("active", type === "login");
@@ -1778,7 +1736,6 @@ async function doLogin() {
     if(res && res.status === "ok"){
       ME = res; 
       tempUserPassHash = passHash;
-      sessionStorage.setItem("cmu_user", JSON.stringify(ME));
 
       if (res.forceChangePass) {
         document.getElementById("modal-change-pass").classList.add("show");
@@ -1791,7 +1748,8 @@ async function doLogin() {
       btn.textContent = "เข้าสู่ระบบ"; btn.disabled = false;
     }
   } catch(e) {
-    showLoginErr("ไม่สามารถเชื่อมต่อระบบได้ กรุณาตรวจสอบการเชื่อมต่อ");
+    console.error("Login error:", e);
+    showLoginErr("เกิดข้อผิดพลาดในการเข้าสู่ระบบ: " + e.message);
     btn.textContent = "เข้าสู่ระบบ"; btn.disabled = false;
   }
 }
@@ -1883,7 +1841,7 @@ async function doChangePassword() {
 
   err.style.display = "none";
   if(!newP || newP.length < 8){
-    err.textContent = "รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 8 ตัวอักษร";
+    err.textContent = "รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 8 ตัวอักษรตามมาตรฐาน NIST";
     err.style.display = "block"; return;
   }
   if(newP !== confirmP){
@@ -1922,7 +1880,6 @@ async function doChangePassword() {
     document.getElementById("modal-change-pass").classList.remove("show");
     document.getElementById("inp-p").value = "";
     if (ME) ME.forceChangePass = false;
-    sessionStorage.setItem("cmu_user", JSON.stringify(ME));
     startApp();
   }
 }
@@ -1957,7 +1914,6 @@ function startApp() {
 
 function doLogout() {
   ME = null; recData = []; usersData = []; tempUserPassHash = "";
-  sessionStorage.removeItem("cmu_user");
   Object.keys(charts).forEach(function(k){ if(charts[k]){ charts[k].destroy(); delete charts[k]; } });
   
   document.getElementById("app").style.display = "none";
@@ -2040,26 +1996,24 @@ function setArcMode(m) {
 }
 
 // ══════════════════════════════════════════════
-//  PAGE: OVERVIEW (OPTIMIZED FAST SINGLE API CALL)
+//  PAGE: OVERVIEW (SHOW 2 SEPARATE TABLES)
 // ══════════════════════════════════════════════
 function loadOverview() {
   var year = document.getElementById("ov-year").value;
   var month = document.getElementById("ov-month").value;
 
-  // Single optimized API request returning summary, todayRecords, and records data
-  apiFetch({action:"getSummary", role:ME.role, username:ME.username, year:year, month:month}).then(function(res){
-    renderOverview(res, month); 
-  }).catch(function(err){
-    console.error("loadOverview error:", err);
-    renderOverview({status:"ok", total:0, todayCount:0, todayRecords:[], monthly:{}, bySender:{}, byReceiver:{}, data:[]}, month);
+  Promise.all([
+    apiFetch({action:"getSummary", role:ME.role, username:ME.username, year:year}),
+    apiFetch({action:"getData", role:ME.role, username:ME.username, year:year, month:month})
+  ]).then(function(r){ 
+    renderOverview(r[0], r[1].data || [], month); 
+  }).catch(function(){
+    renderOverview({total:0, todayCount:0, monthly:{}, bySender:{}, byReceiver:{}}, [], month);
   });
 }
 
-function renderOverview(res, month) {
-  res = res || {};
-  var records = res.data || [];
-  var todayRecords = res.todayRecords || [];
-  var sum = res || {total:0, todayCount:0, monthly:{}, bySender:{}, byReceiver:{}};
+function renderOverview(sum, records, month) {
+  sum = sum || {total:0, todayCount:0, monthly:{}, bySender:{}, byReceiver:{}};
   sum.monthly = sum.monthly || {};
   sum.bySender = sum.bySender || {};
   sum.byReceiver = sum.byReceiver || {};
@@ -2067,11 +2021,12 @@ function renderOverview(res, month) {
   var periodTotal = month ? (sum.monthly[parseInt(month)] || 0) : records.length;
   var senders = sum.bySender, receivers = sum.byReceiver;
   
+  // นับสถิติสถานะการจัดส่ง (จากลายเซ็น)
   var completedCount = records.filter(function(r){ return getRecVal(r, "Signature").length > 0; }).length;
   var pendingCount = records.length - completedCount;
 
   var kpis = [
-    {label:"รายการวันนี้", value: sum.todayCount || todayRecords.length || 0, sub: "ข้อมูลของวันปัจจุบัน"},
+    {label:"รายการวันนี้", value: sum.todayCount || 0, sub: "ข้อมูลของวันปัจจุบัน"},
     {label:"จัดส่งสำเร็จแล้ว", value: completedCount, sub: "มีลายเซ็นรับเรียบร้อย"},
     {label:"อยู่ระหว่างจัดส่ง", value: pendingCount, sub: "รอลายเซ็นผู้รับ"},
     {label:"งานรวมช่วงที่เลือก", value: periodTotal, sub: "ผู้ส่ง " + Object.keys(senders).length + " | ผู้รับ " + Object.keys(receivers).length + " คน"}
@@ -2104,12 +2059,10 @@ function renderOverview(res, month) {
   var now = new Date();
   document.getElementById("today-date-text").textContent = formatThaiFullDate(now);
 
-  if ((!todayRecords || todayRecords.length === 0) && records.length > 0) {
-    todayRecords = records.filter(function(r) {
-      var dt = parseDate(getRecVal(r, "Timestamp") || getRecVal(r, "Date"));
-      return dt && isSameDay(dt, now);
-    });
-  }
+  var todayRecords = records.filter(function(r) {
+    var dt = parseDate(getRecVal(r, "Timestamp") || getRecVal(r, "Date"));
+    return dt && isSameDay(dt, now);
+  });
 
   document.getElementById("today-count-lbl").textContent = todayRecords.length + " รายการ";
   document.getElementById("today-tb").innerHTML = todayRecords.map(function(r){
@@ -2465,4 +2418,84 @@ function doArchive() {
     var el = document.getElementById("arc-result");
     el.style.display = "block";
     if(res && res.status === "ok"){
-      el.className = "archive-
+      el.className = "archive-result result-ok";
+      el.textContent = "✓ " + res.message;
+      toast(res.message, "ok");
+      checkRowsStatus();
+    } else {
+      el.className = "archive-result result-err";
+      el.textContent = "✗ " + (res ? res.message : "เกิดข้อผิดพลาด");
+      toast(res ? res.message : "เกิดข้อผิดพลาด", "err");
+    }
+  }).catch(function(){ 
+    btn.textContent = "เริ่มย้ายข้อมูล (Archive)"; btn.disabled = false; 
+    toast("เกิดข้อผิดพลาดในการ Archive ข้อมูล", "err"); 
+  });
+}
+
+// ══════════════════════════════════════════════
+//  CHART HELPER FUNCTIONS
+// ══════════════════════════════════════════════
+function renderChart(id, type, labels, vals, label, color) {
+  if(charts[id]) {
+    charts[id].destroy();
+    delete charts[id];
+  }
+  var el = document.getElementById(id); 
+  if(!el) return;
+
+  var isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  var gridColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)";
+  var textColor = isDark ? "#f3eefa" : "#2d2930";
+
+  charts[id] = new Chart(el, {
+    type: type,
+    data: {
+      labels: labels,
+      datasets: [{
+        label: label,
+        data: vals,
+        backgroundColor: Array.isArray(color) ? color : (type === "line" ? "rgba(157, 78, 221, 0.18)" : color),
+        borderColor: Array.isArray(color) ? undefined : "#9d4edd",
+        fill: type === "line",
+        tension: 0.35,
+        borderRadius: type === "bar" ? 6 : 0,
+        pointRadius: type === "line" ? 4 : 0,
+        pointBackgroundColor: "#f5b027"
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { 
+          beginAtZero: true, 
+          ticks: { stepSize: 1, color: textColor },
+          grid: { color: gridColor }
+        },
+        x: {
+          ticks: { color: textColor },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
+function renderDoughnut(id, labels, vals) {
+  if(charts[id]) {
+    charts[id].destroy();
+    delete charts[id];
+  }
+  var el = document.getElementById(id); 
+  if(!el) return;
+
+  var isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  var textColor = isDark ? "#f3eefa" : "#2d2930";
+
+  charts[id] = new Chart(el, {
+    type: "doughnut",
+    data: {
+      labels: labels,
+      datasets:

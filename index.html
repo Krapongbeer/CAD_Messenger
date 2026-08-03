@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta http-equiv="X-Frame-Options" content="DENY">
 <title>SmartCAD-Messenger Dashboard & Management System</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-k2jjitdFiMnO4UHkEMk3X48KGsFfpI3fMIgfMWEPEhMYqJSdZ/bMKknFJM4V3JH" crossorigin="anonymous"></script>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ── Reset & Theme Variables (CMU Purple & Gold Palette) ── */
@@ -949,11 +951,59 @@ tr:hover td { background: var(--cmu-purple-bg); }
 }
 
 @media(max-width:768px){
-  .sidebar { display: none; }
   .charts-grid { grid-template-columns: 1fr; }
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .auth-box { padding: 28px 24px; }
 }
+
+/* ── Mobile Hamburger Menu ── */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+.mobile-menu-btn:hover {
+  background: rgba(255,255,255,0.15);
+}
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 90;
+}
+.sidebar-overlay.show { display: block; }
+@media(max-width:768px){
+  .mobile-menu-btn { display: block; }
+  .sidebar {
+    position: fixed;
+    left: -260px;
+    top: 58px;
+    bottom: 0;
+    z-index: 95;
+    width: 240px;
+    transition: left 0.3s ease;
+    box-shadow: var(--shadow-lg);
+    display: block !important;
+  }
+  .sidebar.open { left: 0; }
+}
+
+/* ── Session Timeout Warning ── */
+#session-timer {
+  font-size: 11px;
+  color: rgba(255,255,255,0.7);
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.08);
+}
+#session-timer.warn { color: var(--cmu-gold); background: rgba(224,159,25,0.2); }
 </style>
 </head>
 <body>
@@ -972,11 +1022,11 @@ tr:hover td { background: var(--cmu-purple-bg); }
     <!-- Login Form -->
     <div id="form-login">
       <div class="form-group">
-        <label class="f-label">ชื่อผู้ใช้ (Username)</label>
+        <label class="f-label" for="inp-u">ชื่อผู้ใช้ (Username)</label>
         <input class="f-input" id="inp-u" placeholder="username" autocomplete="username"/>
       </div>
       <div class="form-group">
-        <label class="f-label">รหัสผ่าน (Password / Temporary Password)</label>
+        <label class="f-label" for="inp-p">รหัสผ่าน (Password / Temporary Password)</label>
         <input class="f-input" id="inp-p" type="password" placeholder="••••••••" autocomplete="current-password"/>
       </div>
       <a class="forgot-link" onclick="switchAuthTab('forgot')">ลืมรหัสผ่าน?</a>
@@ -990,7 +1040,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
         กรุณาระบุ Username หรือ Email ที่ลงทะเบียนไว้ ระบบจะจัดส่งรหัสผ่านชั่วคราวใหม่ไปยังอีเมลของคุณ
       </div>
       <div class="form-group">
-        <label class="f-label">Username หรือ Email</label>
+        <label class="f-label" for="forgot-identifier">Username หรือ Email</label>
         <input class="f-input" id="forgot-identifier" placeholder="username หรือ somchai@cmu.ac.th"/>
       </div>
       <div class="f-err" id="forgot-err"></div>
@@ -1004,19 +1054,19 @@ tr:hover td { background: var(--cmu-purple-bg); }
     <!-- Register Form -->
     <div id="form-register" style="display:none">
       <div class="form-group">
-        <label class="f-label">ชื่อ-นามสกุล</label>
+        <label class="f-label" for="reg-fullname">ชื่อ-นามสกุล</label>
         <input class="f-input" id="reg-fullname" placeholder="สมชาย ใจดี"/>
       </div>
       <div class="form-group">
-        <label class="f-label">ชื่อผู้ใช้ที่ต้องการ (Username)</label>
+        <label class="f-label" for="reg-u">ชื่อผู้ใช้ที่ต้องการ (Username)</label>
         <input class="f-input" id="reg-u" placeholder="somchai_j"/>
       </div>
       <div class="form-group">
-        <label class="f-label">อีเมลสำหรับรับรหัสผ่านชั่วคราว (Email)</label>
+        <label class="f-label" for="reg-email">อีเมลสำหรับรับรหัสผ่านชั่วคราว (Email)</label>
         <input class="f-input" id="reg-email" type="email" placeholder="somchai@cmu.ac.th"/>
       </div>
       <div class="form-group">
-        <label class="f-label">แผนก / สังกัด</label>
+        <label class="f-label" for="reg-dept">แผนก / สังกัด</label>
         <input class="f-input" id="reg-dept" placeholder="เช่น ฝ่ายบริหารงานทั่วไป"/>
       </div>
       
@@ -1039,7 +1089,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
     <div class="modal-sub">คุณกำลังเข้าสู่ระบบด้วย <strong>รหัสผ่านชั่วคราว</strong> กรุณาตั้งรหัสผ่านใหม่เพื่อความปลอดภัยในการใช้งาน</div>
     
     <div class="form-group">
-      <label class="f-label">รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)</label>
+      <label class="f-label" for="new-p">รหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)</label>
       <input class="f-input" id="new-p" type="password" placeholder="••••••••" oninput="checkNistPasswordStrength(this.value)"/>
       <div class="pass-meter-wrap">
         <div class="pass-meter-bar"><div class="pass-meter-fill" id="pass-meter-fill"></div></div>
@@ -1047,7 +1097,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
       </div>
     </div>
     <div class="form-group">
-      <label class="f-label">ยืนยันรหัสผ่านใหม่</label>
+      <label class="f-label" for="confirm-new-p">ยืนยันรหัสผ่านใหม่</label>
       <input class="f-input" id="confirm-new-p" type="password" placeholder="••••••••"/>
     </div>
     
@@ -1105,6 +1155,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 <div id="app">
   <div class="topbar">
     <div class="t-logo">SmartCAD-Messenger <em id="role-lbl">CMU</em></div>
+    <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="เปิดเมนู">☰</button>
     <div class="t-spacer"></div>
     
     <!-- Theme Selector -->
@@ -1117,6 +1168,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
       </select>
     </div>
 
+    <div id="session-timer" style="display:none"></div>
     <div class="t-user">
       <div class="avatar" id="av">?</div>
       <div class="uname" id="uname-lbl">-</div>
@@ -1157,6 +1209,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
         </div>
       </div>
     </div>
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
 
     <!-- Main Content Area -->
     <div class="content">
@@ -1433,10 +1486,11 @@ tr:hover td { background: var(--cmu-purple-bg); }
 <div id="toast"></div>
 
 <script>
+(function(window) {
 // ══════════════════════════════════════════════
 //  CONFIG & GLOBAL STATE
 // ══════════════════════════════════════════════
-var API = "https://script.google.com/macros/s/AKfycbwM2r8nfcMiCt11E5W0B47nJUO15dNtBRsnzP3N2OS0FospurR7haQJYHewQH0Gcf7cEw/exec";
+var API = "https://script.google.com/macros/s/AKfycbxmXVM6BFfw-foNL1EhVMj02uhbWj81aCsIIc8B3WLHXPsTw2-ABdWR95RSIkR3OMNL3A/exec";
 
 var ME = null;          
 var tempUserPassHash = ""; 
@@ -1571,7 +1625,7 @@ function checkNistPasswordStrength(pass) {
 
   var score = 0;
   if(pass.length >= 8) score += 25;
-  if(pass.length >= 10) score += 25;
+  if(pass.length >= 12) score += 25;
   if(/[A-Z]/.test(pass) && /[a-z]/.test(pass)) score += 25;
   if(/[0-9]/.test(pass) && /[^A-Za-z0-9]/.test(pass)) score += 25;
 
@@ -1743,9 +1797,12 @@ async function doLogin() {
 
   try {
     var passHash = await hashPassword(p);
-    var res = await apiFetch({action: "login", username: u, passwordHash: passHash, password: p});
+    var res = await apiFetch({action: "login", username: u, passwordHash: passHash});
     if(res.status === "ok"){
       ME = res; 
+      if (res.sessionToken) {
+        sessionStorage.setItem('cmu_session_token', res.sessionToken);
+      }
       tempUserPassHash = passHash;
 
       if (res.forceChangePass) {
@@ -1850,8 +1907,8 @@ async function doChangePassword() {
   var btn = document.getElementById("change-pass-btn");
 
   err.style.display = "none";
-  if(!newP || newP.length < 6){
-    err.textContent = "รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 6 ตัวอักษร";
+  if(!newP || newP.length < 8){
+    err.textContent = "รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 8 ตัวอักษร";
     err.style.display = "block"; return;
   }
   if(newP !== confirmP){
@@ -1920,9 +1977,12 @@ function startApp() {
   initDynamicSelects();
   loadOverview();
   checkRowsStatus();
+  startSessionTimer();
 }
 
 function doLogout() {
+  stopSessionTimer();
+  sessionStorage.removeItem('cmu_session_token');
   ME = null; recData = []; usersData = []; tempUserPassHash = "";
   Object.keys(charts).forEach(function(k){ if(charts[k]){ charts[k].destroy(); delete charts[k]; } });
   
@@ -1937,6 +1997,74 @@ function doLogout() {
   document.querySelectorAll(".page").forEach(function(p){ p.classList.remove("active"); });
   document.getElementById("page-overview").classList.add("active");
   document.querySelector(".nav-item[data-page='overview']").classList.add("active");
+}
+
+// ══════════════════════════════════════════════
+//  SESSION TIMEOUT (NIST 800-63B §4.3.3)
+// ══════════════════════════════════════════════
+var SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes
+var SESSION_WARN_MS = 25 * 60 * 1000; // warn at 25 min
+var sessionTimer = null;
+var sessionStart = null;
+
+function startSessionTimer() {
+  sessionStart = Date.now();
+  clearInterval(sessionTimer);
+  var timerEl = document.getElementById('session-timer');
+  if (timerEl) timerEl.style.display = 'inline-block';
+  
+  sessionTimer = setInterval(function() {
+    var elapsed = Date.now() - sessionStart;
+    var remaining = SESSION_TIMEOUT_MS - elapsed;
+    
+    if (remaining <= 0) {
+      clearInterval(sessionTimer);
+      sessionStorage.removeItem('cmu_session_token');
+      toast('Session หมดอายุ กรุณาเข้าสู่ระบบใหม่', 'err');
+      doLogout();
+      return;
+    }
+    
+    var mins = Math.floor(remaining / 60000);
+    var secs = Math.floor((remaining % 60000) / 1000);
+    var timerEl = document.getElementById('session-timer');
+    if (timerEl) {
+      timerEl.textContent = '⏱ ' + mins + ':' + (secs < 10 ? '0' : '') + secs;
+      timerEl.classList.toggle('warn', remaining < (SESSION_TIMEOUT_MS - SESSION_WARN_MS));
+    }
+  }, 1000);
+  
+  // Reset timer on user activity
+  ['mousemove','keydown','click','scroll','touchstart'].forEach(function(evt) {
+    document.addEventListener(evt, resetSessionTimer, { passive: true });
+  });
+}
+
+function resetSessionTimer() {
+  sessionStart = Date.now();
+}
+
+function stopSessionTimer() {
+  clearInterval(sessionTimer);
+  var timerEl = document.getElementById('session-timer');
+  if (timerEl) timerEl.style.display = 'none';
+  ['mousemove','keydown','click','scroll','touchstart'].forEach(function(evt) {
+    document.removeEventListener(evt, resetSessionTimer);
+  });
+}
+
+// ══════════════════════════════════════════════
+//  MOBILE SIDEBAR
+// ══════════════════════════════════════════════
+function toggleMobileSidebar() {
+  var sidebar = document.querySelector('.sidebar');
+  var overlay = document.getElementById('sidebar-overlay');
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('show', sidebar.classList.contains('open'));
+}
+function closeMobileSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
 }
 
 // ══════════════════════════════════════════════
@@ -1981,6 +2109,8 @@ function nav(el) {
   if(pid === "records") loadRecords();
   if(pid === "users")   loadUsers();
   if(pid === "archive") checkRowsStatus();
+  
+  closeMobileSidebar();
 }
 
 function setRecMode(m) {
@@ -2446,97 +2576,125 @@ function doArchive() {
 //  CHART HELPER FUNCTIONS
 // ══════════════════════════════════════════════
 function renderChart(id, type, labels, vals, label, color) {
-  if(charts[id]) {
-    charts[id].destroy();
-    delete charts[id];
-  }
-  var el = document.getElementById(id); 
-  if(!el) return;
+  try {
+    if(charts[id]) {
+      charts[id].destroy();
+      delete charts[id];
+    }
+    var el = document.getElementById(id); 
+    if(!el) return;
 
-  var isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  var gridColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)";
-  var textColor = isDark ? "#f3eefa" : "#2d2930";
+    var isDark = document.documentElement.getAttribute("data-theme") === "dark";
+    var gridColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)";
+    var textColor = isDark ? "#f3eefa" : "#2d2930";
 
-  charts[id] = new Chart(el, {
-    type: type,
-    data: {
-      labels: labels,
-      datasets: [{
-        label: label,
-        data: vals,
-        backgroundColor: Array.isArray(color) ? color : (type === "line" ? "rgba(157, 78, 221, 0.18)" : color),
-        borderColor: Array.isArray(color) ? undefined : "#9d4edd",
-        fill: type === "line",
-        tension: 0.35,
-        borderRadius: type === "bar" ? 6 : 0,
-        pointRadius: type === "line" ? 4 : 0,
-        pointBackgroundColor: "#f5b027"
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { 
-          beginAtZero: true, 
-          ticks: { stepSize: 1, color: textColor },
-          grid: { color: gridColor }
-        },
-        x: {
-          ticks: { color: textColor },
-          grid: { display: false }
+    charts[id] = new Chart(el, {
+      type: type,
+      data: {
+        labels: labels,
+        datasets: [{
+          label: label,
+          data: vals,
+          backgroundColor: Array.isArray(color) ? color : (type === "line" ? "rgba(157, 78, 221, 0.18)" : color),
+          borderColor: Array.isArray(color) ? undefined : "#9d4edd",
+          fill: type === "line",
+          tension: 0.35,
+          borderRadius: type === "bar" ? 6 : 0,
+          pointRadius: type === "line" ? 4 : 0,
+          pointBackgroundColor: "#f5b027"
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { 
+            beginAtZero: true, 
+            ticks: { stepSize: 1, color: textColor },
+            grid: { color: gridColor }
+          },
+          x: {
+            ticks: { color: textColor },
+            grid: { display: false }
+          }
         }
       }
-    }
-  });
+    });
+  } catch(e) {
+    console.warn('Chart render error:', id, e);
+  }
 }
 
 function renderDoughnut(id, labels, vals) {
-  if(charts[id]) {
-    charts[id].destroy();
-    delete charts[id];
-  }
-  var el = document.getElementById(id); 
-  if(!el) return;
+  try {
+    if(charts[id]) {
+      charts[id].destroy();
+      delete charts[id];
+    }
+    var el = document.getElementById(id); 
+    if(!el) return;
 
-  var isDark = document.documentElement.getAttribute("data-theme") === "dark";
-  var textColor = isDark ? "#f3eefa" : "#2d2930";
+    var isDark = document.documentElement.getAttribute("data-theme") === "dark";
+    var textColor = isDark ? "#f3eefa" : "#2d2930";
 
-  charts[id] = new Chart(el, {
-    type: "doughnut",
-    data: {
-      labels: labels,
-      datasets: [{
-        data: vals,
-        backgroundColor: COLORS.slice(0, Math.max(labels.length, 1))
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: "right",
-          labels: { font: { size: 11, family: 'Sarabun' }, boxWidth: 12, color: textColor }
+    charts[id] = new Chart(el, {
+      type: "doughnut",
+      data: {
+        labels: labels,
+        datasets: [{
+          data: vals,
+          backgroundColor: COLORS.slice(0, Math.max(labels.length, 1))
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: "right",
+            labels: { font: { size: 11, family: 'Sarabun' }, boxWidth: 12, color: textColor }
+          }
         }
       }
-    }
-  });
+    });
+  } catch(e) {
+    console.warn('Chart render error:', id, e);
+  }
 }
 
 // ══════════════════════════════════════════════
 //  UTILITY FUNCTIONS
 // ══════════════════════════════════════════════
+var WRITE_ACTIONS = ['login','register','forgotPassword','changePassword','updateUserStatus','updateUserRole','updateUserInfo','archive'];
+
 function apiFetch(params) {
-  var qs = Object.entries(params).map(function(kv){ 
-    return encodeURIComponent(kv[0]) + "=" + encodeURIComponent(kv[1] !== undefined && kv[1] !== null ? kv[1] : ""); 
-  }).join("&");
+  // Add session token if available
+  var token = sessionStorage.getItem('cmu_session_token');
+  if (token) params.sessionToken = token;
   
-  return fetch(API + "?" + qs).then(function(r){ return r.json(); });
+  if (WRITE_ACTIONS.indexOf(params.action) !== -1) {
+    // POST for write operations
+    return fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    }).then(function(r){ return r.json(); }).then(function(data) {
+      if (data.status === 'rate_limited') {
+        toast('⏳ ' + data.message, 'err');
+      }
+      return data;
+    });
+  } else {
+    // GET for read operations
+    var qs = Object.entries(params).map(function(kv){ 
+      return encodeURIComponent(kv[0]) + '=' + encodeURIComponent(kv[1] !== undefined && kv[1] !== null ? kv[1] : ''); 
+    }).join('&');
+    return fetch(API + '?' + qs).then(function(r){ return r.json(); });
+  }
 }
 
-function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;').replace(/`/g,'&#96;').replace(/\\/g,'&#92;'); }
 function fmtDate(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
 function pad(n){ return n<10?"0"+n:String(n); }
 function sortTop(obj,n){ return Object.entries(obj||{}).sort(function(a,b){return b[1]-a[1];}).slice(0,n); }
@@ -2547,6 +2705,30 @@ function toast(msg,type){
   t.className="show "+(type||"ok"); 
   setTimeout(function(){ t.className=""; }, 4500); 
 }
+  window.switchAuthTab = switchAuthTab;
+  window.doLogin = doLogin;
+  window.doForgotPassword = doForgotPassword;
+  window.doRegister = doRegister;
+  window.doChangePassword = doChangePassword;
+  window.checkNistPasswordStrength = checkNistPasswordStrength;
+  window.changeTheme = changeTheme;
+  window.doLogout = doLogout;
+  window.nav = nav;
+  window.loadOverview = loadOverview;
+  window.exportPDF = exportPDF;
+  window.setRecMode = setRecMode;
+  window.loadRecords = loadRecords;
+  window.setRptMode = setRptMode;
+  window.loadUsers = loadUsers;
+  window.setArcMode = setArcMode;
+  window.doArchive = doArchive;
+  window.openEditUserModal = openEditUserModal;
+  window.setUserStatus = setUserStatus;
+  window.saveUserInfo = saveUserInfo;
+  if(typeof changeUserRole !== 'undefined') window.changeUserRole = changeUserRole;
+  if(typeof toggleMobileSidebar !== 'undefined') window.toggleMobileSidebar = toggleMobileSidebar;
+  if(typeof closeMobileSidebar !== 'undefined') window.closeMobileSidebar = closeMobileSidebar;
+})(window);
 </script>
 </body>
 </html>

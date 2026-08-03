@@ -1436,7 +1436,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 // ══════════════════════════════════════════════
 //  CONFIG & GLOBAL STATE
 // ══════════════════════════════════════════════
-var API = "https://script.google.com/macros/s/AKfycbzDYJtMJEk674bu5V73yaxcRuJ-b3Tz6OzSiLDGsnVMWB_vvupNAm_YojkOmNIRhJR-DA/exec";
+var API = "https://script.google.com/macros/s/AKfycbwM2r8nfcMiCt11E5W0B47nJUO15dNtBRsnzP3N2OS0FospurR7haQJYHewQH0Gcf7cEw/exec";
 
 var ME = null;          
 var tempUserPassHash = ""; 
@@ -1743,10 +1743,14 @@ async function doLogin() {
 
   try {
     var passHash = await hashPassword(p);
-    var res = await apiFetch({action: "login", username: u, passwordHash: passHash, password: p});
+    // NIST: ส่งเพียง passwordHash ไปยังหลังบ้าน (ไม่ส่งรหัสผ่าน Plaintext)
+    var res = await apiFetch({action: "login", username: u, passwordHash: passHash});
     if(res.status === "ok"){
       ME = res; 
       tempUserPassHash = passHash;
+      
+      // เก็บรหัส Token ลงใน sessionStorage ของบราวเซอร์
+      sessionStorage.setItem("token", res.token);
 
       if (res.forceChangePass) {
         document.getElementById("modal-change-pass").classList.add("show");
@@ -1850,8 +1854,9 @@ async function doChangePassword() {
   var btn = document.getElementById("change-pass-btn");
 
   err.style.display = "none";
-  if(!newP || newP.length < 6){
-    err.textContent = "รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 6 ตัวอักษร";
+  // NIST SP 800-63B กำหนดความยาวรหัสผ่านอย่างน้อย 8 ตัวอักษร
+  if(!newP || newP.length < 8){
+    err.textContent = "รหัสผ่านใหม่ต้องมีความยาวอย่างน้อย 8 ตัวอักษร";
     err.style.display = "block"; return;
   }
   if(newP !== confirmP){
@@ -1866,14 +1871,16 @@ async function doChangePassword() {
     var newHash = await hashPassword(newP);
     var res = await apiFetch({
       action: "changePassword",
-      username: ME.username,
       currentPasswordHash: tempUserPassHash,
-      newPassword: newP,
       newPasswordHash: newHash
     });
 
     if(res && res.status === "ok"){
       success = true;
+      // อัปเดต Token ชุดใหม่
+      if (res.token) {
+        sessionStorage.setItem("token", res.token);
+      }
     } else {
       err.textContent = (res && res.message) ? res.message : "เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน";
       err.style.display = "block";
@@ -1924,6 +1931,7 @@ function startApp() {
 
 function doLogout() {
   ME = null; recData = []; usersData = []; tempUserPassHash = "";
+  sessionStorage.removeItem("token"); // ลบ Token ออกจากเซสชันเมื่อล็อกเอาต์
   Object.keys(charts).forEach(function(k){ if(charts[k]){ charts[k].destroy(); delete charts[k]; } });
   
   document.getElementById("app").style.display = "none";
@@ -2334,7 +2342,7 @@ function updateUserRole(targetUser, newRole) {
 //  EXPORT PDF
 // ══════════════════════════════════════════════
 function exportPDF(ctx) {
-  var params = {action:"exportPDF", role:ME.role, username:ME.username};
+  var params = {action:"exportPDF"};
   
   if(ctx === "monthly"){ params.year = document.getElementById("mo-year").value; }
   else if(ctx === "yearly"){ params.year = document.getElementById("ov-year").value; }
@@ -2349,44 +2357,48 @@ function exportPDF(ctx) {
     else { params.dateFrom = document.getElementById("rpt-from").value; params.dateTo = document.getElementById("rpt-to").value; }
   }
 
-  var win = null;
-  try {
-    win = window.open('', '_blank');
-    if(win && win.document) {
-      win.document.write('<style>body{font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#3b1359;color:#fff;text-align:center}</style><div><h2>📄 กำลังสร้างเอกสาร PDF...</h2><p>โปรดรอสักครู่ ระบบกำลังประมวลผลข้อมูล</p></div>');
-    }
-  } catch(e) {
-    console.warn("Pop-up blocker active");
-  }
-
   document.getElementById("pdf-overlay").classList.add("show");
   
   apiFetch(params).then(function(res){
     document.getElementById("pdf-overlay").classList.remove("show");
-    if(res && res.status === "ok"){
-      if(win && !win.closed) {
-        try { win.location.href = res.url; } catch(errLoc) {}
+    
+    if(res && res.status === "ok" && res.fileData){
+      // แปลง Base64 กลับเป็น Binary PDF Blob
+      var byteCharacters = atob(res.fileData);
+      var byteNumbers = new Array(byteCharacters.length);
+      for (var i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
+      var byteArray = new Uint8Array(byteNumbers);
+      var blob = new Blob([byteArray], {type: "application/pdf"});
+      var blobUrl = window.URL.createObjectURL(blob);
       
-      document.getElementById("pdf-modal-name").textContent = res.name || "รายงาน.pdf";
+      document.getElementById("pdf-modal-name").textContent = res.fileName || "รายงาน.pdf";
       document.getElementById("pdf-modal-count").textContent = res.count || 0;
       var linkBtn = document.getElementById("pdf-modal-btn");
-      linkBtn.href = res.url;
+      linkBtn.href = blobUrl;
+      linkBtn.download = res.fileName || "รายงาน.pdf";
       document.getElementById("modal-pdf-success").classList.add("show");
 
-      toast("สร้างเอกสาร PDF สำเร็จ (" + res.count + " รายการ)", "ok");
+      // ดาวน์โหลดแบบปลอดภัยทันทีบน Client
+      var link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = res.fileName || "รายงาน.pdf";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast("ดาวน์โหลดรายงาน PDF สำเร็จ (" + res.count + " รายการ)", "ok");
 
       if(ctx === "report"){
         var el = document.getElementById("rpt-result");
-        el.innerHTML = '<a href="' + res.url + '" target="_blank" style="color:var(--cmu-purple);font-weight:700;text-decoration:none">📄 ดาวน์โหลดรายงาน PDF: ' + esc(res.name||'Report') + '</a>';
+        el.innerHTML = '<a href="' + blobUrl + '" download="' + esc(res.fileName) + '" style="color:var(--cmu-purple);font-weight:700;text-decoration:none">📄 ดาวน์โหลดรายงาน PDF: ' + esc(res.fileName||'Report') + '</a>';
         el.style.display = "block";
       }
     } else { 
-      if(win && !win.closed) win.close();
       toast("เกิดข้อผิดพลาด: " + (res ? res.message : "ไม่สามารถประมวลผลได้"), "err"); 
     }
   }).catch(function(err){ 
-    if(win && !win.closed) win.close();
     document.getElementById("pdf-overlay").classList.remove("show"); 
     toast("ไม่สามารถสร้าง PDF ได้เนื่องจากเกิดปัญหาการเชื่อมต่อ", "err"); 
   });
@@ -2529,11 +2541,22 @@ function renderDoughnut(id, labels, vals) {
 //  UTILITY FUNCTIONS
 // ══════════════════════════════════════════════
 function apiFetch(params) {
-  var qs = Object.entries(params).map(function(kv){ 
-    return encodeURIComponent(kv[0]) + "=" + encodeURIComponent(kv[1] !== undefined && kv[1] !== null ? kv[1] : ""); 
-  }).join("&");
+  // ดึง Token ที่จัดเก็บไว้มาแนบใน Request อัตโนมัติ (ป้องกัน Auth Bypass)
+  var token = sessionStorage.getItem("token");
+  if (token && !params.token) {
+    params.token = token;
+  }
   
-  return fetch(API + "?" + qs).then(function(r){ return r.json(); });
+  // ใช้ POST เสมอ และส่ง parameters ใน HTTP Request Body เพื่อไม่ให้บันทึกใน Logs หรือ History
+  return fetch(API, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain" // ใช้ text/plain เพื่อป้องกันปัญหา CORS Preflight OPTIONS Request บน Apps Script
+    },
+    body: JSON.stringify(params)
+  }).then(function(r){ 
+    return r.json(); 
+  });
 }
 
 function esc(s){ return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }

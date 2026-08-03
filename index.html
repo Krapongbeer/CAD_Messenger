@@ -2556,6 +2556,13 @@ function apiFetch(params) {
     body: JSON.stringify(params)
   }).then(function(r){ 
     return r.json(); 
+  }).then(function(res) {
+    if (res && res.status === "error" && res.message && (res.message.indexOf("เซสชันหมดอายุ") !== -1 || res.message.indexOf("ไม่มีสิทธิ์ใช้งาน") !== -1)) {
+      toast(res.message, "err");
+      setTimeout(doLogout, 1500);
+      throw new Error(res.message);
+    }
+    return res;
   });
 }
 

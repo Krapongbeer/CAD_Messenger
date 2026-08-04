@@ -2348,8 +2348,70 @@ function refreshChartTheme() {
   });
 }
 
+async function checkSession() {
+  try {
+    const { data: { session }, error: sessionErr } = await sbClient.auth.getSession();
+    if (sessionErr || !session) return;
+
+    const user = session.user;
+    
+    const { data: profile, error: pErr } = await sbClient
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (pErr || !profile) return;
+
+    if (profile.status !== "active") {
+      await sbClient.auth.signOut();
+      return;
+    }
+
+    ME = {
+      id: user.id,
+      email: user.email,
+      username: profile.username,
+      fullname: profile.fullname,
+      role: profile.role,
+      department: profile.department
+    };
+
+    const isRecovery = window.location.hash.indexOf("type=recovery") !== -1 || profile.force_change_password;
+
+    if (isRecovery) {
+      window.history.replaceState(null, null, window.location.pathname);
+      document.getElementById("auth-page").style.display = "none";
+      document.getElementById("app").style.display = "flex";
+      
+      const roleMap = { admin: "ผู้ดูแลระบบ", exec: "ผู้บริหาร", staff: "พนักงาน" };
+      const pillMap = { admin: "rpill-admin", exec: "rpill-exec", staff: "rpill-staff" };
+      
+      document.getElementById("av").textContent = (ME.fullname || "U").charAt(0).toUpperCase();
+      document.getElementById("uname-lbl").textContent = ME.fullname;
+      document.getElementById("rpill").textContent = roleMap[ME.role] || ME.role;
+      document.getElementById("rpill").className = "rpill " + (pillMap[ME.role] || "");
+      document.getElementById("role-lbl").textContent = ME.role.toUpperCase();
+      
+      if (ME.role === "admin") {
+        document.getElementById("nav-admin").style.display = "block";
+      } else {
+        document.getElementById("nav-admin").style.display = "none";
+      }
+      
+      initDynamicSelects();
+      document.getElementById("modal-change-pass").classList.add("show");
+    } else {
+      startApp();
+    }
+  } catch (e) {
+    console.error("checkSession error:", e);
+  }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   initTheme();
+  checkSession();
   
   document.addEventListener("keydown", e => {
     const authPage = document.getElementById("auth-page");

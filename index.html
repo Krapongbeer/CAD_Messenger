@@ -2150,7 +2150,16 @@ async function triggerUserWebhook(userId, fullname, email, action) {
       }
     }
 
-    // 2. ส่ง Webhook แจ้งอีเมลในหลังบ้าน (ถ้าใช้งานได้)
+    // 2. ส่งอีเมลรีเซ็ตรหัสผ่านผ่าน Supabase Auth ตรงไปยังอีเมลผู้รับทันที 100%
+    if (email && email.indexOf("@") !== -1) {
+      try {
+        await sbClient.auth.resetPasswordForEmail(email, {
+          redirectTo: "https://krapongbeer.github.io/CAD_Messenger/"
+        });
+      } catch (e) {}
+    }
+
+    // 3. ส่งสัญญาณ Webhook ไปหลังบ้าน Apps Script (สำรอง)
     try {
       const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
       fetch(gasUrl, {

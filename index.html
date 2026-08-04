@@ -1334,7 +1334,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 const SUPABASE_URL = "https://chtxxyrupftpoiooggvh.supabase.co"; 
 const SUPABASE_ANON_KEY = "sb_publishable_KI23ZdXEfUqImxTslnAJ3w_RrMwHDWM";
 
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ลิงก์ Web App Google Apps Script ที่สร้างจากไฟล์ appsscript_sync.js (ใช้สำหรับส่งเมล/รีเซ็ตรหัสผ่านแบบหลังบ้าน)
 const GAS_WEBHOOK_URL = "https://script.google.com/macros/s/your-gas-web-app-url/exec";
@@ -1397,7 +1397,7 @@ async function doLogin() {
     }
 
     // ทำการ Login
-    const { data: authData, error: authErr } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: authErr } = await sbClient.auth.signInWithPassword({
       email: u.indexOf("@") === -1 ? `${u}@cmu.local` : u, // fallback to local mock email if only username given
       password: p
     });
@@ -1418,7 +1418,7 @@ async function doLogin() {
 
     if (!profile || profile.status === "disabled") {
       showLoginErr("บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
-      await supabase.auth.signOut();
+      await sbClient.auth.signOut();
       btn.textContent = "เข้าสู่ระบบ";
       btn.disabled = false;
       return;
@@ -1426,7 +1426,7 @@ async function doLogin() {
 
     if (profile.status === "pending") {
       showLoginErr("บัญชีของท่านอยู่ระหว่างรอการอนุมัติสิทธิ์การใช้งานจากผู้ดูแลระบบ");
-      await supabase.auth.signOut();
+      await sbClient.auth.signOut();
       btn.textContent = "เข้าสู่ระบบ";
       btn.disabled = false;
       return;
@@ -1475,7 +1475,7 @@ async function doRegister() {
   try {
     // สมัครสมาชิกผ่าน Supabase Auth ด้วยรหัสผ่านชั่วคราวแรกเริ่ม
     // จากนั้นข้อมูลจะเด้งเข้า profiles เป็น pending รอ Admin กดอนุมัติ
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await sbClient.auth.signUp({
       email: email,
       password: "TempPassInitial@123!", // รหัสผ่านชั่วคราวระบบตั้งให้ก่อน
       options: {
@@ -1527,7 +1527,7 @@ async function doForgotPassword() {
 
   try {
     // ดึงโปรไฟล์เพื่อหาอีเมลและ User ID
-    let query = supabase.from("profiles").select("id, email, fullname");
+    let query = sbClient.from("profiles").select("id, email, fullname");
     if (identifier.indexOf("@") !== -1) {
       query = query.eq("email", identifier);
     } else {
@@ -1596,7 +1596,7 @@ async function doChangePassword() {
 
   try {
     // 1. อัปเดตรหัสผ่านในระบบ Supabase Auth
-    const { error: authErr } = await supabase.auth.updateUser({ password: newP });
+    const { error: authErr } = await sbClient.auth.updateUser({ password: newP });
     if (authErr) {
       err.textContent = "เปลี่ยนรหัสไม่สำเร็จ: " + authErr.message;
       err.style.display = "block";
@@ -1678,7 +1678,7 @@ function startApp() {
 }
 
 async function doLogout() {
-  await supabase.auth.signOut();
+  await sbClient.auth.signOut();
   ME = null; recData = []; usersData = [];
   Object.keys(charts).forEach(k => { if(charts[k]){ charts[k].destroy(); delete charts[k]; } });
   
@@ -1733,7 +1733,7 @@ async function loadOverview() {
   
   try {
     // ดึงสถิติรวมจากตาราง records
-    let query = supabase.from("records").select("*");
+    let query = sbClient.from("records").select("*");
     
     // กรองระดับแถวข้อมูล RLS จะทำโดยอัตโนมัติที่ฐานข้อมูล แต่ที่นี่เราเขียน Logic กรองในแดชบอร์ดด้วย
     if (ME.role === "staff") {
@@ -1854,7 +1854,7 @@ function renderRowHtml(r) {
 async function loadMonthly() {
   const year = document.getElementById("mo-year").value;
   try {
-    let query = supabase.from("records").select("timestamp");
+    let query = sbClient.from("records").select("timestamp");
     if (ME.role === "staff") query = query.eq("record_by_email", ME.email);
     
     const { data: records } = await query;
@@ -1886,7 +1886,7 @@ async function loadMonthly() {
 
 async function loadYearly() {
   try {
-    let query = supabase.from("records").select("timestamp");
+    let query = sbClient.from("records").select("timestamp");
     if (ME.role === "staff") query = query.eq("record_by_email", ME.email);
     
     const { data: records } = await query;
@@ -1917,7 +1917,7 @@ async function loadYearly() {
 
 async function loadRecords() {
   try {
-    let query = supabase.from("records").select("*");
+    let query = sbClient.from("records").select("*");
     if (ME.role === "staff") query = query.eq("record_by_email", ME.email);
     
     if (recMode === "ym") {

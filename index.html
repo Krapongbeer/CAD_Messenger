@@ -1377,44 +1377,46 @@ async function doLogin() {
     
     // ถ้าผู้ใช้กรอกเป็น username (ไม่มี @) ให้ไปค้นหา email ที่ผูกไว้จากตาราง profiles ก่อน
     if (u.indexOf("@") === -1) {
-      const { data: profile, error: pErr } = await supabase
+      const { data: profileRow, error: pErr } = await sbClient
         .from("profiles")
-        .select("id")
+        .select("id, username")
         .eq("username", u)
         .maybeSingle();
         
-      if (profile) {
-        // หา Email ใน Supabase Auth
-        // เนื่องจาก client-side ดึง auth.users ตรงๆ ไม่ได้เพื่อความปลอดภัย 
-        // เราจึงตั้งค่าลงทะเบียนแบบ Email = username + "@cmu-messenger.local" (หรือใช้อีเมลจริงของผู้ใช้)
-        // เพื่อความชัวร์และใช้งานได้จริง แนะนำให้ผู้ใช้ล็อกอินด้วย Email เสมอ
+      if (!profileRow) {
+        showLoginErr("ไม่พบบัญชีผู้ใช้ชื่อนี้ในระบบ กรุณาตรวจสอบ Username หรือใช้ Email แทนครับ");
+        btn.textContent = "เข้าสู่ระบบ";
+        btn.disabled = false;
+        return;
       }
-      
-      // เพื่อให้ใช้งานง่ายกับทั้ง Username และ Email ระบบจะบังคับใช้ email จริงเป็น username ไปในตัว 
-      // หรือค้นหาจากฐานข้อมูล:
-      const { data: userProfile } = await supabase
-        .rpc("get_email_by_username", { input_username: u }); // custom rpc (optional)
+      // ใช้ email format จาก username (ที่สมัครด้วย email จริงเสมอ)
+      // แจ้งผู้ใช้ให้ Login ด้วย Email ที่ลงทะเบียนไว้
+      showLoginErr("กรุณาใช้ Email จริงที่ลงทะเบียนไว้ในการเข้าสู่ระบบ (ไม่ใช่ Username)");
+      btn.textContent = "เข้าสู่ระบบ";
+      btn.disabled = false;
+      return;
     }
 
-    // ทำการ Login
+    // ทำการ Login ด้วย Email จริง
     const { data: authData, error: authErr } = await sbClient.auth.signInWithPassword({
-      email: u.indexOf("@") === -1 ? `${u}@cmu.local` : u, // fallback to local mock email if only username given
+      email: email,
       password: p
     });
 
     if (authErr) {
-      showLoginErr("อีเมล/Username หรือรหัสผ่านไม่ถูกต้อง หรือบัญชีของท่านยังไม่เปิดใช้งาน");
+      showLoginErr("อีเมลหรือรหัสผ่านไม่ถูกต้อง หรือบัญชียังไม่ได้รับการอนุมัติ");
       btn.textContent = "เข้าสู่ระบบ";
       btn.disabled = false;
       return;
     }
 
     // ดึงโปรไฟล์และเช็กสถานะการอนุมัติ
-    const { data: profile, error: profileErr } = await supabase
+    const { data: profile, error: profileErr } = await sbClient
       .from("profiles")
       .select("*")
       .eq("id", authData.user.id)
       .single();
+
 
     if (!profile || profile.status === "disabled") {
       showLoginErr("บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
@@ -1604,7 +1606,7 @@ async function doChangePassword() {
     }
 
     // 2. ปลดสถานะบังคับเปลี่ยนรหัสผ่านใน profiles
-    const { error: dbErr } = await supabase
+    const { error: dbErr } = await sbClient
       .from("profiles")
       .update({ force_change_password: false })
       .eq("id", ME.id);
@@ -1998,7 +2000,7 @@ function generateReportPDF() {
 async function loadUsers() {
   if (ME.role !== "admin") return;
   try {
-    const { data: profiles, error } = await supabase
+    const { data: profiles, error } = await sbClient
       .from("profiles")
       .select("*")
       .order("created_at", { ascending: false });
@@ -2099,7 +2101,7 @@ async function triggerUserWebhook(userId, fullname, email, action) {
     if (res.status === "ok") {
       // 2. ปรับสถานะเป็น Active ใน Supabase profiles
       if (action === "approve") {
-        await supabase
+        await sbClient
           .from("profiles")
           .update({ status: "active" })
           .eq("id", userId);
@@ -2118,7 +2120,7 @@ async function triggerUserWebhook(userId, fullname, email, action) {
 async function setUserStatus(userId, status) {
   if (!confirm(`ยืนยันการปรับสถานะผู้ใช้งานสิทธิ์นี้หรือไม่?`)) return;
   try {
-    const { error } = await supabase
+    const { error } = await sbClient
       .from("profiles")
       .update({ status: status })
       .eq("id", userId);
@@ -2133,7 +2135,7 @@ async function setUserStatus(userId, status) {
 
 async function updateUserRole(userId, newRole) {
   try {
-    const { error } = await supabase
+    const { error } = await sbClient
       .from("profiles")
       .update({ role: newRole })
       .eq("id", userId);
@@ -2172,7 +2174,7 @@ async function saveUserInfo() {
   }
   
   try {
-    const { error } = await supabase
+    const { error } = await sbClient
       .from("profiles")
       .update({ fullname: name, department: dept })
       .eq("id", id);

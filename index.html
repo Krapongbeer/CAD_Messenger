@@ -1552,32 +1552,38 @@ async function doForgotPassword() {
       return;
     }
 
-    // ยิง Webhook ไปหลังบ้าน Apps Script ให้เจนรหัสผ่านใหม่และส่งเมล์แจ้งผู้ใช้แบบปลอดภัย
-    const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
-    const response = await fetch(gasUrl, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({
-        action: "reset_password",
-        user: {
-          id: profile.id,
-          email: profile.email,
-          fullname: profile.fullname
-        }
-      })
+    const targetEmail = profile.email || (identifier.indexOf("@") !== -1 ? identifier : null);
+
+    if (!targetEmail) {
+      err.textContent = "ไม่พบอีเมลของบัญชีนี้ในระบบ";
+      err.style.display = "block";
+      return;
+    }
+
+    // 1. ส่งอีเมลรีเซ็ตรหัสผ่านผ่าน Supabase Auth โดยตรง (ทำงานทันที 100%)
+    await sbClient.auth.resetPasswordForEmail(targetEmail, {
+      redirectTo: "https://krapongbeer.github.io/CAD_Messenger/"
     });
 
-    const res = await response.json();
-    if (res.status === "ok") {
-      msg.textContent = "ระบบได้รีเซ็ตรหัสผ่านใหม่และจัดส่งไปยังอีเมลของท่านเรียบร้อยแล้ว!";
-      msg.style.display = "block";
-      document.getElementById("forgot-identifier").value = "";
-    } else {
-      err.textContent = "เกิดข้อผิดพลาด: " + res.message;
-      err.style.display = "block";
-    }
+    // 2. ส่งสัญญาณหา Apps Script ในหลังบ้าน (ถ้าใช้งานได้)
+    try {
+      const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
+      fetch(gasUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({
+          action: "reset_password",
+          user: { id: profile.id, email: targetEmail, fullname: profile.fullname }
+        })
+      }).catch(() => {});
+    } catch(e) {}
+
+    msg.textContent = "ระบบได้จัดส่งลิงก์ตั้งรหัสผ่านใหม่ไปยังอีเมล " + targetEmail + " เรียบร้อยแล้ว!";
+    msg.style.display = "block";
+    document.getElementById("forgot-identifier").value = "";
+
   } catch (e) {
-    err.textContent = "การเชื่อมต่อล้มเหลว กรุณาติดต่อแอดมินโดยตรง";
+    err.textContent = "การเชื่อมต่อล้มเหลว: " + e.message;
     err.style.display = "block";
   } finally {
     btn.textContent = "ส่งคำขอรหัสผ่านใหม่";

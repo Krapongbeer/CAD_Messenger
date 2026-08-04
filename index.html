@@ -1820,7 +1820,7 @@ function renderOverview(records, year, month) {
   
   // คำนวณสถานะพัสดุ
   // สมมติว่ามีฟิลด์ signature เพื่อบอกว่ามีลายเซ็นผู้รับหรือยัง (หรือใช้ฟิลด์ status === 'Delivered')
-  const completedCount = filtered.filter(r => r.signature || r.status === "Delivered").length;
+  const completedCount = filtered.filter(r => r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว").length;
   const pendingCount = filtered.length - completedCount;
   
   // นับสถิติตามผู้ส่ง
@@ -1894,7 +1894,7 @@ function renderOverview(records, year, month) {
 }
 
 function renderRowHtml(r) {
-  const isDelivered = r.signature || r.status === "Delivered";
+  const isDelivered = r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว";
   const badgeClass = isDelivered ? "tag-delivered" : "tag-transit";
   const badgeText = isDelivered ? "ส่งมอบแล้ว" : "รอดำเนินการ";
   
@@ -2027,7 +2027,7 @@ function filterRec() {
   
   document.getElementById("rec-count").textContent = filtered.length + " รายการ";
   document.getElementById("rec-tb").innerHTML = filtered.map(r => {
-    const isDelivered = r.signature || r.status === "Delivered";
+    const isDelivered = r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว";
     const badgeClass = isDelivered ? "tag-delivered" : "tag-transit";
     const badgeText = isDelivered ? "ส่งมอบแล้ว" : "รอดำเนินการ";
     

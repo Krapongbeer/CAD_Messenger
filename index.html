@@ -1686,6 +1686,23 @@ function startApp() {
   
   initDynamicSelects();
   loadOverview();
+
+  // Supabase Realtime Subscription: ดึงและอัปเดตหน้าเว็บแบบเรียลไทม์เมื่อข้อมูลใน Supabase มีการเปลี่ยนแปลง
+  try {
+    sbClient
+      .channel('realtime-records-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'records' },
+        (payload) => {
+          toast("⚡ มีการอัปเดตข้อมูลพัสดุแบบเรียลไทม์!", "ok");
+          loadOverview();
+        }
+      )
+      .subscribe();
+  } catch (e) {
+    console.log("Realtime subscription error:", e);
+  }
 }
 
 async function doLogout() {

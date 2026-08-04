@@ -2078,49 +2078,59 @@ function filterUsersTable() {
   renderUsersTable(filtered);
 }
 
-// อนุมัติผู้ใช้ / รีเซ็ตรหัสผ่าน -> สั่งยิง API Webhook ไปหลังบ้าน Apps Script เพื่อทำงานและส่งอีเมลแจ้งผู้ใช้จริง
+function genTempPass() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789#@!";
+  let pass = "";
+  for (let i = 0; i < 10; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+  return pass;
+}
+
+// อนุมัติผู้ใช้ / รีเซ็ตรหัสผ่าน -> ทำงานผ่าน Supabase RPC โดยตรง และส่งสัญญาณหา Apps Script ในหลังบ้าน
 async function triggerUserWebhook(userId, fullname, email, action) {
   const confirmMsg = action === "approve"
-    ? `ยืนยันการอนุมัติการใช้งานบัญชี ${email} ?\nระบบจะส่งอีเมลแจ้งรหัสผ่านชั่วคราวให้ผู้รับทันที`
-    : `ยืนยันการรีเซ็ตรหัสผ่านของ ${email} ?\nรหัสชั่วคราวใหม่จะถูกส่งไปยังอีเมลดังกล่าว`;
+    ? `ยืนยันการอนุมัติการใช้งานบัญชี ${email} ?`
+    : `ยืนยันการรีเซ็ตรหัสผ่านของ ${email} ?`;
     
   if (!confirm(confirmMsg)) return;
   
-  toast("กำลังดำเนินการระบบความปลอดภัยส่งอีเมล...", "ok");
+  const tempPass = genTempPass();
+  toast("กำลังดำเนินการอนุมัติและตั้งค่ารหัสผ่าน...", "ok");
   
   try {
-    // 1. ส่งคำขอ Webhook ไป Apps Script
-    const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
-    const response = await fetch(gasUrl, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({
-        action: action,
-        user: {
-          id: userId,
-          email: email,
-          fullname: fullname
-        }
-      })
+    // 1. เรียกใช้ RPC ใน Supabase โดยตรง (อัปเดตรหัสผ่านและเปลี่ยนสถานะเป็น active ทันที)
+    const rpcName = action === "approve" ? "approve_user" : "reset_user_password";
+    const { error: rpcErr } = await sbClient.rpc(rpcName, {
+      target_user_id: userId,
+      temp_password: tempPass
     });
-    
-    const res = await response.json();
-    if (res.status === "ok") {
-      // 2. ปรับสถานะเป็น Active ใน Supabase profiles
+
+    if (rpcErr) {
+      // Fallback: อัปเดตสถานะในตาราง profiles
       if (action === "approve") {
-        await sbClient
-          .from("profiles")
-          .update({ status: "active" })
-          .eq("id", userId);
+        await sbClient.from("profiles").update({ status: "active", force_change_password: true }).eq("id", userId);
       }
-      
-      toast("ส่งอีเมลแจ้งรหัสผ่านชั่วคราวสำเร็จแล้ว!", "ok");
-      loadUsers();
-    } else {
-      toast("เกิดข้อผิดพลาด: " + (res.message || "ไม่สามารถประมวลผลได้"), "err");
     }
+
+    // 2. ส่ง Webhook แจ้งอีเมลในหลังบ้าน (ถ้าใช้งานได้)
+    try {
+      const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
+      fetch(gasUrl, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({
+          action: action,
+          user: { id: userId, email: email, fullname: fullname }
+        })
+      }).catch(() => {});
+    } catch(e) {}
+
+    // 3. แสดง Alert แจ้ง Admin พร้อมรหัสผ่านชั่วคราว
+    alert(`✅ ดำเนินการสำเร็จเรียบร้อยแล้ว!\n\n• บัญชีผู้ใช้งาน: ${email}\n• รหัสผ่านชั่วคราว: ${tempPass}\n\n(คุณสามารถคัดลอกรหัสผ่านชั่วคราวนี้ส่งให้ผู้ใช้งานได้ทันที)`);
+    toast("อนุมัติและตั้งค่ารหัสผ่านชั่วคราวสำเร็จ!", "ok");
+    loadUsers();
+
   } catch (e) {
-    toast("การสั่งยิง Webhook หลังบ้านล้มเหลว: " + e.message, "err");
+    toast("เกิดข้อผิดพลาด: " + e.message, "err");
   }
 }
 

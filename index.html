@@ -7,7 +7,7 @@
 <!-- Chart.js and Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ── Reset & Theme Variables (CMU Purple & Gold Palette) ── */
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -85,6 +85,10 @@ body {
   transition: background 0.3s ease, color 0.3s ease;
 }
 
+h1, h2, h3, .t-logo, .auth-logo, .tbl-title, .chart-title, .nav-sec, .uname, .kpi-value, .auth-btn, .btn {
+  font-family: 'Mitr', 'Sarabun', sans-serif;
+}
+
 /* ── Status Badges & Tag Styles ── */
 .tag {
   display: inline-flex;
@@ -121,20 +125,26 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.12);
-  padding: 4px 10px;
-  border-radius: 99px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.25s ease;
+}
+.theme-switch-wrap:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 .theme-switch-select {
   background: transparent;
   color: #fff;
   border: none;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 12.5px;
+  font-weight: 500;
   outline: none;
   cursor: pointer;
   font-family: inherit;
+  padding: 0 4px;
 }
 .theme-switch-select option {
   background: var(--card-bg);

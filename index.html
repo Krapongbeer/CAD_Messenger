@@ -1553,6 +1553,7 @@ async function doForgotPassword() {
     const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
     const response = await fetch(gasUrl, {
       method: "POST",
+      headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({
         action: "reset_password",
         user: {
@@ -2092,6 +2093,7 @@ async function triggerUserWebhook(userId, fullname, email, action) {
     const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
     const response = await fetch(gasUrl, {
       method: "POST",
+      headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({
         action: action,
         user: {
@@ -2115,10 +2117,10 @@ async function triggerUserWebhook(userId, fullname, email, action) {
       toast("ส่งอีเมลแจ้งรหัสผ่านชั่วคราวสำเร็จแล้ว!", "ok");
       loadUsers();
     } else {
-      toast("เกิดข้อผิดพลาด: " + res.message, "err");
+      toast("เกิดข้อผิดพลาด: " + (res.message || "ไม่สามารถประมวลผลได้"), "err");
     }
   } catch (e) {
-    toast("การสั่งยิง Webhook หลังบ้านล้มเหลว", "err");
+    toast("การสั่งยิง Webhook หลังบ้านล้มเหลว: " + e.message, "err");
   }
 }
 

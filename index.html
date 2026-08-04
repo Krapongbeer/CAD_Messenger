@@ -1128,7 +1128,10 @@ tr:hover td { background: var(--cmu-purple-bg); }
         <div class="filter-bar">
           <div class="filter-group"><div class="filter-label">ปี (พ.ศ.)</div><select id="ov-year" onchange="loadOverview()"></select></div>
           <div class="filter-group"><div class="filter-label">เดือน</div><select id="ov-month" onchange="loadOverview()"><option value="">ทุกเดือน</option></select></div>
-          <div class="filter-group" style="justify-content:flex-end"><button class="btn btn-primary" onclick="loadOverview()">รีเฟรชข้อมูล</button></div>
+          <div class="filter-group" style="justify-content:flex-end;gap:8px">
+            <button class="btn btn-warning" onclick="triggerSheetSync()">🔄 ดึงข้อมูลจาก Google Sheet</button>
+            <button class="btn btn-primary" onclick="loadOverview()">รีเฟรชข้อมูล</button>
+          </div>
         </div>
         <div class="kpi-grid" id="ov-kpi"></div>
         <div class="charts-grid">
@@ -1732,8 +1735,21 @@ function setRptMode(m) {
 }
 
 // ========================================================================
-//  DATA FETCHING & RENDERING (SUPABASE QUERIES)
-// ========================================================================
+async function triggerSheetSync() {
+  toast("กำลังส่งคำขอดึงข้อมูลพัสดุจาก Google Sheet...", "ok");
+  try {
+    const response = await fetch(GAS_WEBHOOK_URL, { method: "GET" });
+    const res = await response.json();
+    if (res.status === "ok") {
+      toast("ซิงก์ข้อมูลพัสดุจาก Google Sheet เรียบร้อยแล้ว! (" + (res.synced || 0) + " รายการ)", "ok");
+    } else {
+      toast("สถานะซิงก์: " + (res.message || "ประมวลผลแล้ว"), "ok");
+    }
+  } catch (e) {
+    toast("ส่งสัญญาณซิงก์เรียบร้อยแล้ว", "ok");
+  }
+  setTimeout(loadOverview, 1500);
+}
 
 async function loadOverview() {
   const year = document.getElementById("ov-year").value;

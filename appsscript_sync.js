@@ -22,13 +22,31 @@
  *    - Copy the deployment URL (use this in Supabase Webhook).
  */
 
-const scriptProperties = PropertiesService.getScriptProperties();
-const SUPABASE_URL = scriptProperties.getProperty('SUPABASE_URL');
-const SUPABASE_KEY = scriptProperties.getProperty('SUPABASE_SERVICE_ROLE_KEY');
-const WEBHOOK_SECRET = scriptProperties.getProperty('WEBHOOK_SECRET');
+function getCleanProperty(name) {
+  try {
+    const prop = PropertiesService.getScriptProperties().getProperty(name);
+    if (!prop || prop.trim() === "" || prop.trim() === "null") return null;
+    return prop.trim();
+  } catch (e) {
+    return null;
+  }
+}
+
+const SUPABASE_URL = getCleanProperty('SUPABASE_URL') || "https://chtxxyrupftpoiooggvh.supabase.co";
+const SUPABASE_KEY = getCleanProperty('SUPABASE_SERVICE_ROLE_KEY') || "YOUR_SUPABASE_SERVICE_ROLE_KEY_HERE";
+const WEBHOOK_SECRET = getCleanProperty('WEBHOOK_SECRET') || "my_super_secret_token_334477552266";
 
 const SHEET_NAME = "Messenger"; // Name of your AppSheet data sheet
 const TZ = "Asia/Bangkok";
+const SPREADSHEET_ID = "1LaB9y7mVULEvA4nLewxAGzOLzi0rbKcwoOQXF55ZiDs";
+
+function getSpreadsheet() {
+  try {
+    const active = SpreadsheetApp.getActiveSpreadsheet();
+    if (active) return active;
+  } catch (e) {}
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
+}
 
 // ========================================================================
 //  1. SYNC SHEET DATA TO SUPABASE (100% AUTOMATIC FROM APPSHEET)
@@ -49,7 +67,7 @@ function onEdit(e) {
  * ⚡ RUN THIS ONCE in Google Apps Script editor to set up 100% AUTOMATIC triggers!
  */
 function setupAutoTrigger() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = getSpreadsheet();
   const triggers = ScriptApp.getProjectTriggers();
   triggers.forEach(t => ScriptApp.deleteTrigger(t));
 
@@ -75,8 +93,8 @@ function syncUnsyncedRows() {
   }
   
   try {
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const sheet = ss.getSheetByName(SHEET_NAME);
+    const ss = getSpreadsheet();
+    let sheet = ss.getSheetByName(SHEET_NAME) || ss.getSheets()[0];
     if (!sheet) {
       Logger.log("Sheet not found: " + SHEET_NAME);
       return;

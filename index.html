@@ -1813,10 +1813,9 @@ async function loadOverview() {
   const month = document.getElementById("ov-month").value;
   
   try {
-    // ดึงสถิติรวมจากตาราง records
-    let query = sbClient.from("records").select("*");
+    // ดึงสถิติรวมจากตาราง records (เรียงลำดับ ID ล่าสุดจากฐานข้อมูลโดยตรง)
+    let query = sbClient.from("records").select("*").order("id", { ascending: false });
     
-    // กรองระดับแถวข้อมูล RLS จะทำโดยอัตโนมัติที่ฐานข้อมูล แต่ที่นี่เราเขียน Logic กรองในแดชบอร์ดด้วย
     if (ME.role === "staff") {
       query = query.eq("record_by_email", ME.email);
     }
@@ -2040,7 +2039,7 @@ async function loadYearly() {
 
 async function loadRecords() {
   try {
-    let query = sbClient.from("records").select("*");
+    let query = sbClient.from("records").select("*").order("id", { ascending: false });
     if (ME.role === "staff") query = query.eq("record_by_email", ME.email);
     
     if (recMode === "ym") {

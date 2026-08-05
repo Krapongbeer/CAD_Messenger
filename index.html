@@ -1138,9 +1138,6 @@ tr:hover td { background: var(--cmu-purple-bg); }
         <div class="filter-bar">
           <div class="filter-group"><div class="filter-label">ปี (พ.ศ.)</div><select id="ov-year" onchange="loadOverview()"></select></div>
           <div class="filter-group"><div class="filter-label">เดือน</div><select id="ov-month" onchange="loadOverview()"><option value="">ทุกเดือน</option></select></div>
-          <div class="filter-group" style="justify-content:flex-end;gap:8px">
-            <button class="btn btn-primary" onclick="loadOverview()">รีเฟรชข้อมูล</button>
-          </div>
         </div>
         <div class="kpi-grid" id="ov-kpi"></div>
         <div class="charts-grid">
@@ -1362,6 +1359,7 @@ const currentYear = new Date().getFullYear();
 let recMode = "ym";
 let rptMode = "ym";
 let debounceTimer;
+let autoRefreshInterval = null;
 
 const MONTHS = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
 const COLORS = ["#5c2483", "#e09f19", "#059669", "#d93838", "#0284c7", "#7c2d12", "#4f46e5", "#db2777"];
@@ -1702,6 +1700,13 @@ function startApp() {
   initDynamicSelects();
   loadOverview();
 
+  // Clear any existing interval to prevent duplicates
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+  }
+  // Setup automatic background refresh every 10 seconds for reliable fallback
+  autoRefreshInterval = setInterval(triggerDataRefresh, 10000);
+
   // Supabase Realtime Subscription: ดึงและอัปเดตหน้าเว็บแบบเรียลไทม์เมื่อข้อมูลใน Supabase มีการเปลี่ยนแปลง
   try {
     sbClient
@@ -1711,7 +1716,7 @@ function startApp() {
         { event: '*', schema: 'public', table: 'records' },
         (payload) => {
           toast("⚡ มีการอัปเดตข้อมูลพัสดุแบบเรียลไทม์!", "ok");
-          loadOverview();
+          triggerDataRefresh();
         }
       )
       .subscribe();
@@ -1720,7 +1725,27 @@ function startApp() {
   }
 }
 
+function triggerDataRefresh() {
+  if (!ME) return;
+  const activePage = document.querySelector(".page.active");
+  if (!activePage) return;
+  
+  if (activePage.id === "page-overview") {
+    loadOverview();
+  } else if (activePage.id === "page-monthly") {
+    loadMonthly();
+  } else if (activePage.id === "page-yearly") {
+    loadYearly();
+  } else if (activePage.id === "page-records") {
+    loadRecords();
+  }
+}
+
 async function doLogout() {
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+    autoRefreshInterval = null;
+  }
   await sbClient.auth.signOut();
   ME = null; recData = []; usersData = [];
   Object.keys(charts).forEach(k => { if(charts[k]){ charts[k].destroy(); delete charts[k]; } });

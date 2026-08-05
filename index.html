@@ -1821,10 +1821,30 @@ async function loadOverview() {
       query = query.eq("record_by_email", ME.email);
     }
     
-    const { data: records, error } = await query;
+    const { data: rawRecords, error } = await query;
     if (error) throw error;
     
-    renderOverview(records || [], year, month);
+    // Automatic Deduplication by tracking_no (prioritize signed / latest rows)
+    const uniqueMap = new Map();
+    (rawRecords || []).forEach(r => {
+      const tNo = String(r.tracking_no || "").trim();
+      if (!tNo) return;
+      if (!uniqueMap.has(tNo)) {
+        uniqueMap.set(tNo, r);
+      } else {
+        const existing = uniqueMap.get(tNo);
+        const isCurrentSigned = r.signature || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว" || r.status === "Delivered";
+        const isExistingSigned = existing.signature || existing.status === "สำเร็จ" || existing.status === "ส่งมอบแล้ว" || existing.status === "Delivered";
+        if (isCurrentSigned && !isExistingSigned) {
+          uniqueMap.set(tNo, r);
+        } else if (r.id > existing.id && (isCurrentSigned === isExistingSigned)) {
+          uniqueMap.set(tNo, r);
+        }
+      }
+    });
+    const records = Array.from(uniqueMap.values());
+    
+    renderOverview(records, year, month);
   } catch (e) {
     toast("ไม่สามารถดึงข้อมูลสรุปได้", "err");
   }

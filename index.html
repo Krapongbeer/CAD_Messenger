@@ -1149,7 +1149,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
         <!-- Table 1: พัสดุของวันนี้ -->
         <div class="tbl-wrap" style="margin-bottom:20px">
           <div class="tbl-head">
-            <div class="tbl-title">รายการรับพัสดุ ประจำวันที่ <span id="today-date-text" style="color:var(--cmu-gold);margin-left:6px"></span></div>
+            <div class="tbl-title">รายการเอกสาร/จดหมาย/พัสดุ ประจำวันที่ <span id="today-date-text" style="color:var(--cmu-gold);margin-left:6px"></span></div>
             <div class="tbl-count" id="today-count-lbl">0 รายการ</div>
           </div>
           <div class="tbl-scroll">
@@ -1946,13 +1946,15 @@ function renderOverview(records, year, month) {
   const now = new Date();
   document.getElementById("today-date-text").textContent = formatThaiFullDate(now);
   const todayRecords = filtered.filter(r => parseRecordDate(r).toDateString() === now.toDateString());
+  todayRecords.sort((a, b) => (b.id || 0) - (a.id || 0) || parseRecordDate(b) - parseRecordDate(a));
+  
   document.getElementById("today-count-lbl").textContent = todayRecords.length + " รายการ";
   
   document.getElementById("today-tb").innerHTML = todayRecords.map(r => renderRowHtml(r)).join("")
     || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">วันนี้ยังไม่มีรายการบันทึกรับพัสดุ</td></tr>';
     
   // รายการล่าสุด 10 รายการ
-  const sortedByTime = [...filtered].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+  const sortedByTime = [...filtered].sort((a,b) => (b.id || 0) - (a.id || 0) || parseRecordDate(b) - parseRecordDate(a));
   document.getElementById("recent-tb").innerHTML = sortedByTime.slice(0, 10).map(r => renderRowHtml(r)).join("")
     || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">ไม่มีข้อมูลพัสดุ</td></tr>';
 }
@@ -2088,6 +2090,8 @@ function filterRec() {
       String(v || "").toLowerCase().indexOf(q) !== -1
     );
   });
+  
+  filtered.sort((a, b) => (b.id || 0) - (a.id || 0) || parseRecordDate(b) - parseRecordDate(a));
   
   document.getElementById("rec-count").textContent = filtered.length + " รายการ";
   document.getElementById("rec-tb").innerHTML = filtered.map(r => {

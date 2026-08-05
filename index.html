@@ -1830,20 +1830,40 @@ async function loadOverview() {
   }
 }
 
+function parseRecordDate(r) {
+  if (!r) return new Date();
+  let src = r.timestamp || r.date;
+  if (!src) return new Date();
+  
+  if (typeof src === "string") {
+    let str = src.trim();
+    if (str.startsWith("25")) {
+      let parts = str.split("-");
+      if (parts.length >= 3) {
+        let beYear = parseInt(parts[0], 10);
+        if (beYear > 2500) {
+          str = (beYear - 543) + "-" + parts.slice(1).join("-");
+        }
+      }
+    }
+    return new Date(str);
+  }
+  return new Date(src);
+}
+
 function renderOverview(records, year, month) {
   // กรองตามปีและเดือน
   const targetYear = parseInt(year);
   const targetMonth = month ? parseInt(month) : null;
   
   const filtered = records.filter(r => {
-    const d = new Date(r.timestamp);
+    const d = parseRecordDate(r);
     const yMatches = d.getFullYear() === targetYear;
     const mMatches = targetMonth ? (d.getMonth() + 1) === targetMonth : true;
     return yMatches && mMatches;
   });
   
   // คำนวณสถานะพัสดุ
-  // สมมติว่ามีฟิลด์ signature เพื่อบอกว่ามีลายเซ็นผู้รับหรือยัง (หรือใช้ฟิลด์ status === 'Delivered')
   const completedCount = filtered.filter(r => r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว").length;
   const pendingCount = filtered.length - completedCount;
   
@@ -1858,7 +1878,7 @@ function renderOverview(records, year, month) {
     if (r.sender) senders[r.sender] = (senders[r.sender] || 0) + 1;
     if (r.receiver) receivers[r.receiver] = (receivers[r.receiver] || 0) + 1;
     
-    const d = new Date(r.timestamp);
+    const d = parseRecordDate(r);
     monthlyData[d.getMonth() + 1]++;
     
     if (d.toDateString() === todayStr) todayCount++;

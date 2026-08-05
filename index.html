@@ -1925,7 +1925,7 @@ function renderOverview(records, year, month) {
   // รายการของวันนี้
   const now = new Date();
   document.getElementById("today-date-text").textContent = formatThaiFullDate(now);
-  const todayRecords = filtered.filter(r => new Date(r.timestamp).toDateString() === now.toDateString());
+  const todayRecords = filtered.filter(r => parseRecordDate(r).toDateString() === now.toDateString());
   document.getElementById("today-count-lbl").textContent = todayRecords.length + " รายการ";
   
   document.getElementById("today-tb").innerHTML = todayRecords.map(r => renderRowHtml(r)).join("")
@@ -2591,7 +2591,7 @@ function toast(msg, type) {
 // Thai Date formatting helper
 function formatThaiDate(dateStr) {
   if (!dateStr) return "-";
-  const d = new Date(dateStr);
+  const d = parseRecordDate(dateStr);
   if (isNaN(d.getTime())) return dateStr;
   const thYear = d.getFullYear() + 543;
   return `${d.getDate()}/${d.getMonth()+1}/${thYear}`;
@@ -2599,7 +2599,7 @@ function formatThaiDate(dateStr) {
 
 function formatThaiTime(timestampStr) {
   if (!timestampStr) return "-";
-  const d = new Date(timestampStr);
+  const d = parseRecordDate(timestampStr);
   if (isNaN(d.getTime())) return timestampStr;
   const thYear = d.getFullYear() + 543;
   return `${d.getDate()}/${d.getMonth()+1}/${thYear} ${pad(d.getHours())}:${pad(d.getMinutes())} น.`;

@@ -114,16 +114,36 @@ function syncUnsyncedRows() {
       sheet.getRange(1, syncedColIdx + 1).setValue("Synced");
     }
     
+    const signatureColIdx = headers.indexOf("Signature");
+    
     let recordsToSync = [];
     let rowIndices = [];
+    let rowSyncStates = [];
     
     // Scan sheet rows (start at index 1 for row 2)
     for (let i = 1; i < values.length; i++) {
       const row = values[i];
       const syncedVal = String(row[syncedColIdx]).trim().toUpperCase();
       
-      // If row has data and is not marked as synced
-      if (row[trackingColIdx] && syncedVal !== "Y" && syncedVal !== "YES" && syncedVal !== "TRUE") {
+      if (!row[trackingColIdx]) continue;
+      
+      const hasSignature = signatureColIdx !== -1 && String(row[signatureColIdx]).trim() !== "";
+      let shouldSync = false;
+      let targetSyncState = "Y";
+      
+      if (hasSignature) {
+        if (syncedVal !== "Y_SIGNED") {
+          shouldSync = true;
+          targetSyncState = "Y_SIGNED";
+        }
+      } else {
+        if (syncedVal !== "Y" && syncedVal !== "Y_SIGNED") {
+          shouldSync = true;
+          targetSyncState = "Y";
+        }
+      }
+      
+      if (shouldSync) {
         let record = {};
         headers.forEach((header, idx) => {
           if (header && header !== "Synced") {
@@ -136,8 +156,12 @@ function syncUnsyncedRows() {
           }
         });
         
+        // Explicitly map status based on signature presence
+        record["status"] = hasSignature ? "สำเร็จ" : "รอดำเนินการ";
+        
         recordsToSync.push(record);
         rowIndices.push(i + 1); // Store 1-based row index
+        rowSyncStates.push(targetSyncState);
       }
     }
     
@@ -165,8 +189,8 @@ function syncUnsyncedRows() {
     if (code >= 200 && code < 300) {
       Logger.log("Sync successful. Marking rows in sheet...");
       // Mark as synced in sheet
-      rowIndices.forEach(rowIdx => {
-        sheet.getRange(rowIdx, syncedColIdx + 1).setValue("Y");
+      rowIndices.forEach((rowIdx, idx) => {
+        sheet.getRange(rowIdx, syncedColIdx + 1).setValue(rowSyncStates[idx]);
       });
       SpreadsheetApp.flush();
       return recordsToSync.length;

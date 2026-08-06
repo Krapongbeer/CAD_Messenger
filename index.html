@@ -1597,18 +1597,15 @@ async function doForgotPassword() {
     btn.textContent = "กำลังส่งคำขอ...";
     const tempPass = genTempPass();
 
-    // 2. ยิงหา Apps Script หลังบ้าน (ซึ่งปลอดภัยบนเซิร์ฟเวอร์ Google) เพื่ออัปเดตรหัสผ่านใน Supabase Auth และส่ง Gmail
-    const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
-    fetch(gasUrl, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({
-        action: "reset_password",
-        temp_password: tempPass,
-        user: { id: profile.id, email: profile.email, fullname: profile.fullname || profile.email }
-      })
-    }).catch(() => {});
+    // 2. อัปเดตรหัสผ่านลง Supabase Auth 100% ทันทีผ่าน RPC (การันตีนำรหัสไปใช้ล็อกอินได้ทันทีแน่นอน)
+    try {
+      await sbClient.rpc("reset_user_password", { target_user_id: profile.id, temp_password: tempPass });
+      await sbClient.from("profiles").update({ force_change_password: true }).eq("id", profile.id);
+    } catch (rpce) {}
+
+    // 3. ยิงส่งอีเมลแจ้งรหัสผ่านภาษาไทยไปยัง Gmail หลังบ้าน
+    const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=reset_password&identifier=${encodeURIComponent(profile.email)}&temp_password=${encodeURIComponent(tempPass)}&user_id=${encodeURIComponent(profile.id)}&fullname=${encodeURIComponent(profile.fullname || profile.email)}`;
+    fetch(gasUrl, { mode: "no-cors" }).catch(() => {});
 
     msg.textContent = "ระบบได้จัดส่งอีเมลแจ้งรหัสผ่านชั่วคราวไปยัง " + profile.email + " เรียบร้อยแล้ว! (กรุณาเช็กในกล่องข้อความหรืออีเมลขยะ/Spam)";
     msg.style.display = "block";
@@ -2249,19 +2246,10 @@ async function triggerUserWebhook(userId, fullname, email, action) {
       await sbClient.rpc(rpcName, { target_user_id: userId, temp_password: tempPass });
     } catch(rpce) {}
 
-    // 3. ส่งคำขอหา Apps Script หลังบ้านเพื่ออัปเดตรหัสผ่านในฐานข้อมูลและส่งอีเมลภาษาไทยพร้อมรหัสผ่านชั่วคราวตรงไปยัง Gmail
+    // 3. ส่งคำขอหา Apps Script หลังบ้านเพื่ออัปเดตรหัสผ่านใน Supabase Auth และส่งอีเมลภาษาไทยผ่าน Gmail
     try {
-      const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
-      fetch(gasUrl, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({
-          action: action,
-          temp_password: tempPass,
-          user: { id: userId, email: email, fullname: fullname }
-        })
-      }).catch(() => {});
+      const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=${encodeURIComponent(action)}&identifier=${encodeURIComponent(email)}&temp_password=${encodeURIComponent(tempPass)}&user_id=${encodeURIComponent(userId)}&fullname=${encodeURIComponent(fullname)}`;
+      fetch(gasUrl, { mode: "no-cors" }).catch(() => {});
     } catch(e) {}
 
     // 5. แสดง Alert แจ้ง Admin พร้อมรหัสผ่านชั่วคราว

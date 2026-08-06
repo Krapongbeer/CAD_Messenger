@@ -1541,7 +1541,7 @@ async function doForgotPassword() {
     return;
   }
 
-  btn.textContent = "กำลังตรวจสอบบัญชี...";
+  btn.textContent = "กำลังส่งคำขอ...";
   btn.disabled = true;
   err.style.display = "none";
   msg.style.display = "none";
@@ -1550,11 +1550,15 @@ async function doForgotPassword() {
     let targetEmail = null;
     let targetFullname = "";
     let targetUserId = null;
-    let profileFound = false;
 
-    // 1. ตรวจสอบข้อมูลในตารางโปรไฟล์ย่อย
+    // 1. ถ้าผู้ใช้พิมพ์อีเมลเข้ามาโดยตรง (มี @)
+    if (identifier.indexOf("@") !== -1) {
+      targetEmail = identifier;
+    }
+
+    // 2. ค้นหาข้อมูลในตารางโปรไฟล์ย่อย (เพื่อหา Email จาก Username)
     try {
-      let query = sbClient.from("profiles").select("id, email, fullname, username, status");
+      let query = sbClient.from("profiles").select("id, email, fullname, username");
       if (identifier.indexOf("@") !== -1) {
         query = query.eq("email", identifier);
       } else {
@@ -1562,24 +1566,21 @@ async function doForgotPassword() {
       }
 
       const { data: profile } = await query.maybeSingle();
-      if (profile && profile.email) {
-        targetEmail = profile.email;
+      if (profile) {
+        if (profile.email) targetEmail = profile.email;
         targetFullname = profile.fullname || "";
         targetUserId = profile.id || null;
-        profileFound = true;
       }
     } catch (pe) {}
 
-    // 2. หากไม่พบข้อมูลบัญชีในระบบ ให้ปฏิเสธทันที ไม่ส่งอีเมลมั่ว
-    if (!profileFound) {
-      err.textContent = "ไม่พบข้อมูลบัญชีหรืออีเมลนี้ในระบบ กรุณาตรวจสอบอีเมลหรือลงทะเบียนใหม่";
+    // หากระบุ Username แต่สแกนไม่เจอ
+    if (!targetEmail) {
+      err.textContent = "ไม่พบข้อมูล Username นี้ในระบบ (กรุณาลองระบุเป็น Email ของท่าน)";
       err.style.display = "block";
       return;
     }
 
-    btn.textContent = "กำลังส่งคำขอ...";
-
-    // 3. เมื่อพบว่ามีอีเมลในระบบจริง ถึงจะทำการส่งอีเมลรีเซ็ตรหัสผ่าน
+    // 3. ส่งอีเมลรีเซ็ตรหัสผ่านผ่าน Supabase Auth ตรงไปยังผู้ใช้ทันที 100%
     const { error: resetErr } = await sbClient.auth.resetPasswordForEmail(targetEmail, {
       redirectTo: "https://krapongbeer.github.io/CAD_Messenger/"
     });
@@ -1590,11 +1591,12 @@ async function doForgotPassword() {
       return;
     }
 
-    // 4. ส่งสัญญาณหา Apps Script ในหลังบ้านส่งรหัสชั่วคราวเป็นสำรอง
+    // 4. ส่งสัญญาณหา Apps Script ในหลังบ้านส่งรหัสชั่วคราวและแจ้งเตือนผ่าน Gmail (สำรอง)
     try {
       const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
       fetch(gasUrl, {
         method: "POST",
+        mode: "no-cors",
         headers: { "Content-Type": "text/plain" },
         body: JSON.stringify({
           action: "reset_password",
@@ -1603,7 +1605,7 @@ async function doForgotPassword() {
       }).catch(() => {});
     } catch(e) {}
 
-    msg.textContent = "ระบบได้จัดส่งคำขอและลิงก์ตั้งรหัสผ่านใหม่ไปยังอีเมล " + targetEmail + " เรียบร้อยแล้ว!";
+    msg.textContent = "ระบบได้จัดส่งคำขอและลิงก์ตั้งรหัสผ่านใหม่ไปยังอีเมล " + targetEmail + " เรียบร้อยแล้ว! (กรุณาเช็กในกล่องข้อความหรืออีเมลขยะ/Spam)";
     msg.style.display = "block";
     document.getElementById("forgot-identifier").value = "";
 
@@ -2244,7 +2246,16 @@ async function triggerUserWebhook(userId, fullname, email, action) {
       await sbClient.rpc(rpcName, { target_user_id: userId, temp_password: tempPass });
     } catch(rpce) {}
 
-    // 3. ส่งคำขอหา Apps Script หลังบ้านเพื่อยิงอีเมลภาษาไทยพร้อมรหัสผ่านชั่วคราวตรงไปยัง Gmail ผู้รับ
+    // 3. ยิงอีเมลรีเซ็ตรหัสผ่านผ่าน Supabase Auth ตรงไปยังอีเมลผู้รับทันที 100%
+    if (email && email.indexOf("@") !== -1) {
+      try {
+        await sbClient.auth.resetPasswordForEmail(email, {
+          redirectTo: "https://krapongbeer.github.io/CAD_Messenger/"
+        });
+      } catch (e) {}
+    }
+
+    // 4. ส่งคำขอหา Apps Script หลังบ้านเพื่อยิงอีเมลภาษาไทยพร้อมรหัสผ่านชั่วคราวตรงไปยัง Gmail ผู้รับ
     try {
       const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
       fetch(gasUrl, {
@@ -2259,8 +2270,8 @@ async function triggerUserWebhook(userId, fullname, email, action) {
       }).catch(() => {});
     } catch(e) {}
 
-    // 4. แสดง Alert แจ้ง Admin พร้อมรหัสผ่านชั่วคราว
-    alert(`✅ ดำเนินการอนุมัติเรียบร้อยแล้ว!\n\n• บัญชีผู้ใช้งาน: ${email}\n• รหัสผ่านชั่วคราว: ${tempPass}\n\n(ระบบได้จัดส่งอีเมลแจ้งรหัสผ่านชั่วคราวและลิงก์เข้าใช้งานไปยังผู้ใช้เรียบร้อยแล้ว)`);
+    // 5. แสดง Alert แจ้ง Admin พร้อมรหัสผ่านชั่วคราว
+    alert(`✅ ดำเนินการอนุมัติ/รีเซ็ตรหัสผ่านเรียบร้อยแล้ว!\n\n• บัญชีผู้ใช้งาน: ${email}\n• รหัสผ่านชั่วคราว: ${tempPass}\n\n(ระบบได้จัดส่งอีเมลแจ้งรหัสผ่านชั่วคราวและลิงก์เข้าใช้งานไปยังผู้ใช้เรียบร้อยแล้ว)`);
     toast("อนุมัติและจัดส่งอีเมลสำเร็จ!", "ok");
     loadUsers();
 

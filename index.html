@@ -357,26 +357,43 @@ h1, h2, h3, .t-logo, .auth-logo, .tbl-title, .chart-title, .nav-sec, .uname, .kp
 }
 .t-logo {
   font-size: 17px;
-.nav-logo-img {
+.nav-logo-box {
   max-width: 140px;
-  max-height: 38px;
-  width: auto;
-  height: auto;
-  object-fit: contain;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.nav-logo-img {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
   filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));
   transition: transform 0.25s ease;
 }
 .nav-logo-img:hover {
   transform: scale(1.05);
 }
-.auth-logo-img {
+.auth-logo-box {
+  width: 100%;
   max-width: 200px;
-  max-height: 70px;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  display: inline-block;
-  margin: 0 auto 6px auto;
+  height: 65px;
+  margin: 0 auto 10px auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.auth-logo-img {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
   filter: drop-shadow(0 4px 12px rgba(92, 36, 131, 0.3));
 }
 .t-logo {
@@ -1315,8 +1332,8 @@ tr:hover td { background: var(--cmu-purple-bg); }
 <!-- AUTH PAGE -->
 <div id="auth-page">
   <div class="auth-box">
-    <div style="text-align:center;margin-bottom:12px">
-      <img src="logo-nobg.png" alt="CMU Logo" class="auth-logo-img" style="max-width:180px;max-height:65px;width:auto;height:auto;object-fit:contain" />
+    <div class="auth-logo-box">
+      <img src="logo-nobg.png?v=2" alt="CMU Logo" class="auth-logo-img" />
     </div>
     <div class="auth-logo">SmartCAD<em>-Messenger</em></div>
     <div class="auth-sub">ระบบติดตามส่งเอกสาร/จดหมาย/พัสดุ (เชื่อมต่อ Supabase - ความปลอดภัยสูง)</div>
@@ -1443,7 +1460,9 @@ tr:hover td { background: var(--cmu-purple-bg); }
 <div id="app">
   <div class="topbar">
     <div class="t-logo">
-      <img src="logo-nobg.png" alt="CMU Logo" class="nav-logo-img" style="max-width:130px;max-height:36px;width:auto;height:auto;object-fit:contain" />
+      <div class="nav-logo-box">
+        <img src="logo-nobg.png?v=2" alt="CMU Logo" class="nav-logo-img" />
+      </div>
       <span>SmartCAD<em>-Messenger</em></span>
       <em id="role-lbl">CMU</em>
     </div>

@@ -7,7 +7,7 @@
 <!-- Chart.js and Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 /* ── Reset & Theme Variables (CMU Purple & Gold Palette) ── */
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -76,17 +76,25 @@
 }
 
 body {
-  font-family: 'Sarabun', sans-serif;
+  font-family: 'Prompt', 'IBM Plex Sans Thai', 'Sarabun', system-ui, -apple-system, sans-serif;
   background: var(--bg-main);
   color: var(--text-main);
   font-size: 14px;
+  line-height: 1.6;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   transition: background 0.3s ease, color 0.3s ease;
 }
 
 h1, h2, h3, .t-logo, .auth-logo, .tbl-title, .chart-title, .nav-sec, .uname, .kpi-value, .auth-btn, .btn {
-  font-family: 'Mitr', 'Sarabun', sans-serif;
+  font-family: 'Prompt', 'Mitr', 'Sarabun', sans-serif;
+}
+
+/* Ensure underscores _ are prominent, raised, and highly visible across inputs and tables */
+input, select, textarea, button, .f-input, table, td, th, code {
+  font-family: 'Prompt', 'IBM Plex Sans Thai', 'Sarabun', system-ui, -apple-system, sans-serif !important;
+  line-height: 1.6 !important;
+  letter-spacing: 0.3px;
 }
 
 /* ── Status Badges & Tag Styles ── */
@@ -260,15 +268,16 @@ h1, h2, h3, .t-logo, .auth-logo, .tbl-title, .chart-title, .nav-sec, .uname, .kp
 }
 .f-input, select.f-input {
   width: 100%;
-  padding: 10px 14px;
+  padding: 10px 14px 12px 14px;
   border: 1.5px solid var(--border-color);
   border-radius: 10px;
-  font-size: 13px;
+  font-size: 13.5px;
   outline: none;
   transition: all .2s;
   font-family: inherit;
   background: var(--card-bg);
   color: var(--text-main);
+  letter-spacing: 0.4px;
 }
 .f-input:focus, select.f-input:focus {
   border-color: var(--cmu-purple);

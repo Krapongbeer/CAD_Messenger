@@ -358,19 +358,25 @@ h1, h2, h3, .t-logo, .auth-logo, .tbl-title, .chart-title, .nav-sec, .uname, .kp
 .t-logo {
   font-size: 17px;
 .nav-logo-img {
-  height: 38px;
+  max-width: 140px;
+  max-height: 38px;
   width: auto;
+  height: auto;
   object-fit: contain;
   filter: drop-shadow(0 2px 5px rgba(0,0,0,0.3));
   transition: transform 0.25s ease;
 }
 .nav-logo-img:hover {
-  transform: scale(1.06);
+  transform: scale(1.05);
 }
 .auth-logo-img {
-  height: 76px;
+  max-width: 200px;
+  max-height: 70px;
   width: auto;
+  height: auto;
   object-fit: contain;
+  display: inline-block;
+  margin: 0 auto 6px auto;
   filter: drop-shadow(0 4px 12px rgba(92, 36, 131, 0.3));
 }
 .t-logo {
@@ -1310,7 +1316,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 <div id="auth-page">
   <div class="auth-box">
     <div style="text-align:center;margin-bottom:12px">
-      <img src="logo-nobg.png" alt="CMU Logo" class="auth-logo-img" />
+      <img src="logo-nobg.png" alt="CMU Logo" class="auth-logo-img" style="max-width:180px;max-height:65px;width:auto;height:auto;object-fit:contain" />
     </div>
     <div class="auth-logo">SmartCAD<em>-Messenger</em></div>
     <div class="auth-sub">ระบบติดตามส่งเอกสาร/จดหมาย/พัสดุ (เชื่อมต่อ Supabase - ความปลอดภัยสูง)</div>
@@ -1437,7 +1443,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 <div id="app">
   <div class="topbar">
     <div class="t-logo">
-      <img src="logo-nobg.png" alt="CMU Logo" class="nav-logo-img" />
+      <img src="logo-nobg.png" alt="CMU Logo" class="nav-logo-img" style="max-width:130px;max-height:36px;width:auto;height:auto;object-fit:contain" />
       <span>SmartCAD<em>-Messenger</em></span>
       <em id="role-lbl">CMU</em>
     </div>
@@ -2608,7 +2614,7 @@ async function renderReportPreview() {
     docContainer.innerHTML = `
       <div class="report-header">
         <div style="display:flex;align-items:center;gap:14px">
-          <img src="logo-nobg.png" alt="CMU Logo" style="height:55px;width:auto;object-fit:contain" />
+          <img src="logo-nobg.png" alt="CMU Logo" style="max-width:130px;max-height:48px;width:auto;height:auto;object-fit:contain" />
           <div>
             <div class="report-title">📋 รายงานสรุปการรับ-ส่ง เอกสาร/จดหมาย/พัสดุ</div>
             <div class="report-subtitle">ระบบบริหารจัดการพัสดุ SmartCAD-Messenger (มหาวิทยาลัยเชียงใหม่)</div>

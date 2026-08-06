@@ -821,29 +821,51 @@ select:focus, input[type=date]:focus {
 .kpi {
   background: var(--card-bg);
   border-radius: 14px;
-  border: 1px solid var(--border-color);
+  border: 1.5px solid var(--border-color);
   padding: 16px 18px;
   box-shadow: var(--shadow-sm);
   position: relative;
   overflow: hidden;
-  transition: all .2s;
+  transition: all .25s ease;
+  cursor: pointer;
+  user-select: none;
 }
 .kpi:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(92, 36, 131, 0.15);
+  border-color: var(--cmu-purple-light);
+}
+.kpi.active-kpi-filter {
+  border-color: var(--cmu-purple) !important;
+  background: var(--cmu-purple-bg) !important;
+  box-shadow: 0 0 15px rgba(92, 36, 131, 0.2) !important;
 }
 .kpi::before {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
-  width: 4px;
+  width: 5px;
   height: 100%;
   background: var(--cmu-purple);
 }
 .kpi:nth-child(2)::before { background: var(--success); }
 .kpi:nth-child(3)::before { background: var(--warning); }
 .kpi:nth-child(4)::before { background: var(--cmu-gold); }
+.kpi-hint {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  opacity: 0.6;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+.kpi:hover .kpi-hint {
+  opacity: 1;
+  color: var(--cmu-purple);
+}
 .kpi-label {
   font-size: 11px;
   color: var(--text-muted);
@@ -851,6 +873,7 @@ select:focus, input[type=date]:focus {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  padding-right: 65px;
 }
 .kpi-value {
   font-size: 26px;
@@ -1504,11 +1527,14 @@ tr:hover td { background: var(--cmu-purple-bg); }
         </div>
         <div class="chart-card" style="margin-bottom:20px"><div class="chart-title">ผู้รับสูงสุด</div><div class="bar-list" id="receiver-bars"></div></div>
 
-        <!-- Table 1: พัสดุของวันนี้ -->
-        <div class="tbl-wrap" style="margin-bottom:20px">
+        <!-- Dynamic KPI Drill-down Table Section -->
+        <div class="tbl-wrap" id="kpi-drill-table-section">
           <div class="tbl-head">
-            <div class="tbl-title">รายการเอกสาร/จดหมาย/พัสดุ ประจำวันที่ <span id="today-date-text" style="color:var(--cmu-gold);margin-left:6px"></span></div>
-            <div class="tbl-count" id="today-count-lbl">0 รายการ</div>
+            <div class="tbl-title" id="kpi-table-title">📋 รายการเอกสาร/จดหมาย/พัสดุ</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="tbl-count" id="kpi-table-count">0 รายการ</span>
+              <button class="btn btn-sm" id="kpi-reset-btn" onclick="filterDashboardByKpi('all')" style="font-size:11px;padding:4px 10px;display:none;background:var(--cmu-purple-subtle);color:var(--cmu-purple)">แสดงทั้งหมด</button>
+            </div>
           </div>
           <div class="tbl-scroll">
             <table>
@@ -1522,27 +1548,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
                   <th>รายละเอียด</th>
                 </tr>
               </thead>
-              <tbody id="today-tb"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Table 2: รายการล่าสุด 10 รายการ -->
-        <div class="tbl-wrap">
-          <div class="tbl-head"><div class="tbl-title">รายการล่าสุด (10 รายการล่าสุด)</div></div>
-          <div class="tbl-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Tracking No.</th>
-                  <th>วันที่รับ</th>
-                  <th>ผู้ส่ง</th>
-                  <th>ผู้รับ / หน่วยงาน</th>
-                  <th>สถานะ</th>
-                  <th>รายละเอียด</th>
-                </tr>
-              </thead>
-              <tbody id="recent-tb"></tbody>
+              <tbody id="kpi-table-tb"></tbody>
             </table>
           </div>
         </div>
@@ -2278,7 +2284,25 @@ function parseRecordDate(r) {
   return new Date(src);
 }
 
+let lastOverviewRecords = [];
+let currentKpiFilter = "all";
+
+function filterDashboardByKpi(filterType) {
+  currentKpiFilter = filterType;
+  const year = document.getElementById("ov-year").value;
+  const month = document.getElementById("ov-month").value;
+  renderOverview(lastOverviewRecords, year, month);
+  
+  // Smooth scroll to drill-down table section
+  const tblSection = document.getElementById("kpi-drill-table-section");
+  if (tblSection) {
+    tblSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
 function renderOverview(records, year, month) {
+  lastOverviewRecords = records || [];
+  
   // กรองตามปีและเดือน
   const targetYear = parseInt(year);
   const targetMonth = month ? parseInt(month) : null;
@@ -2311,16 +2335,18 @@ function renderOverview(records, year, month) {
     if (d.toDateString() === todayStr) todayCount++;
   });
   
-  // เรนเดอร์ KPI
+  // เรนเดอร์ KPI Cards พร้อม Click Handler และ Active Badge State
   const kpis = [
-    { label: "รายการของวันนี้", value: todayCount, sub: "รับเอกสาร/จดหมาย/พัสดุ ภายในวันนี้" },
-    { label: "ส่งสำเร็จแล้ว", value: completedCount, sub: "มีลายเซ็นต์รับมอบเรียบร้อย" },
-    { label: "รอดำเนินการ", value: pendingCount, sub: "รายการคงค้างยังไม่รับมอบ" },
-    { label: "จำนวนงานรวม (ตัวกรอง)", value: filtered.length, sub: `ปี ${targetYear + 543}` }
+    { key: "today", label: "รายการของวันนี้", value: todayCount, sub: "รับเอกสาร/จดหมาย/พัสดุ ภายในวันนี้" },
+    { key: "delivered", label: "ส่งสำเร็จแล้ว", value: completedCount, sub: "มีลายเซ็นต์รับมอบเรียบร้อย" },
+    { key: "pending", label: "รอดำเนินการ", value: pendingCount, sub: "รายการคงค้างยังไม่รับมอบ" },
+    { key: "all", label: "จำนวนงานรวม (ตัวกรอง)", value: filtered.length, sub: `ปี ${targetYear + 543}` }
   ];
   
   document.getElementById("ov-kpi").innerHTML = kpis.map(k => {
-    return `<div class="kpi">
+    const isActive = currentKpiFilter === k.key ? " active-kpi-filter" : "";
+    return `<div class="kpi${isActive}" onclick="filterDashboardByKpi('${k.key}')" title="คลิกเพื่อดูรายการ ${k.label}">
+      <div class="kpi-hint">👇 คลิกดูรายการ</div>
       <div class="kpi-label">${k.label}</div>
       <div class="kpi-value">${k.value}</div>
       <div class="kpi-sub" title="${esc(k.sub)}">${esc(k.sub)}</div>
@@ -2349,21 +2375,35 @@ function renderOverview(records, year, month) {
     </div>`;
   }).join("") || '<div style="color:#aaa;padding:16px;text-align:center">ไม่มีข้อมูลพัสดุ</div>';
   
-  // รายการของวันนี้
-  const now = new Date();
-  document.getElementById("today-date-text").textContent = formatThaiFullDate(now);
-  const todayRecords = filtered.filter(r => parseRecordDate(r).toDateString() === now.toDateString());
-  todayRecords.sort((a, b) => (b.id || 0) - (a.id || 0) || parseRecordDate(b) - parseRecordDate(a));
+  // กรองแสดงตารางผลลัพธ์ตามการคลิกเลือกบน KPI Card (Interactive KPI Drill-Down Table)
+  let displayTitle = "";
+  let displayRecords = [];
+  const resetBtn = document.getElementById("kpi-reset-btn");
+
+  if (currentKpiFilter === "today") {
+    displayTitle = `📋 รายการเอกสาร/จดหมาย/พัสดุ ประจำวันนี้ (${formatThaiFullDate(new Date())})`;
+    displayRecords = filtered.filter(r => parseRecordDate(r).toDateString() === todayStr);
+    if (resetBtn) resetBtn.style.display = "inline-block";
+  } else if (currentKpiFilter === "delivered") {
+    displayTitle = `✅ รายการเอกสาร/จดหมาย/พัสดุ ที่ส่งสำเร็จแล้ว (${completedCount} รายการ)`;
+    displayRecords = filtered.filter(r => r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว");
+    if (resetBtn) resetBtn.style.display = "inline-block";
+  } else if (currentKpiFilter === "pending") {
+    displayTitle = `⏳ รายการเอกสาร/จดหมาย/พัสดุ รอดำเนินการคงค้าง (${pendingCount} รายการ)`;
+    displayRecords = filtered.filter(r => !(r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว"));
+    if (resetBtn) resetBtn.style.display = "inline-block";
+  } else {
+    displayTitle = `📦 รายการเอกสาร/จดหมาย/พัสดุ ทั้งหมด (ปี ${targetYear + 543}${targetMonth ? ' เดือน ' + MONTHS[targetMonth] : ''})`;
+    displayRecords = [...filtered];
+    if (resetBtn) resetBtn.style.display = "none";
+  }
   
-  document.getElementById("today-count-lbl").textContent = todayRecords.length + " รายการ";
+  displayRecords.sort((a, b) => (b.id || 0) - (a.id || 0) || parseRecordDate(b) - parseRecordDate(a));
   
-  document.getElementById("today-tb").innerHTML = todayRecords.map(r => renderRowHtml(r)).join("")
-    || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">วันนี้ยังไม่มีรายการบันทึกรับพัสดุ</td></tr>';
-    
-  // รายการล่าสุด 10 รายการ
-  const sortedByTime = [...filtered].sort((a,b) => (b.id || 0) - (a.id || 0) || parseRecordDate(b) - parseRecordDate(a));
-  document.getElementById("recent-tb").innerHTML = sortedByTime.slice(0, 10).map(r => renderRowHtml(r)).join("")
-    || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">ไม่มีข้อมูลพัสดุ</td></tr>';
+  document.getElementById("kpi-table-title").innerHTML = displayTitle;
+  document.getElementById("kpi-table-count").textContent = displayRecords.length + " รายการ";
+  document.getElementById("kpi-table-tb").innerHTML = displayRecords.map(r => renderRowHtml(r)).join("")
+    || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">ไม่พบรายการในหมวดหมู่นี้</td></tr>';
 }
 
 function renderRowHtml(r) {

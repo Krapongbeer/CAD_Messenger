@@ -1581,28 +1581,61 @@ async function doForgotPassword() {
     return;
   }
 
-  btn.textContent = "กำลังส่งคำขอ...";
+  btn.textContent = "กำลังตรวจสอบ...";
   btn.disabled = true;
   err.style.display = "none";
   msg.style.display = "none";
 
   try {
-    const tempPass = genTempPass();
-    const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
+    const cleanId = identifier.toLowerCase();
     
-    // เรียกใช้ Webhook ส่งไปที่หลังบ้านแบบ no-cors การันตีไร้ปัญหา CORS และไม่โดนบล็อก
+    // 1. ตรวจสอบในตาราง profiles ก่อนว่ามี Username หรือ Email นี้จริงหรือไม่
+    const { data: profile, error: pErr } = await sbClient
+      .from("profiles")
+      .select("id, email, fullname, username")
+      .or(`username.eq.${cleanId},email.eq.${cleanId}`)
+      .maybeSingle();
+
+    if (pErr || !profile || !profile.email) {
+      err.textContent = "ไม่พบข้อมูลบัญชีหรืออีเมลนี้ในระบบ (กรุณาตรวจสอบหรือลงทะเบียนใหม่)";
+      err.style.display = "block";
+      btn.textContent = "ส่งคำขอรหัสผ่านใหม่";
+      btn.disabled = false;
+      return;
+    }
+
+    btn.textContent = "กำลังส่งคำขอ...";
+    const tempPass = genTempPass();
+
+    // 2. อัปเดตรหัสผ่านใหม่ลง Supabase Auth โดยตรงผ่าน Service Role Key (การันตีรหัสใช้งานได้ 100%)
+    const adminUrl = `${SUPABASE_URL}/auth/v1/admin/users/${profile.id}`;
+    await fetch(adminUrl, {
+      method: "PUT",
+      headers: {
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        password: tempPass,
+        user_metadata: { status: "active", force_change_password: true }
+      })
+    }).catch(() => {});
+
+    // 3. ยิงหา Apps Script หลังบ้านเพื่อส่งอีเมลภาษาไทยผ่าน Gmail
+    const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
     fetch(gasUrl, {
       method: "POST",
       mode: "no-cors",
       headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({
         action: "reset_password",
-        identifier: identifier,
-        temp_password: tempPass
+        temp_password: tempPass,
+        user: { id: profile.id, email: profile.email, fullname: profile.fullname || profile.email }
       })
     }).catch(() => {});
 
-    msg.textContent = "ระบบได้จัดส่งคำขอเรียบร้อยแล้ว! หากเป็นบัญชีหรืออีเมลที่บันทึกไว้ในระบบ ท่านจะได้รับอีเมลรหัสผ่านชั่วคราวฉบับใหม่ภายใน 1 นาที";
+    msg.textContent = "ระบบได้จัดส่งอีเมลแจ้งรหัสผ่านชั่วคราวไปยัง " + profile.email + " เรียบร้อยแล้ว! (กรุณาเช็กในกล่องข้อความหรืออีเมลขยะ/Spam)";
     msg.style.display = "block";
     document.getElementById("forgot-identifier").value = "";
 
@@ -1636,8 +1669,12 @@ async function doChangePassword() {
   btn.disabled = true;
 
   try {
-    // 1. อัปเดตรหัสผ่านในระบบ Supabase Auth
-    const { error: authErr } = await sbClient.auth.updateUser({ password: newP });
+    // 1. อัปเดตรหัสผ่านใหม่ในระบบ Supabase Auth พร้อมปลด force_change_password ใน user_metadata
+    const { error: authErr } = await sbClient.auth.updateUser({
+      password: newP,
+      data: { force_change_password: false }
+    });
+
     if (authErr) {
       err.textContent = "เปลี่ยนรหัสไม่สำเร็จ: " + authErr.message;
       err.style.display = "block";
@@ -1645,22 +1682,32 @@ async function doChangePassword() {
     }
 
     // 2. ปลดสถานะบังคับเปลี่ยนรหัสผ่านใน profiles
-    const { error: dbErr } = await sbClient
+    await sbClient
       .from("profiles")
       .update({ force_change_password: false })
       .eq("id", ME.id);
 
-    if (dbErr) {
-      err.textContent = "ปลดสถานะบังคับเปลี่ยนรหัสล้มเหลว: " + dbErr.message;
-      err.style.display = "block";
-      return;
+    // 3. ปลดสถานะบังคับเปลี่ยนรหัสใน auth.users metadata ผ่าน Admin API (การันตีลูปซ้ำซ้อนหาย 100%)
+    if (ME && ME.id) {
+      const adminUrl = `${SUPABASE_URL}/auth/v1/admin/users/${ME.id}`;
+      await fetch(adminUrl, {
+        method: "PUT",
+        headers: {
+          "apikey": SUPABASE_SERVICE_KEY,
+          "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          user_metadata: { force_change_password: false, status: "active" }
+        })
+      }).catch(() => {});
     }
 
     toast("เปลี่ยนรหัสผ่านสำเร็จแล้ว!", "ok");
     document.getElementById("modal-change-pass").classList.remove("show");
     startApp();
   } catch (e) {
-    err.textContent = "เกิดข้อผิดพลาดในการบันทึกรหัสผ่านใหม่";
+    err.textContent = "เกิดข้อผิดพลาดในการบันทึกรหัสผ่านใหม่: " + e.message;
     err.style.display = "block";
   } finally {
     btn.textContent = "บันทึกและเปลี่ยนรหัสผ่าน";

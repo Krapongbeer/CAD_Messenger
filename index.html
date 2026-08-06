@@ -382,15 +382,33 @@ h1, h2, h3, .t-logo, .auth-logo, .tbl-title, .chart-title, .nav-sec, .uname, .kp
   align-items: center;
   gap: 10px;
 }
-.t-logo em {
-  color: var(--cmu-gold);
+.t-logo em, .role-tag {
   font-style: normal;
   font-size: 11px;
-  background: rgba(224, 159, 25, 0.18);
   padding: 3px 10px;
   border-radius: 99px;
-  font-weight: 600;
-  border: 1px solid rgba(224, 159, 25, 0.3);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: all 0.25s ease;
+}
+.role-tag-admin {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.18);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.2);
+}
+.role-tag-exec {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+}
+.role-tag-staff {
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.18);
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.2);
 }
 .t-spacer { flex: 1; }
 .t-user {
@@ -2082,7 +2100,10 @@ function startApp() {
   document.getElementById("uname-lbl").textContent = ME.fullname;
   document.getElementById("rpill").textContent = roleMap[ME.role] || ME.role;
   document.getElementById("rpill").className = "rpill " + (pillMap[ME.role] || "");
-  document.getElementById("role-lbl").textContent = ME.role.toUpperCase();
+  const roleTagMap = { admin: "role-tag-admin", exec: "role-tag-exec", staff: "role-tag-staff" };
+  const roleLblEl = document.getElementById("role-lbl");
+  roleLblEl.textContent = ME.role.toUpperCase();
+  roleLblEl.className = "role-tag " + (roleTagMap[ME.role] || "role-tag-staff");
   
   if (ME.role === "admin") {
     document.getElementById("nav-admin").style.display = "block";

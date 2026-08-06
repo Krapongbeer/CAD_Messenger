@@ -1547,77 +1547,33 @@ async function doForgotPassword() {
   msg.style.display = "none";
 
   try {
-    let targetEmail = null;
-    let targetFullname = "";
-    let targetUserId = null;
-    let profileFound = false;
-
-    // 1. ค้นหาในตารางโปรไฟล์ย่อยโดยมีระบบป้องกันหน้าเว็บค้าง 100% (Timeout 1.5 วินาที)
-    try {
-      const fetchPromise = (async () => {
-        let query = sbClient.from("profiles").select("id, email, fullname, username");
-        if (identifier.indexOf("@") !== -1) {
-          query = query.eq("email", identifier);
-        } else {
-          query = query.eq("username", identifier);
-        }
-        return await query.maybeSingle();
-      })();
-
-      const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ data: null }), 1500));
-      const res = await Promise.race([fetchPromise, timeoutPromise]);
-      const profile = res ? res.data : null;
-
-      if (profile) {
-        if (profile.email) targetEmail = profile.email;
-        targetFullname = profile.fullname || "";
-        targetUserId = profile.id || null;
-        profileFound = true;
-      }
-    } catch (pe) {}
-
-    // หากกรอกเป็น Email แต่หาไม่พบในตารางโปรไฟล์ ให้ใช้ Email นั้นถ้าได้รับสิทธิ์
-    if (!profileFound && identifier.indexOf("@") !== -1) {
-      targetEmail = identifier;
-    }
-
-    // หากไม่พบข้อมูลบัญชี ให้ปฏิเสธทันที
-    if (!targetEmail) {
-      err.textContent = "ไม่พบข้อมูลบัญชีหรืออีเมลนี้ในระบบ (กรุณาตรวจสอบอีเมลหรือลงทะเบียนใหม่)";
-      err.style.display = "block";
-      btn.textContent = "ส่งคำขอรหัสผ่านใหม่";
-      btn.disabled = false;
-      return;
-    }
-
-    // 2. สร้างรหัสผ่านชั่วคราวและยิงหา Apps Script หลังบ้านทันทีแบบ Non-blocking (การันตีลื่นไหล 100%)
     const tempPass = genTempPass();
     const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
     
-    fetch(gasUrl, {
+    // เรียกใช้ Webhook สแกนตรวจสอบบัญชีหลังบ้านและสร้างรหัสผ่านใหม่
+    const response = await fetch(gasUrl, {
       method: "POST",
-      mode: "no-cors",
       headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({
         action: "reset_password",
-        temp_password: tempPass,
-        user: { id: targetUserId, email: targetEmail, fullname: targetFullname }
+        identifier: identifier,
+        temp_password: tempPass
       })
-    }).catch(() => {});
+    });
 
-    // 3. พยายามยิง Supabase Auth เพิ่มเติมเป็นตัวเลือก (ถ้าทำได้)
-    try {
-      sbClient.auth.resetPasswordForEmail(targetEmail, {
-        redirectTo: "https://krapongbeer.github.io/CAD_Messenger/"
-      }).catch(() => {});
-    } catch(e) {}
+    const result = await response.json();
 
-    msg.textContent = "ระบบได้จัดส่งอีเมลแจ้งรหัสผ่านชั่วคราวและลิงก์ไปยัง " + targetEmail + " เรียบร้อยแล้ว! (กรุณาเช็กในกล่องข้อความหรืออีเมลขยะ/Spam)";
-    msg.style.display = "block";
-    document.getElementById("forgot-identifier").value = "";
+    if (result && result.status === "ok") {
+      msg.textContent = "ระบบได้จัดส่งอีเมลแจ้งรหัสผ่านชั่วคราวไปยัง " + result.email + " เรียบร้อยแล้ว! (กรุณาเช็กในกล่องข้อความหรืออีเมลขยะ/Spam)";
+      msg.style.display = "block";
+      document.getElementById("forgot-identifier").value = "";
+    } else {
+      err.textContent = (result && result.message) ? result.message : "ไม่พบข้อมูลบัญชีหรืออีเมลนี้ในระบบ (กรุณาตรวจสอบอีเมลหรือลงทะเบียนใหม่)";
+      err.style.display = "block";
+    }
 
   } catch (e) {
-    err.textContent = "เกิดข้อผิดพลาดในการส่งคำขอ: " + e.message;
+    err.textContent = "ไม่พบข้อมูลบัญชีหรืออีเมลนี้ในระบบ (กรุณาตรวจสอบอีเมลหรือลงทะเบียนใหม่)";
     err.style.display = "block";
   } finally {
     btn.textContent = "ส่งคำขอรหัสผ่านใหม่";

@@ -1518,25 +1518,30 @@ async function signUp() {
           status: "pending",
           role: "staff"
         }
-      showRegErr("ลงทะเบียนไม่สำเร็จ: " + (errJson.msg || errJson.message || "ไม่สามารถลงทะเบียนได้"));
+      }
+    });
+
+    if (authErr) {
+      showRegErr("ลงทะเบียนไม่สำเร็จ: " + authErr.message);
       btn.textContent = "ส่งคำขอลงทะเบียน";
       btn.disabled = false;
       return;
     }
 
-    const newUser = await response.json();
-
     // 3. บันทึกข้อมูลลงตาราง profiles ในสถานะ pending (รอ Admin อนุมัติ)
-    await sbClient.from("profiles").upsert({
-      id: newUser.id,
-      email: email,
-      username: username,
-      fullname: fullname,
-      department: dept,
-      role: "staff",
-      status: "pending",
-      force_change_password: true
-    });
+    const userId = authData.user ? authData.user.id : null;
+    if (userId) {
+      await sbClient.from("profiles").upsert({
+        id: userId,
+        email: email,
+        username: username,
+        fullname: fullname,
+        department: dept,
+        role: "staff",
+        status: "pending",
+        force_change_password: true
+      });
+    }
 
     msg.textContent = "ส่งคำขอลงทะเบียนสำเร็จแล้ว! บัญชีของท่านอยู่ในสถานะ 'รออนุมัติ' กรุณาแจ้งผู้ดูแลระบบเพื่อเปิดสิทธิ์การเข้าใช้ และรับรหัสผ่านชั่วคราวทางอีเมล";
     msg.style.display = "block";

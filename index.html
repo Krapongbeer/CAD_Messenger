@@ -1657,22 +1657,6 @@ async function doChangePassword() {
       .update({ force_change_password: false })
       .eq("id", ME.id);
 
-    // 3. ปลดสถานะบังคับเปลี่ยนรหัสใน auth.users metadata ผ่าน Admin API (การันตีลูปซ้ำซ้อนหาย 100%)
-    if (ME && ME.id) {
-      const adminUrl = `${SUPABASE_URL}/auth/v1/admin/users/${ME.id}`;
-      await fetch(adminUrl, {
-        method: "PUT",
-        headers: {
-          "apikey": SUPABASE_SERVICE_KEY,
-          "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          user_metadata: { force_change_password: false, status: "active" }
-        })
-      }).catch(() => {});
-    }
-
     toast("เปลี่ยนรหัสผ่านสำเร็จแล้ว!", "ok");
     document.getElementById("modal-change-pass").classList.remove("show");
     startApp();

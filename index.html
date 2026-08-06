@@ -1547,9 +1547,10 @@ async function doForgotPassword() {
   msg.style.display = "none";
 
   try {
-    let targetEmail = (identifier.indexOf("@") !== -1) ? identifier : null;
+    let targetEmail = null;
     let targetFullname = "";
     let targetUserId = null;
+    let profileFound = false;
 
     // 1. ค้นหาในตารางโปรไฟล์ย่อยโดยมีระบบป้องกันหน้าเว็บค้าง 100% (Timeout 1.5 วินาที)
     try {
@@ -1571,12 +1572,18 @@ async function doForgotPassword() {
         if (profile.email) targetEmail = profile.email;
         targetFullname = profile.fullname || "";
         targetUserId = profile.id || null;
+        profileFound = true;
       }
     } catch (pe) {}
 
-    // หากระบุเป็น Username แล้วสแกนไม่พบข้อมูล
+    // หากกรอกเป็น Email แต่หาไม่พบในตารางโปรไฟล์ ให้ใช้ Email นั้นถ้าได้รับสิทธิ์
+    if (!profileFound && identifier.indexOf("@") !== -1) {
+      targetEmail = identifier;
+    }
+
+    // หากไม่พบข้อมูลบัญชี ให้ปฏิเสธทันที
     if (!targetEmail) {
-      err.textContent = "ไม่พบข้อมูล Username นี้ในระบบ (กรุณาลองระบุเป็น Email ของท่าน)";
+      err.textContent = "ไม่พบข้อมูลบัญชีหรืออีเมลนี้ในระบบ (กรุณาตรวจสอบอีเมลหรือลงทะเบียนใหม่)";
       err.style.display = "block";
       btn.textContent = "ส่งคำขอรหัสผ่านใหม่";
       btn.disabled = false;

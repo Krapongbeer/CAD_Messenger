@@ -1385,26 +1385,29 @@ async function doLogin() {
   try {
     let email = u;
     
-    // ถ้าผู้ใช้กรอกเป็น username (ไม่มี @) ให้ไปค้นหา email ที่ผูกไว้จากตาราง profiles ก่อน
+    // ถ้าผู้ใช้กรอกเป็น Username (ไม่มี @) ให้ค้นหา Email ที่ผูกไว้อัตโนมัติเพื่อล็อกอิน
     if (u.indexOf("@") === -1) {
-      const { data: profileRow, error: pErr } = await sbClient
-        .from("profiles")
-        .select("id, username")
-        .eq("username", u)
-        .maybeSingle();
-        
-      if (!profileRow) {
-        showLoginErr("ไม่พบบัญชีผู้ใช้ชื่อนี้ในระบบ กรุณาตรวจสอบ Username หรือใช้ Email แทนครับ");
+      try {
+        const { data: profileRow } = await sbClient
+          .from("profiles")
+          .select("email")
+          .eq("username", u)
+          .maybeSingle();
+          
+        if (profileRow && profileRow.email) {
+          email = profileRow.email;
+        } else {
+          showLoginErr("ไม่พบข้อมูล Username นี้ในระบบ กรุณาตรวจสอบหรือลองใช้ Email ในการเข้าสู่ระบบ");
+          btn.textContent = "เข้าสู่ระบบ";
+          btn.disabled = false;
+          return;
+        }
+      } catch(pe) {
+        showLoginErr("เกิดข้อผิดพลาดในการตรวจสอบบัญชี กรุณาใช้ Email ในการเข้าสู่ระบบ");
         btn.textContent = "เข้าสู่ระบบ";
         btn.disabled = false;
         return;
       }
-      // ใช้ email format จาก username (ที่สมัครด้วย email จริงเสมอ)
-      // แจ้งผู้ใช้ให้ Login ด้วย Email ที่ลงทะเบียนไว้
-      showLoginErr("กรุณาใช้ Email จริงที่ลงทะเบียนไว้ในการเข้าสู่ระบบ (ไม่ใช่ Username)");
-      btn.textContent = "เข้าสู่ระบบ";
-      btn.disabled = false;
-      return;
     }
 
     // ทำการ Login ด้วย Email จริง

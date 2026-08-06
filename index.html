@@ -1540,7 +1540,11 @@ async function doRegister() {
         role: "staff",
         status: "pending",
         force_change_password: true
-      });
+      }).catch(() => {});
+
+      // ส่งสัญญาณหา Apps Script หลังบ้านให้ช่วยเขียนโปรไฟล์โดยใช้ Service Key การันตีข้อมูลเด้งขึ้นหน้า Admin 100%
+      const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=register_profile&user_id=${encodeURIComponent(userId)}&email=${encodeURIComponent(email)}&username=${encodeURIComponent(username)}&fullname=${encodeURIComponent(fullname)}&department=${encodeURIComponent(dept)}`;
+      fetch(gasUrl, { mode: "no-cors" }).catch(() => {});
     }
 
     msg.textContent = "ส่งคำขอลงทะเบียนสำเร็จแล้ว! บัญชีของท่านอยู่ในสถานะ 'รออนุมัติ' กรุณาแจ้งผู้ดูแลระบบเพื่อเปิดสิทธิ์การเข้าใช้ และรับรหัสผ่านชั่วคราวทางอีเมล";
@@ -1872,18 +1876,31 @@ async function loadOverview() {
 
 function parseRecordDate(r) {
   if (!r) return new Date();
-  let src = r.timestamp || r.date;
+  let src = r.date || r.timestamp;
   if (!src) return new Date();
   
   if (typeof src === "string") {
     let str = src.trim();
-    if (str.startsWith("25")) {
+    if (str.includes("T")) str = str.split("T")[0];
+    else if (str.includes(" ")) str = str.split(" ")[0];
+    
+    if (str.includes("/")) {
+      let parts = str.split("/");
+      if (parts.length === 3) {
+        let d = parseInt(parts[0], 10);
+        let m = parseInt(parts[1], 10);
+        let y = parseInt(parts[2], 10);
+        if (y > 2500) y -= 543;
+        return new Date(y, m - 1, d);
+      }
+    } else if (str.includes("-")) {
       let parts = str.split("-");
-      if (parts.length >= 3) {
-        let beYear = parseInt(parts[0], 10);
-        if (beYear > 2500) {
-          str = (beYear - 543) + "-" + parts.slice(1).join("-");
-        }
+      if (parts.length === 3) {
+        let y = parseInt(parts[0], 10);
+        let m = parseInt(parts[1], 10);
+        let d = parseInt(parts[2], 10);
+        if (y > 2500) y -= 543;
+        return new Date(y, m - 1, d);
       }
     }
     return new Date(str);

@@ -591,6 +591,104 @@ select:focus, input[type=date]:focus {
   border-radius: 6px;
 }
 
+/* Modern Admin Action Buttons */
+.action-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.btn-act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 11px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.btn-act-secondary {
+  background: rgba(140, 150, 170, 0.12);
+  color: var(--text-main);
+  border-color: rgba(140, 150, 170, 0.25);
+}
+.btn-act-secondary:hover {
+  background: rgba(140, 150, 170, 0.28);
+  transform: translateY(-1px);
+}
+
+.btn-act-primary {
+  background: rgba(92, 36, 131, 0.1);
+  color: var(--cmu-purple);
+  border-color: rgba(92, 36, 131, 0.25);
+}
+.btn-act-primary:hover {
+  background: var(--cmu-purple);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(92, 36, 131, 0.25);
+}
+
+.btn-act-success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+.btn-act-success:hover {
+  background: #10b981;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.25);
+}
+
+.btn-act-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+.btn-act-warning:hover {
+  background: #f59e0b;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.25);
+}
+
+.btn-act-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+.btn-act-danger:hover {
+  background: #ef4444;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.25);
+}
+
+.role-select {
+  padding: 5px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-main);
+  outline: none;
+  font-weight: 500;
+  transition: border-color .15s;
+}
+.role-select:focus {
+  border-color: var(--cmu-purple);
+}
+
 .range-toggle {
   display: flex;
   border: 1.5px solid var(--border-color);
@@ -1316,7 +1414,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
                   <th>แผนก/สังกัด</th>
                   <th>ระดับสิทธิ์การใช้งาน</th>
                   <th>สถานะ</th>
-                  <th>การจัดการ</th>
+                  <th style="min-width: 260px;">การจัดการ</th>
                 </tr>
               </thead>
               <tbody id="users-tb">
@@ -2204,17 +2302,20 @@ function renderUsersTable(users) {
                       u.status === "pending" ? '<span class="tag tag-pending">รออนุมัติ / ขอรหัสผ่าน</span>' :
                       '<span class="tag tag-disabled">ระงับสิทธิ์</span>';
                       
-    const editBtn = `<button class="btn btn-sm" style="margin-right:4px" onclick="openEditUserModal('${u.username}','${esc(u.fullname)}','${esc(u.department)}')">แก้ไข</button>`;
+    const editBtn = `<button class="btn-act btn-act-secondary" onclick="openEditUserModal('${u.username}','${esc(u.fullname)}','${esc(u.department)}')" title="แก้ไขข้อมูล">✏️ แก้ไข</button>`;
     
-    // ปุ่มอนุมัติ: จะส่ง POST ยิงยิกๆ ไปหา Webhook Apps Script เพื่อเจนพาสเวิร์ด ส่งเมล์ และ Active บัญชีทันที
-    const actionBtn = u.status === "pending" 
-      ? `<button class="btn btn-success btn-sm" onclick="triggerUserWebhook('${u.id}', '${esc(u.fullname)}', '${u.email}', 'approve')">อนุมัติ & ส่งรหัสชั่วคราว</button>`
-      : (u.status === "active" 
-          ? `<button class="btn btn-primary btn-sm" style="margin-right:4px" onclick="triggerUserWebhook('${u.id}', '${esc(u.fullname)}', '${u.email}', 'reset_password')">รีเซ็ตรหัส (ส่งอีเมล)</button><button class="btn btn-warning btn-sm" onclick="setUserStatus('${u.id}', 'disabled')">บล็อก</button>`
-          : `<button class="btn btn-primary btn-sm" onclick="setUserStatus('${u.id}', 'active')">เปิดใช้งานอีกครั้ง</button>`);
-          
+    let actionBtn = "";
+    if (u.status === "pending") {
+      actionBtn = `<button class="btn-act btn-act-success" onclick="triggerUserWebhook('${u.id}', '${esc(u.fullname)}', '${u.email}', 'approve')" title="อนุมัติการใช้งาน">✅ อนุมัติ</button>`;
+    } else if (u.status === "active") {
+      actionBtn = `<button class="btn-act btn-act-primary" onclick="triggerUserWebhook('${u.id}', '${esc(u.fullname)}', '${u.email}', 'reset_password')" title="รีเซ็ตรหัสผ่านส่งอีเมล">🔑 รีเซ็ตรหัส</button>
+                   <button class="btn-act btn-act-warning" onclick="setUserStatus('${u.id}', 'disabled')" title="ระงับสิทธิ์การใช้งาน">🚫 บล็อก</button>`;
+    } else {
+      actionBtn = `<button class="btn-act btn-act-primary" onclick="setUserStatus('${u.id}', 'active')" title="เปิดใช้งานอีกครั้ง">🔄 ปลดบล็อก</button>`;
+    }
+
     const deleteBtn = u.id !== ME.id 
-      ? `<button class="btn btn-danger btn-sm" style="margin-left:4px" onclick="deleteUser('${u.id}', '${esc(u.fullname)}', '${u.email}')">ลบผู้ใช้</button>`
+      ? `<button class="btn-act btn-act-danger" onclick="deleteUser('${u.id}', '${esc(u.fullname)}', '${u.email}')" title="ลบบัญชีถาวร">🗑️ ลบ</button>`
       : ``;
 
     return `<tr>
@@ -2222,14 +2323,20 @@ function renderUsersTable(users) {
       <td><code>${esc(u.username)}</code><br><span style="font-size:11px;color:var(--text-muted)">${esc(u.email)}</span></td>
       <td>${esc(u.department || '-')}</td>
       <td>
-        <select onchange="updateUserRole('${u.id}', this.value)" style="padding:4px 8px;font-size:12px">
+        <select class="role-select" onchange="updateUserRole('${u.id}', this.value)">
           <option value="staff" ${u.role==='staff'?'selected':''}>Staff (พนักงาน)</option>
           <option value="exec" ${u.role==='exec'?'selected':''}>Executive (ผู้บริหาร)</option>
           <option value="admin" ${u.role==='admin'?'selected':''}>Admin (ผู้ดูแล)</option>
         </select>
       </td>
       <td>${statusTag}</td>
-      <td>${editBtn}${actionBtn}${deleteBtn}</td>
+      <td>
+        <div class="action-btn-group">
+          ${editBtn}
+          ${actionBtn}
+          ${deleteBtn}
+        </div>
+      </td>
     </tr>`;
   }).join("");
 }

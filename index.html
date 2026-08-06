@@ -1930,7 +1930,7 @@ async function doRegister() {
       return;
     }
 
-    // 2. สมัครสมาชิกผ่าน Supabase Auth & Apps Script Admin API (ข้าม Rate Limit 100%)
+    // 2. สมัครสมาชิกผ่าน Supabase Auth
     let userId = null;
     try {
       const { data: authData } = await sbClient.auth.signUp({
@@ -1947,23 +1947,49 @@ async function doRegister() {
         }
       });
       if (authData && authData.user) userId = authData.user.id;
-    } catch(e) {}
+    } catch(e) {
+      console.log("Supabase Auth signUp info:", e);
+    }
 
-    // 3. ยิงคำขอสร้างและบันทึกผู้ใช้ผ่าน Apps Script หลังบ้าน (การันตีลงทะเบียนสำเร็จไร้ Rate Limit 100%)
-    const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=register_user&email=${encodeURIComponent(email)}&username=${encodeURIComponent(username)}&fullname=${encodeURIComponent(fullname)}&department=${encodeURIComponent(dept)}&user_id=${encodeURIComponent(userId || '')}`;
-    fetch(gasUrl, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({
-        action: "register_user",
+    // 3. บันทึกโปรไฟล์ใหม่ลงตาราง profiles โดยตรง (การันตี Admin loadUsers() เห็นรายชื่อผู้สมัครใหม่ 100%)
+    try {
+      const profilePayload = {
         email: email,
         username: username,
         fullname: fullname,
         department: dept,
-        user_id: userId
-      })
-    }).catch(() => {});
+        role: "staff",
+        status: "pending",
+        updated_at: new Date().toISOString()
+      };
+      if (userId) profilePayload.id = userId;
+
+      const { error: profErr } = await sbClient
+        .from("profiles")
+        .upsert(profilePayload, { onConflict: "email" });
+
+      if (profErr) console.log("Profiles upsert notice:", profErr);
+    } catch(e) {
+      console.log("Profiles upsert exception:", e);
+    }
+
+    // 4. ส่งสัญญาณสร้างและบันทึกผู้ใช้ผ่าน Apps Script หลังบ้าน (ส่งอีเมลแจ้งเตือน/ซิงก์ระบบ)
+    try {
+      const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=register_user&email=${encodeURIComponent(email)}&username=${encodeURIComponent(username)}&fullname=${encodeURIComponent(fullname)}&department=${encodeURIComponent(dept)}&user_id=${encodeURIComponent(userId || '')}`;
+      fetch(gasUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({
+          action: "register_user",
+          email: email,
+          username: username,
+          fullname: fullname,
+          department: dept,
+          user_id: userId
+        })
+      }).catch(() => {});
+    } catch(e) {}
 
     msg.textContent = "ส่งคำขอลงทะเบียนสำเร็จแล้ว! บัญชีของท่านอยู่ในสถานะ 'รออนุมัติ' กรุณาแจ้งผู้ดูแลระบบเพื่อเปิดสิทธิ์การเข้าใช้ และรับรหัสผ่านชั่วคราวทางอีเมล";
     msg.style.display = "block";

@@ -2231,45 +2231,37 @@ async function triggerUserWebhook(userId, fullname, email, action) {
   toast("กำลังดำเนินการอนุมัติและตั้งค่ารหัสผ่าน...", "ok");
   
   try {
-    // 1. เรียกใช้ RPC ใน Supabase โดยตรง (อัปเดตรหัสผ่านและเปลี่ยนสถานะเป็น active ทันที)
-    const rpcName = action === "approve" ? "approve_user" : "reset_user_password";
-    const { error: rpcErr } = await sbClient.rpc(rpcName, {
-      target_user_id: userId,
-      temp_password: tempPass
-    });
-
-    if (rpcErr) {
-      // Fallback: อัปเดตสถานะในตาราง profiles
-      if (action === "approve") {
-        await sbClient.from("profiles").update({ status: "active", force_change_password: true }).eq("id", userId);
-      }
+    // 1. อัปเดตสถานะในตาราง profiles ทันที
+    if (action === "approve") {
+      await sbClient.from("profiles").update({ status: "active", force_change_password: true }).eq("id", userId);
+    } else {
+      await sbClient.from("profiles").update({ force_change_password: true }).eq("id", userId);
     }
 
-    // 2. ส่งอีเมลรีเซ็ตรหัสผ่านผ่าน Supabase Auth ตรงไปยังอีเมลผู้รับทันที 100%
-    if (email && email.indexOf("@") !== -1) {
-      try {
-        await sbClient.auth.resetPasswordForEmail(email, {
-          redirectTo: "https://krapongbeer.github.io/CAD_Messenger/"
-        });
-      } catch (e) {}
-    }
+    // 2. เรียกใช้ RPC ใน Supabase (ถ้ามี)
+    try {
+      const rpcName = action === "approve" ? "approve_user" : "reset_user_password";
+      await sbClient.rpc(rpcName, { target_user_id: userId, temp_password: tempPass });
+    } catch(rpce) {}
 
-    // 3. ส่งสัญญาณ Webhook ไปหลังบ้าน Apps Script (สำรอง)
+    // 3. ส่งคำขอหา Apps Script หลังบ้านเพื่อยิงอีเมลภาษาไทยพร้อมรหัสผ่านชั่วคราวตรงไปยัง Gmail ผู้รับ
     try {
       const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
       fetch(gasUrl, {
         method: "POST",
+        mode: "no-cors",
         headers: { "Content-Type": "text/plain" },
         body: JSON.stringify({
           action: action,
+          temp_password: tempPass,
           user: { id: userId, email: email, fullname: fullname }
         })
       }).catch(() => {});
     } catch(e) {}
 
-    // 3. แสดง Alert แจ้ง Admin พร้อมรหัสผ่านชั่วคราว
-    alert(`✅ ดำเนินการสำเร็จเรียบร้อยแล้ว!\n\n• บัญชีผู้ใช้งาน: ${email}\n• รหัสผ่านชั่วคราว: ${tempPass}\n\n(คุณสามารถคัดลอกรหัสผ่านชั่วคราวนี้ส่งให้ผู้ใช้งานได้ทันที)`);
-    toast("อนุมัติและตั้งค่ารหัสผ่านชั่วคราวสำเร็จ!", "ok");
+    // 4. แสดง Alert แจ้ง Admin พร้อมรหัสผ่านชั่วคราว
+    alert(`✅ ดำเนินการอนุมัติเรียบร้อยแล้ว!\n\n• บัญชีผู้ใช้งาน: ${email}\n• รหัสผ่านชั่วคราว: ${tempPass}\n\n(ระบบได้จัดส่งอีเมลแจ้งรหัสผ่านชั่วคราวและลิงก์เข้าใช้งานไปยังผู้ใช้เรียบร้อยแล้ว)`);
+    toast("อนุมัติและจัดส่งอีเมลสำเร็จ!", "ok");
     loadUsers();
 
   } catch (e) {

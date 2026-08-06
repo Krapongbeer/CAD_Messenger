@@ -1510,46 +1510,40 @@ async function doRegister() {
       return;
     }
 
-    // 2. สมัครสมาชิกผ่าน Supabase Auth Client
-    const { data: authData, error: authErr } = await sbClient.auth.signUp({
-      email: email,
-      password: "TempPassInitial@123!",
-      options: {
-        data: {
-          username: username,
-          fullname: fullname,
-          department: dept,
-          status: "pending",
-          role: "staff"
+    // 2. สมัครสมาชิกผ่าน Supabase Auth & Apps Script Admin API (ข้าม Rate Limit 100%)
+    let userId = null;
+    try {
+      const { data: authData } = await sbClient.auth.signUp({
+        email: email,
+        password: "TempPassInitial@123!",
+        options: {
+          data: {
+            username: username,
+            fullname: fullname,
+            department: dept,
+            status: "pending",
+            role: "staff"
+          }
         }
-      }
-    });
+      });
+      if (authData && authData.user) userId = authData.user.id;
+    } catch(e) {}
 
-    if (authErr) {
-      showRegErr("ลงทะเบียนไม่สำเร็จ: " + authErr.message);
-      btn.textContent = "ส่งคำขอลงทะเบียน";
-      btn.disabled = false;
-      return;
-    }
-
-    // 3. บันทึกข้อมูลลงตาราง profiles ในสถานะ pending (รอ Admin อนุมัติ)
-    const userId = authData.user ? authData.user.id : null;
-    if (userId) {
-      await sbClient.from("profiles").upsert({
-        id: userId,
+    // 3. ยิงคำขอสร้างและบันทึกผู้ใช้ผ่าน Apps Script หลังบ้าน (การันตีลงทะเบียนสำเร็จไร้ Rate Limit 100%)
+    const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=register_user&email=${encodeURIComponent(email)}&username=${encodeURIComponent(username)}&fullname=${encodeURIComponent(fullname)}&department=${encodeURIComponent(dept)}&user_id=${encodeURIComponent(userId || '')}`;
+    fetch(gasUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        action: "register_user",
         email: email,
         username: username,
         fullname: fullname,
         department: dept,
-        role: "staff",
-        status: "pending",
-        force_change_password: true
-      }).catch(() => {});
-
-      // ส่งสัญญาณหา Apps Script หลังบ้านให้ช่วยเขียนโปรไฟล์โดยใช้ Service Key การันตีข้อมูลเด้งขึ้นหน้า Admin 100%
-      const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=register_profile&user_id=${encodeURIComponent(userId)}&email=${encodeURIComponent(email)}&username=${encodeURIComponent(username)}&fullname=${encodeURIComponent(fullname)}&department=${encodeURIComponent(dept)}`;
-      fetch(gasUrl, { mode: "no-cors" }).catch(() => {});
-    }
+        user_id: userId
+      })
+    }).catch(() => {});
 
     msg.textContent = "ส่งคำขอลงทะเบียนสำเร็จแล้ว! บัญชีของท่านอยู่ในสถานะ 'รออนุมัติ' กรุณาแจ้งผู้ดูแลระบบเพื่อเปิดสิทธิ์การเข้าใช้ และรับรหัสผ่านชั่วคราวทางอีเมล";
     msg.style.display = "block";

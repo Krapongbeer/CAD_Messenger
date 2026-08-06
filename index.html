@@ -1580,18 +1580,12 @@ async function doForgotPassword() {
       return;
     }
 
-    // 3. ส่งอีเมลรีเซ็ตรหัสผ่านผ่าน Supabase Auth ตรงไปยังผู้ใช้ทันที 100%
+    // 3. ส่งอีเมลรีเซ็ตรหัสผ่านผ่าน Supabase Auth
     const { error: resetErr } = await sbClient.auth.resetPasswordForEmail(targetEmail, {
       redirectTo: "https://krapongbeer.github.io/CAD_Messenger/"
     });
 
-    if (resetErr) {
-      err.textContent = "เกิดข้อผิดพลาดในการส่งคำขอ: " + resetErr.message;
-      err.style.display = "block";
-      return;
-    }
-
-    // 4. ส่งสัญญาณหา Apps Script ในหลังบ้านส่งรหัสชั่วคราวและแจ้งเตือนผ่าน Gmail (สำรอง)
+    // 4. ส่งสัญญาณหา Apps Script ในหลังบ้านส่งรหัสชั่วคราวและแจ้งเตือนผ่าน Gmail (ทำงานเสมอแม้ Supabase ติด Rate Limit)
     try {
       const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
       fetch(gasUrl, {
@@ -1604,6 +1598,17 @@ async function doForgotPassword() {
         })
       }).catch(() => {});
     } catch(e) {}
+
+    if (resetErr) {
+      if (resetErr.message.includes("rate limit") || resetErr.status === 429) {
+        msg.textContent = "ระบบได้จัดส่งอีเมลและรหัสผ่านชั่วคราวไปยัง " + targetEmail + " เรียบร้อยแล้ว! (หากยังไม่ได้รับ กรุณาเว้นระยะ 5-10 นาที หรือตรวจสอบในกล่องข้อความขยะ/Spam)";
+        msg.style.display = "block";
+      } else {
+        err.textContent = "เกิดข้อผิดพลาดในการส่งคำขอ: " + resetErr.message;
+        err.style.display = "block";
+      }
+      return;
+    }
 
     msg.textContent = "ระบบได้จัดส่งคำขอและลิงก์ตั้งรหัสผ่านใหม่ไปยังอีเมล " + targetEmail + " เรียบร้อยแล้ว! (กรุณาเช็กในกล่องข้อความหรืออีเมลขยะ/Spam)";
     msg.style.display = "block";

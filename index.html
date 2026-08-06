@@ -1047,14 +1047,173 @@ tr:hover td { background: var(--cmu-purple-bg); }
   .auth-box { padding: 28px 24px; }
 }
 
+/* Official A4 Report Paper Styling */
+.report-paper {
+  background: #ffffff;
+  color: #1a1a1a;
+  padding: 36px 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  margin-top: 10px;
+  font-family: 'Sarabun', 'Inter', sans-serif;
+}
+
+.report-header {
+  border-bottom: 2px solid #5c2483;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.report-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #5c2483;
+  margin-bottom: 4px;
+}
+
+.report-subtitle {
+  font-size: 13px;
+  color: #4a5568;
+}
+
+.report-meta {
+  text-align: right;
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.report-summary-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+.report-summary-item {
+  font-size: 12px;
+  color: #475569;
+}
+
+.report-summary-item strong {
+  font-size: 15px;
+  color: #5c2483;
+  margin-left: 4px;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 28px;
+  font-size: 12px;
+}
+
+.report-table th {
+  background: #f1f5f9;
+  color: #1e293b;
+  font-weight: 700;
+  padding: 10px 8px;
+  border: 1px solid #cbd5e1;
+  text-align: left;
+}
+
+.report-table td {
+  padding: 9px 8px;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  vertical-align: top;
+}
+
+.report-table tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.report-signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-top: 36px;
+  padding-top: 20px;
+  page-break-inside: avoid;
+}
+
+.sig-box {
+  text-align: center;
+  font-size: 12px;
+  color: #334155;
+}
+
+.sig-line {
+  margin-top: 45px;
+  border-bottom: 1px dotted #94a3b8;
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 /* Print-friendly styles for Report Generation */
 @media print {
-  body { background: white; color: black; font-size: 12px; }
-  .topbar, .sidebar, .filter-bar, .btn, #toast, .modal-overlay, #pdf-overlay { display: none !important; }
-  .content { padding: 0; }
-  .tbl-wrap { border: none; box-shadow: none; }
-  th { background: #eee !important; color: black !important; border-bottom: 2px solid #000; }
-  td { border-bottom: 1px solid #ddd; }
+  @page {
+    size: A4 portrait;
+    margin: 12mm 15mm;
+  }
+  
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .topbar, .sidebar, .filter-bar, .admin-box, .no-print, .btn, #toast, .modal-overlay, #pdf-overlay {
+    display: none !important;
+  }
+
+  .content-wrap, .content, .main-layout, #page-report {
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    width: 100% !important;
+  }
+
+  .report-paper {
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .report-header {
+    border-bottom: 2px solid #000000 !important;
+  }
+
+  .report-title {
+    color: #000000 !important;
+  }
+
+  .report-table th {
+    background: #e2e8f0 !important;
+    color: #000000 !important;
+    border: 1px solid #000000 !important;
+  }
+
+  .report-table td {
+    border: 1px solid #64748b !important;
+    color: #000000 !important;
+  }
+
+  .report-signatures {
+    page-break-inside: avoid !important;
+  }
 }
 </style>
 </head>
@@ -1362,34 +1521,48 @@ tr:hover td { background: var(--cmu-purple-bg); }
 
       <!-- PAGE: REPORT -->
       <div id="page-report" class="page">
-        <div class="admin-box">
-          <div class="admin-title">ออกรายงาน เอกสาร/จดหมาย/พัสดุ</div>
-          <div class="admin-sub">กรองช่วงข้อมูลที่ต้องการจัดทำรายงานและกดปุ่มด้านล่างเพื่อสั่งพิมพ์หน้านี้เป็น PDF</div>
+        <div class="admin-box no-print" style="margin-bottom:24px">
+          <div class="admin-title">📋 ออกรายงาน เอกสาร/จดหมาย/พัสดุ (PDF Report)</div>
+          <div class="admin-sub">กรองช่วงข้อมูลที่ต้องการจัดทำรายงาน ระบบจะสร้างตัวอย่างรายงาน A4 ให้โดยอัตโนมัติ</div>
           <div class="range-toggle" style="margin-bottom:18px">
             <button id="rpt-mode-ym" class="active" onclick="setRptMode('ym')">ระบบ ปี/เดือน</button>
             <button id="rpt-mode-dr" onclick="setRptMode('dr')">ระบบ ช่วงวันที่</button>
           </div>
           <div id="rpt-ym">
-            <div class="form-group">
-              <label class="f-label">ปี (พ.ศ.)</label>
-              <select class="f-input" id="rpt-year"></select>
-            </div>
-            <div class="form-group">
-              <label class="f-label">เดือน (ไม่ระบุ = ตลอดทั้งปี)</label>
-              <select class="f-input" id="rpt-month"><option value="">รวมทั้งปี</option></select>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+              <div class="form-group">
+                <label class="f-label">ปี (พ.ศ.)</label>
+                <select class="f-input" id="rpt-year" onchange="renderReportPreview()"></select>
+              </div>
+              <div class="form-group">
+                <label class="f-label">เดือน (ไม่ระบุ = ตลอดทั้งปี)</label>
+                <select class="f-input" id="rpt-month" onchange="renderReportPreview()"><option value="">รวมทั้งปี</option></select>
+              </div>
             </div>
           </div>
           <div id="rpt-dr" style="display:none">
-            <div class="form-group">
-              <label class="f-label">จากวันที่</label>
-              <input type="date" class="f-input" id="rpt-from"/>
-            </div>
-            <div class="form-group">
-              <label class="f-label">ถึงวันที่</label>
-              <input type="date" class="f-input" id="rpt-to"/>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+              <div class="form-group">
+                <label class="f-label">จากวันที่</label>
+                <input type="date" class="f-input" id="rpt-from" onchange="renderReportPreview()"/>
+              </div>
+              <div class="form-group">
+                <label class="f-label">ถึงวันที่</label>
+                <input type="date" class="f-input" id="rpt-to" onchange="renderReportPreview()"/>
+              </div>
             </div>
           </div>
-          <button class="auth-btn" onclick="generateReportPDF()">สั่งพิมพ์ / ออกรายงานเป็น PDF</button>
+          <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="renderReportPreview()" style="padding:10px 20px;font-size:14px">🔄 อัปเดตตัวอย่างรายงาน</button>
+            <button class="auth-btn" onclick="generateReportPDF()" style="margin-top:0;padding:10px 24px;font-size:14px;flex:1;min-width:200px">🖨️ สั่งพิมพ์ / บันทึกรายงานเป็น PDF</button>
+          </div>
+        </div>
+
+        <!-- Official Report Document Preview Container -->
+        <div id="report-doc-wrap">
+          <div id="report-doc" class="report-paper">
+            <div style="text-align:center;padding:40px;color:#888">⏳ กำลังจัดทำเอกสารรายงาน...</div>
+          </div>
         </div>
       </div>
 
@@ -1879,6 +2052,8 @@ function triggerDataRefresh() {
     loadYearly();
   } else if (activePage.id === "page-records") {
     loadRecords();
+  } else if (activePage.id === "page-report") {
+    renderReportPreview();
   }
 }
 
@@ -1913,6 +2088,7 @@ function nav(el) {
   if (pid === "monthly") loadMonthly();
   if (pid === "yearly")  loadYearly();
   if (pid === "records") loadRecords();
+  if (pid === "report")  renderReportPreview();
   if (pid === "users")   loadUsers();
 }
 
@@ -2245,8 +2421,152 @@ function filterRec() {
   }).join("") || '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:24px">ไม่พบข้อมูลค้นหา</td></tr>';
 }
 
+let currentRptMode = "ym";
+
+function setRptMode(mode) {
+  currentRptMode = mode;
+  document.getElementById("rpt-mode-ym").classList.toggle("active", mode === "ym");
+  document.getElementById("rpt-mode-dr").classList.toggle("active", mode === "dr");
+  document.getElementById("rpt-ym").style.display = mode === "ym" ? "block" : "none";
+  document.getElementById("rpt-dr").style.display = mode === "dr" ? "block" : "none";
+  renderReportPreview();
+}
+
+async function renderReportPreview() {
+  const docContainer = document.getElementById("report-doc");
+  if (!docContainer) return;
+
+  docContainer.innerHTML = `<div style="text-align:center;padding:40px;color:#888">⏳ กำลังสร้างตัวอย่างรายงาน A4...</div>`;
+
+  try {
+    let query = sbClient.from("records").select("*").order("id", { ascending: false });
+    if (ME.role === "staff") query = query.eq("record_by_email", ME.email);
+
+    let filterDesc = "";
+    if (currentRptMode === "ym") {
+      const year = document.getElementById("rpt-year").value || new Date().getFullYear();
+      const month = document.getElementById("rpt-month").value;
+
+      const startDate = `${year}-01-01`;
+      const endDate = `${year}-12-31`;
+      query = query.gte("date", startDate).lte("date", endDate);
+
+      const thaiYear = parseInt(year) + 543;
+      const monthText = month ? MONTHS[parseInt(month)] : "รวมทั้งปี";
+      filterDesc = `ประจำปี พ.ศ. ${thaiYear} (เดือน: ${monthText})`;
+    } else {
+      const from = document.getElementById("rpt-from").value;
+      const to = document.getElementById("rpt-to").value;
+      if (from && to) {
+        query = query.gte("date", from).lte("date", to);
+        filterDesc = `ตั้งแต่วันที่ ${formatThaiDate(from)} ถึงวันที่ ${formatThaiDate(to)}`;
+      } else {
+        filterDesc = `ช่วงวันที่ระบุ`;
+      }
+    }
+
+    const { data: records, error } = await query;
+    if (error) throw error;
+
+    let finalRecords = records || [];
+
+    // Filter by month client-side if month specified in ym mode
+    if (currentRptMode === "ym") {
+      const month = document.getElementById("rpt-month").value;
+      if (month) {
+        const targetM = parseInt(month);
+        finalRecords = finalRecords.filter(r => (parseRecordDate(r).getMonth() + 1) === targetM);
+      }
+    }
+
+    const totalCount = finalRecords.length;
+    const completedCount = finalRecords.filter(r => r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว").length;
+    const pendingCount = totalCount - completedCount;
+
+    const nowStr = formatThaiFullDate(new Date()) + " เวลา " + new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) + " น.";
+    const authorName = (ME && (ME.fullname || ME.username)) ? `${ME.fullname || ME.username} (${ME.email || ''})` : 'ผู้ดูแลระบบ SmartCAD-Messenger';
+
+    const tableRows = finalRecords.map((r, idx) => {
+      const isDelivered = r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว";
+      const statusBadge = isDelivered
+        ? `<span style="color:#059669;font-weight:700">✓ ส่งมอบแล้ว</span>`
+        : `<span style="color:#d97706;font-weight:700">⏳ รอดำเนินการ</span>`;
+
+      return `<tr>
+        <td style="text-align:center">${idx + 1}</td>
+        <td><strong>${esc(r.tracking_no || '-')}</strong></td>
+        <td>${formatThaiDate(r.date || r.timestamp)}</td>
+        <td>${esc(r.sender || '-')}</td>
+        <td>${esc(r.receiver || '-')}</td>
+        <td>${statusBadge}</td>
+        <td style="font-size:11px">${esc(r.detail || '-')}</td>
+        <td style="font-size:11px;color:#64748b">${formatThaiTime(r.timestamp)}</td>
+      </tr>`;
+    }).join("");
+
+    docContainer.innerHTML = `
+      <div class="report-header">
+        <div>
+          <div class="report-title">📋 รายงานสรุปการรับ-ส่ง เอกสาร/จดหมาย/พัสดุ</div>
+          <div class="report-subtitle">ระบบบริหารจัดการพัสดุ SmartCAD-Messenger (มหาวิทยาลัยเชียงใหม่)</div>
+        </div>
+        <div class="report-meta">
+          <div><strong>ขอบเขต:</strong> ${filterDesc}</div>
+          <div><strong>วันที่จัดทำ:</strong> ${nowStr}</div>
+          <div><strong>ผู้ออกรายงาน:</strong> ${esc(authorName)}</div>
+        </div>
+      </div>
+
+      <div class="report-summary-bar">
+        <div class="report-summary-item">งานรับ-ส่งทั้งหมด: <strong>${totalCount} รายการ</strong></div>
+        <div class="report-summary-item">ส่งมอบสำเร็จแล้ว: <strong style="color:#059669">${completedCount} รายการ</strong></div>
+        <div class="report-summary-item">รอดำเนินการคงค้าง: <strong style="color:#d97706">${pendingCount} รายการ</strong></div>
+      </div>
+
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th style="width:35px;text-align:center">#</th>
+            <th style="width:120px">Tracking No.</th>
+            <th style="width:90px">วันที่รับ</th>
+            <th>ผู้ส่ง</th>
+            <th>ผู้รับ / หน่วยงาน</th>
+            <th style="width:95px">สถานะ</th>
+            <th>รายละเอียด/หมายเหตุ</th>
+            <th style="width:105px">เวลาบันทึก</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows || '<tr><td colspan="8" style="text-align:center;color:#888;padding:24px">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>'}
+        </tbody>
+      </table>
+
+      <div class="report-signatures">
+        <div class="sig-box">
+          <div class="sig-line"></div>
+          <div style="margin-top:8px">ลงชื่อ...................................................</div>
+          <div style="margin-top:4px;font-weight:600">(${esc(authorName)})</div>
+          <div style="font-size:11px;color:#64748b;margin-top:2px">ผู้จัดทำและออกรายงาน</div>
+        </div>
+        <div class="sig-box">
+          <div class="sig-line"></div>
+          <div style="margin-top:8px">ลงชื่อ...................................................</div>
+          <div style="margin-top:4px;font-weight:600">(...................................................)</div>
+          <div style="font-size:11px;color:#64748b;margin-top:2px">ผู้ตรวจสอบ / หัวหน้างาน</div>
+        </div>
+      </div>
+    `;
+  } catch (e) {
+    docContainer.innerHTML = `<div style="text-align:center;padding:40px;color:#dc2626">❌ เกิดข้อผิดพลาดในการโหลดรายงาน: ${esc(e.message)}</div>`;
+  }
+}
+
 function generateReportPDF() {
-  window.print(); // ใช้ฟังก์ชัน print ของเบราว์เซอร์ ซึ่งจัดสไตล์ print-friendly CSS ไว้แล้ว ได้เอกสารสวยงามแบบฟรีๆ
+  renderReportPreview().then(() => {
+    setTimeout(() => {
+      window.print();
+    }, 300);
+  });
 }
 
 // ========================================================================

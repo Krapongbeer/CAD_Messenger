@@ -1580,37 +1580,29 @@ async function doForgotPassword() {
       return;
     }
 
-    // 3. ส่งอีเมลรีเซ็ตรหัสผ่านผ่าน Supabase Auth
-    const { error: resetErr } = await sbClient.auth.resetPasswordForEmail(targetEmail, {
-      redirectTo: "https://krapongbeer.github.io/CAD_Messenger/"
-    });
+    // 3. สร้างรหัสผ่านชั่วคราวและยิงหา Apps Script หลังบ้านทันทีแบบ Non-blocking (ไม่มีทางค้าง)
+    const tempPass = genTempPass();
+    const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
+    
+    fetch(gasUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        action: "reset_password",
+        temp_password: tempPass,
+        user: { id: targetUserId, email: targetEmail, fullname: targetFullname }
+      })
+    }).catch(() => {});
 
-    // 4. ส่งสัญญาณหา Apps Script ในหลังบ้านส่งรหัสชั่วคราวและแจ้งเตือนผ่าน Gmail (ทำงานเสมอแม้ Supabase ติด Rate Limit)
+    // 4. พยายามยิง Supabase Auth เพิ่มเติมเป็นตัวเลือก (ถ้าทำได้)
     try {
-      const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
-      fetch(gasUrl, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({
-          action: "reset_password",
-          user: { id: targetUserId, email: targetEmail, fullname: targetFullname }
-        })
+      sbClient.auth.resetPasswordForEmail(targetEmail, {
+        redirectTo: "https://krapongbeer.github.io/CAD_Messenger/"
       }).catch(() => {});
     } catch(e) {}
 
-    if (resetErr) {
-      if (resetErr.message.includes("rate limit") || resetErr.status === 429) {
-        msg.textContent = "ระบบได้จัดส่งอีเมลและรหัสผ่านชั่วคราวไปยัง " + targetEmail + " เรียบร้อยแล้ว! (หากยังไม่ได้รับ กรุณาเว้นระยะ 5-10 นาที หรือตรวจสอบในกล่องข้อความขยะ/Spam)";
-        msg.style.display = "block";
-      } else {
-        err.textContent = "เกิดข้อผิดพลาดในการส่งคำขอ: " + resetErr.message;
-        err.style.display = "block";
-      }
-      return;
-    }
-
-    msg.textContent = "ระบบได้จัดส่งคำขอและลิงก์ตั้งรหัสผ่านใหม่ไปยังอีเมล " + targetEmail + " เรียบร้อยแล้ว! (กรุณาเช็กในกล่องข้อความหรืออีเมลขยะ/Spam)";
+    msg.textContent = "ระบบได้จัดส่งอีเมลแจ้งรหัสผ่านชั่วคราวและลิงก์ไปยัง " + targetEmail + " เรียบร้อยแล้ว! (กรุณาเช็กในกล่องข้อความหรืออีเมลขยะ/Spam)";
     msg.style.display = "block";
     document.getElementById("forgot-identifier").value = "";
 

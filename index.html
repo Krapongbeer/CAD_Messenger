@@ -2251,16 +2251,7 @@ async function triggerUserWebhook(userId, fullname, email, action) {
       await sbClient.rpc(rpcName, { target_user_id: userId, temp_password: tempPass });
     } catch(rpce) {}
 
-    // 3. ยิงอีเมลรีเซ็ตรหัสผ่านผ่าน Supabase Auth ตรงไปยังอีเมลผู้รับทันที 100%
-    if (email && email.indexOf("@") !== -1) {
-      try {
-        await sbClient.auth.resetPasswordForEmail(email, {
-          redirectTo: "https://krapongbeer.github.io/CAD_Messenger/"
-        });
-      } catch (e) {}
-    }
-
-    // 4. ส่งคำขอหา Apps Script หลังบ้านเพื่อยิงอีเมลภาษาไทยพร้อมรหัสผ่านชั่วคราวตรงไปยัง Gmail ผู้รับ
+    // 3. ส่งคำขอหา Apps Script หลังบ้านเพื่ออัปเดตรหัสผ่านในฐานข้อมูลและส่งอีเมลภาษาไทยพร้อมรหัสผ่านชั่วคราวตรงไปยัง Gmail
     try {
       const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
       fetch(gasUrl, {

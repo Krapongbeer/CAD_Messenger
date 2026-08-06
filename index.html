@@ -1493,25 +1493,65 @@ async function doRegister() {
   hideAuthErr();
 
   try {
-    // สมัครสมาชิกผ่าน Supabase Auth ด้วยรหัสผ่านชั่วคราวแรกเริ่ม
-    // จากนั้นข้อมูลจะเด้งเข้า profiles เป็น pending รอ Admin กดอนุมัติ
-    const { data, error } = await sbClient.auth.signUp({
-      email: email,
-      password: "TempPassInitial@123!", // รหัสผ่านชั่วคราวระบบตั้งให้ก่อน
-      options: {
-        emailRedirectTo: "https://krapongbeer.github.io/CAD_Messenger/",
-        data: {
-          username: username,
-          fullname: fullname,
-          department: dept
-        }
-      }
-    });
+    // 1. ตรวจสอบ Username / Email ซ้ำในตาราง profiles ก่อน
+    const { data: existingProfiles } = await sbClient
+      .from("profiles")
+      .select("username, email")
+      .or(`username.eq.${username},email.eq.${email}`);
 
-    if (error) {
-      showRegErr("ลงทะเบียนไม่สำเร็จ: " + error.message);
+    if (existingProfiles && existingProfiles.length > 0) {
+      showRegErr("Username หรือ Email นี้มีผู้ใช้งานในระบบแล้ว");
+      btn.textContent = "ส่งคำขอลงทะเบียน";
+      btn.disabled = false;
       return;
     }
+
+    // 2. สมัครสมาชิกผ่าน Supabase Auth Admin API (Auto-Confirm) ปิดการส่งอีเมลอังกฤษจาก Supabase 100%
+    const adminUrl = `${SUPABASE_URL}/auth/v1/admin/users`;
+    const tempInitialPass = "TempPassInitial@123!";
+    
+    const response = await fetch(adminUrl, {
+      method: "POST",
+      headers: {
+        "apikey": SUPABASE_SERVICE_KEY,
+        "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        email: email,
+        password: tempInitialPass,
+        email_confirm: true,
+        user_metadata: {
+          username: username,
+          fullname: fullname,
+          department: dept,
+          status: "pending",
+          role: "staff"
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const errJson = await response.json();
+      showRegErr("ลงทะเบียนไม่สำเร็จ: " + (errJson.msg || errJson.message || "ไม่สามารถลงทะเบียนได้"));
+      btn.textContent = "ส่งคำขอลงทะเบียน";
+      btn.disabled = false;
+      return;
+    }
+
+    const newUser = await response.json();
+
+    // 3. บันทึกข้อมูลลงตาราง profiles ในสถานะ pending (รอ Admin อนุมัติ)
+    await sbClient.from("profiles").upsert({
+      id: newUser.id,
+      email: email,
+      username: username,
+      fullname: fullname,
+      department: dept,
+      role: "staff",
+      status: "pending",
+      force_change_password: true
+    });
 
     msg.textContent = "ส่งคำขอลงทะเบียนสำเร็จแล้ว! บัญชีของท่านอยู่ในสถานะ 'รออนุมัติ' กรุณาแจ้งผู้ดูแลระบบเพื่อเปิดสิทธิ์การเข้าใช้ และรับรหัสผ่านชั่วคราวทางอีเมล";
     msg.style.display = "block";
@@ -1522,7 +1562,7 @@ async function doRegister() {
     document.getElementById("reg-email").value = "";
     document.getElementById("reg-dept").value = "";
   } catch (e) {
-    showRegErr("เกิดข้อผิดพลาดระบบการลงทะเบียน");
+    showRegErr("เกิดข้อผิดพลาดระบบการลงทะเบียน: " + e.message);
   } finally {
     btn.textContent = "ส่งคำขอลงทะเบียน";
     btn.disabled = false;

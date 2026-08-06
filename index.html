@@ -1547,25 +1547,26 @@ async function doForgotPassword() {
   msg.style.display = "none";
 
   try {
-    let targetEmail = null;
+    let targetEmail = (identifier.indexOf("@") !== -1) ? identifier : null;
     let targetFullname = "";
     let targetUserId = null;
 
-    // 1. ถ้าผู้ใช้พิมพ์อีเมลเข้ามาโดยตรง (มี @)
-    if (identifier.indexOf("@") !== -1) {
-      targetEmail = identifier;
-    }
-
-    // 2. ค้นหาข้อมูลในตารางโปรไฟล์ย่อย (เพื่อหา Email จาก Username)
+    // 1. ค้นหาในตารางโปรไฟล์ย่อยโดยมีระบบป้องกันหน้าเว็บค้าง 100% (Timeout 1.5 วินาที)
     try {
-      let query = sbClient.from("profiles").select("id, email, fullname, username");
-      if (identifier.indexOf("@") !== -1) {
-        query = query.eq("email", identifier);
-      } else {
-        query = query.eq("username", identifier);
-      }
+      const fetchPromise = (async () => {
+        let query = sbClient.from("profiles").select("id, email, fullname, username");
+        if (identifier.indexOf("@") !== -1) {
+          query = query.eq("email", identifier);
+        } else {
+          query = query.eq("username", identifier);
+        }
+        return await query.maybeSingle();
+      })();
 
-      const { data: profile } = await query.maybeSingle();
+      const timeoutPromise = new Promise(resolve => setTimeout(() => resolve({ data: null }), 1500));
+      const res = await Promise.race([fetchPromise, timeoutPromise]);
+      const profile = res ? res.data : null;
+
       if (profile) {
         if (profile.email) targetEmail = profile.email;
         targetFullname = profile.fullname || "";
@@ -1573,14 +1574,16 @@ async function doForgotPassword() {
       }
     } catch (pe) {}
 
-    // หากระบุ Username แต่สแกนไม่เจอ
+    // หากระบุเป็น Username แล้วสแกนไม่พบข้อมูล
     if (!targetEmail) {
       err.textContent = "ไม่พบข้อมูล Username นี้ในระบบ (กรุณาลองระบุเป็น Email ของท่าน)";
       err.style.display = "block";
+      btn.textContent = "ส่งคำขอรหัสผ่านใหม่";
+      btn.disabled = false;
       return;
     }
 
-    // 3. สร้างรหัสผ่านชั่วคราวและยิงหา Apps Script หลังบ้านทันทีแบบ Non-blocking (ไม่มีทางค้าง)
+    // 2. สร้างรหัสผ่านชั่วคราวและยิงหา Apps Script หลังบ้านทันทีแบบ Non-blocking (การันตีลื่นไหล 100%)
     const tempPass = genTempPass();
     const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
     
@@ -1595,7 +1598,7 @@ async function doForgotPassword() {
       })
     }).catch(() => {});
 
-    // 4. พยายามยิง Supabase Auth เพิ่มเติมเป็นตัวเลือก (ถ้าทำได้)
+    // 3. พยายามยิง Supabase Auth เพิ่มเติมเป็นตัวเลือก (ถ้าทำได้)
     try {
       sbClient.auth.resetPasswordForEmail(targetEmail, {
         redirectTo: "https://krapongbeer.github.io/CAD_Messenger/"
@@ -1607,7 +1610,7 @@ async function doForgotPassword() {
     document.getElementById("forgot-identifier").value = "";
 
   } catch (e) {
-    err.textContent = "การเชื่อมต่อล้มเหลว: " + e.message;
+    err.textContent = "เกิดข้อผิดพลาดในการส่งคำขอ: " + e.message;
     err.style.display = "block";
   } finally {
     btn.textContent = "ส่งคำขอรหัสผ่านใหม่";

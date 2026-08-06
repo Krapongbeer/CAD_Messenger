@@ -901,6 +901,27 @@ select:focus, input[type=date]:focus {
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+.kpi-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #3b1359 0%, #5c2483 100%);
+  color: #f5b027;
+  font-weight: 700;
+  font-size: 11.5px;
+  box-shadow: 0 2px 6px rgba(92, 36, 131, 0.25);
+  letter-spacing: 0.3px;
+  border: 1px solid rgba(245, 176, 39, 0.4);
+}
+[data-theme="dark"] .kpi-badge {
+  background: linear-gradient(135deg, #9d4edd 0%, #3b1359 100%);
+  color: #ffd166;
+  border: 1px solid rgba(255, 209, 102, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 /* ── Charts ── */
@@ -1538,8 +1559,8 @@ tr:hover td { background: var(--cmu-purple-bg); }
       <!-- PAGE: OVERVIEW -->
       <div id="page-overview" class="page active">
         <div class="filter-bar">
+          <div class="filter-group"><div class="filter-label">เดือน</div><select id="ov-month" onchange="loadOverview()"><option value="">ทุกเดือน (ตลอดทั้งปี)</option></select></div>
           <div class="filter-group"><div class="filter-label">ปี (พ.ศ.)</div><select id="ov-year" onchange="loadOverview()"></select></div>
-          <div class="filter-group"><div class="filter-label">เดือน</div><select id="ov-month" onchange="loadOverview()"><option value="">ทุกเดือน</option></select></div>
         </div>
         <div class="kpi-grid" id="ov-kpi"></div>
         <div class="charts-grid">
@@ -2357,20 +2378,25 @@ function renderOverview(records, year, month) {
   });
   
   // เรนเดอร์ KPI Cards พร้อม Click Handler และ Active Badge State
+  const monthText = targetMonth ? MONTHS[targetMonth] : "ทุกเดือน";
+  const thaiYear = targetYear + 543;
+  const periodBracketText = `(${monthText} ${thaiYear})`;
+
   const kpis = [
     { key: "today", label: "รายการของวันนี้", value: todayCount, sub: "รับเอกสาร/จดหมาย/พัสดุ ภายในวันนี้" },
     { key: "delivered", label: "ส่งสำเร็จแล้ว", value: completedCount, sub: "มีลายเซ็นต์รับมอบเรียบร้อย" },
     { key: "pending", label: "รอดำเนินการ", value: pendingCount, sub: "รายการคงค้างยังไม่รับมอบ" },
-    { key: "all", label: "จำนวนงานรวม (ตัวกรอง)", value: filtered.length, sub: `ปี ${targetYear + 543}` }
+    { key: "all", label: "จำนวนงานรวม (ตัวกรอง)", value: filtered.length, subHtml: `<span class="kpi-badge">${periodBracketText}</span>` }
   ];
   
   document.getElementById("ov-kpi").innerHTML = kpis.map(k => {
     const isActive = currentKpiFilter === k.key ? " active-kpi-filter" : "";
+    const subHTML = k.subHtml ? k.subHtml : esc(k.sub);
     return `<div class="kpi${isActive}" onclick="filterDashboardByKpi('${k.key}')" title="คลิกเพื่อดูรายการ ${k.label}">
       <div class="kpi-hint">👇 คลิกดูรายการ</div>
       <div class="kpi-label">${k.label}</div>
       <div class="kpi-value">${k.value}</div>
-      <div class="kpi-sub" title="${esc(k.sub)}">${esc(k.sub)}</div>
+      <div class="kpi-sub" title="${k.sub ? esc(k.sub) : ''}">${subHTML}</div>
     </div>`;
   }).join("");
   
@@ -3175,10 +3201,14 @@ function initDynamicSelects() {
     }
   });
   
+  const curMonthVal = (new Date().getMonth() + 1).toString();
   ["ov-month","rec-month","rpt-month"].forEach(id => {
     const el = document.getElementById(id);
     if (el) {
-      el.innerHTML = '<option value="">ทุกเดือน</option>' + monthOpts;
+      el.innerHTML = '<option value="">ทุกเดือน (ตลอดทั้งปี)</option>' + monthOpts;
+      if (id === "ov-month") {
+        el.value = curMonthVal; // Default to Current Month on Dashboard Startup!
+      }
     }
   });
   

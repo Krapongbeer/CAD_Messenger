@@ -1543,36 +1543,51 @@ async function doForgotPassword() {
   msg.style.display = "none";
 
   try {
-    // ดึงโปรไฟล์เพื่อหาอีเมลและ User ID
-    let query = sbClient.from("profiles").select("id, email, fullname");
+    let targetEmail = null;
+    let targetFullname = "";
+    let targetUserId = null;
+
+    // 1. ถ้าผู้ใช้พิมพ์อีเมลเข้ามาโดยตรง (มี @)
     if (identifier.indexOf("@") !== -1) {
-      query = query.eq("email", identifier);
-    } else {
-      query = query.eq("username", identifier);
+      targetEmail = identifier;
     }
 
-    const { data: profile, error: pErr } = await query.maybeSingle();
+    // 2. ค้นหาข้อมูลในโปรไฟล์ (ถ้ามีข้อมูลในตาราง profiles)
+    try {
+      let query = sbClient.from("profiles").select("id, email, fullname");
+      if (identifier.indexOf("@") !== -1) {
+        query = query.eq("email", identifier);
+      } else {
+        query = query.eq("username", identifier);
+      }
 
-    if (!profile) {
-      err.textContent = "ไม่พบข้อมูลบัญชีผู้ใช้ในระบบ";
-      err.style.display = "block";
-      return;
-    }
+      const { data: profile } = await query.maybeSingle();
+      if (profile) {
+        if (profile.email) targetEmail = profile.email;
+        targetFullname = profile.fullname || "";
+        targetUserId = profile.id || null;
+      }
+    } catch (pe) {}
 
-    const targetEmail = profile.email || (identifier.indexOf("@") !== -1 ? identifier : null);
-
+    // หากพิมพ์ Username แล้วหาอีเมลไม่เจอ
     if (!targetEmail) {
-      err.textContent = "ไม่พบอีเมลของบัญชีนี้ในระบบ";
+      err.textContent = "ไม่พบข้อมูลบัญชีผู้ใช้ในระบบ (หากระบุเป็น Username กรุณาลองระบุเป็น Email ของท่าน)";
       err.style.display = "block";
       return;
     }
 
-    // 1. ส่งอีเมลรีเซ็ตรหัสผ่านผ่าน Supabase Auth โดยตรง (ทำงานทันที 100%)
-    await sbClient.auth.resetPasswordForEmail(targetEmail, {
+    // 3. ส่งอีเมลรีเซ็ตรหัสผ่านผ่าน Supabase Auth โดยตรง
+    const { error: resetErr } = await sbClient.auth.resetPasswordForEmail(targetEmail, {
       redirectTo: "https://krapongbeer.github.io/CAD_Messenger/"
     });
 
-    // 2. ส่งสัญญาณหา Apps Script ในหลังบ้าน (ถ้าใช้งานได้)
+    if (resetErr) {
+      err.textContent = "เกิดข้อผิดพลาดในการส่งคำขอ: " + resetErr.message;
+      err.style.display = "block";
+      return;
+    }
+
+    // 4. ส่งสัญญาณหา Apps Script ในหลังบ้านส่งรหัสชั่วคราวเป็นสำรอง
     try {
       const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}`;
       fetch(gasUrl, {
@@ -1580,12 +1595,12 @@ async function doForgotPassword() {
         headers: { "Content-Type": "text/plain" },
         body: JSON.stringify({
           action: "reset_password",
-          user: { id: profile.id, email: targetEmail, fullname: profile.fullname }
+          user: { id: targetUserId, email: targetEmail, fullname: targetFullname }
         })
       }).catch(() => {});
     } catch(e) {}
 
-    msg.textContent = "ระบบได้จัดส่งลิงก์ตั้งรหัสผ่านใหม่ไปยังอีเมล " + targetEmail + " เรียบร้อยแล้ว!";
+    msg.textContent = "ระบบได้จัดส่งคำขอและลิงก์ตั้งรหัสผ่านใหม่ไปยังอีเมล " + targetEmail + " เรียบร้อยแล้ว!";
     msg.style.display = "block";
     document.getElementById("forgot-identifier").value = "";
 

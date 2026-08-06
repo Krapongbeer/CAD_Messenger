@@ -1064,7 +1064,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 <div id="auth-page">
   <div class="auth-box">
     <div class="auth-logo">SmartCAD<em>-Messenger</em></div>
-    <div class="auth-sub">ระบบติดตามส่งเอกสารและพัสดุ (เชื่อมต่อ Supabase - ความปลอดภัยสูง)</div>
+    <div class="auth-sub">ระบบติดตามส่งเอกสาร/จดหมาย/พัสดุ (เชื่อมต่อ Supabase - ความปลอดภัยสูง)</div>
     
     <div class="auth-tabs">
       <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">เข้าสู่ระบบ</div>
@@ -1312,7 +1312,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
       <!-- PAGE: YEARLY -->
       <div id="page-yearly" class="page">
         <div class="filter-bar"><button class="btn btn-success" onclick="window.print()">พิมพ์รายงานประจำปี</button></div>
-        <div class="chart-card" style="margin-bottom:20px"><div class="chart-title">จำนวนพัสดุรายปี</div><div class="chart-wrap" style="height:230px"><canvas id="ch-yearly"></canvas></div></div>
+        <div class="chart-card" style="margin-bottom:20px"><div class="chart-title">จำนวนรายปี เอกสาร/จดหมาย/พัสดุ</div><div class="chart-wrap" style="height:230px"><canvas id="ch-yearly"></canvas></div></div>
         <div class="tbl-wrap"><div class="tbl-head"><div class="tbl-title">ตารางสรุปรายปี</div></div>
           <table><thead><tr><th>ปี (พ.ศ.)</th><th>จำนวนงาน</th></tr></thead><tbody id="yr-tb"></tbody></table></div>
       </div>
@@ -1339,7 +1339,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
           <button class="btn btn-success" onclick="window.print()">พิมพ์รายงานหน้านี้</button>
         </div>
         <div class="tbl-wrap">
-          <div class="tbl-head"><div class="tbl-title">รายการพัสดุค้นพบ</div><div class="tbl-count" id="rec-count">0 รายการ</div></div>
+          <div class="tbl-head"><div class="tbl-title">รายการค้นพบ (เอกสาร/จดหมาย/พัสดุ)</div><div class="tbl-count" id="rec-count">0 รายการ</div></div>
           <div class="tbl-scroll">
             <table>
               <thead>
@@ -1363,7 +1363,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
       <!-- PAGE: REPORT -->
       <div id="page-report" class="page">
         <div class="admin-box">
-          <div class="admin-title">ออกรายงานพัสดุ</div>
+          <div class="admin-title">ออกรายงาน เอกสาร/จดหมาย/พัสดุ</div>
           <div class="admin-sub">กรองช่วงข้อมูลที่ต้องการจัดทำรายงานและกดปุ่มด้านล่างเพื่อสั่งพิมพ์หน้านี้เป็น PDF</div>
           <div class="range-toggle" style="margin-bottom:18px">
             <button id="rpt-mode-ym" class="active" onclick="setRptMode('ym')">ระบบ ปี/เดือน</button>
@@ -2039,9 +2039,9 @@ function renderOverview(records, year, month) {
   
   // เรนเดอร์ KPI
   const kpis = [
-    { label: "รายการของวันนี้", value: todayCount, sub: "รับพัสดุพนักงานภายในวันนี้" },
+    { label: "รายการของวันนี้", value: todayCount, sub: "รับเอกสาร/จดหมาย/พัสดุ ภายในวันนี้" },
     { label: "ส่งสำเร็จแล้ว", value: completedCount, sub: "มีลายเซ็นต์รับมอบเรียบร้อย" },
-    { label: "รอดำเนินการ", value: pendingCount, sub: "พัสดุคงค้างยังไม่รับมอบ" },
+    { label: "รอดำเนินการ", value: pendingCount, sub: "รายการคงค้างยังไม่รับมอบ" },
     { label: "จำนวนงานรวม (ตัวกรอง)", value: filtered.length, sub: `ปี ${targetYear + 543}` }
   ];
   

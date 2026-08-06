@@ -373,7 +373,17 @@ input, select, textarea, button, .f-input, table, td, th, code {
   align-items: center;
   gap: 10px;
 }
-.t-logo em, .role-tag {
+.t-logo em {
+  color: var(--cmu-gold);
+  font-style: normal;
+  font-weight: 800;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.role-tag {
   font-style: normal;
   font-size: 11px;
   padding: 4px 12px;
@@ -1425,8 +1435,8 @@ tr:hover td { background: var(--cmu-purple-bg); }
 <div id="app">
   <div class="topbar">
     <div class="t-logo">
-      <span>SmartCAD<em>-Messenger</em></span>
-      <em id="role-lbl">CMU</em>
+      SmartCAD<em>-Messenger</em>
+      <span id="role-lbl" class="role-tag">CMU</span>
     </div>
     <div class="t-spacer"></div>
     

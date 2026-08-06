@@ -1475,7 +1475,7 @@ async function doLogin() {
   }
 }
 
-async function signUp() {
+async function doRegister() {
   const fullname = document.getElementById("reg-fullname").value.trim();
   const username = document.getElementById("reg-u").value.trim().toLowerCase();
   const email = document.getElementById("reg-email").value.trim().toLowerCase();
@@ -1558,6 +1558,7 @@ async function signUp() {
     btn.disabled = false;
   }
 }
+const signUp = doRegister;
 
 async function doForgotPassword() {
   const identifier = document.getElementById("forgot-identifier").value.trim();

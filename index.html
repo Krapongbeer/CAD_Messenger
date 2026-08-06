@@ -1537,7 +1537,7 @@ async function doForgotPassword() {
     return;
   }
 
-  btn.textContent = "กำลังส่งคำขอ...";
+  btn.textContent = "กำลังตรวจสอบบัญชี...";
   btn.disabled = true;
   err.style.display = "none";
   msg.style.display = "none";
@@ -1546,15 +1546,11 @@ async function doForgotPassword() {
     let targetEmail = null;
     let targetFullname = "";
     let targetUserId = null;
+    let profileFound = false;
 
-    // 1. ถ้าผู้ใช้พิมพ์อีเมลเข้ามาโดยตรง (มี @)
-    if (identifier.indexOf("@") !== -1) {
-      targetEmail = identifier;
-    }
-
-    // 2. ค้นหาข้อมูลในโปรไฟล์ (ถ้ามีข้อมูลในตาราง profiles)
+    // 1. ตรวจสอบข้อมูลในตารางโปรไฟล์ย่อย
     try {
-      let query = sbClient.from("profiles").select("id, email, fullname");
+      let query = sbClient.from("profiles").select("id, email, fullname, username, status");
       if (identifier.indexOf("@") !== -1) {
         query = query.eq("email", identifier);
       } else {
@@ -1562,21 +1558,24 @@ async function doForgotPassword() {
       }
 
       const { data: profile } = await query.maybeSingle();
-      if (profile) {
-        if (profile.email) targetEmail = profile.email;
+      if (profile && profile.email) {
+        targetEmail = profile.email;
         targetFullname = profile.fullname || "";
         targetUserId = profile.id || null;
+        profileFound = true;
       }
     } catch (pe) {}
 
-    // หากพิมพ์ Username แล้วหาอีเมลไม่เจอ
-    if (!targetEmail) {
-      err.textContent = "ไม่พบข้อมูลบัญชีผู้ใช้ในระบบ (หากระบุเป็น Username กรุณาลองระบุเป็น Email ของท่าน)";
+    // 2. หากไม่พบข้อมูลบัญชีในระบบ ให้ปฏิเสธทันที ไม่ส่งอีเมลมั่ว
+    if (!profileFound) {
+      err.textContent = "ไม่พบข้อมูลบัญชีหรืออีเมลนี้ในระบบ กรุณาตรวจสอบอีเมลหรือลงทะเบียนใหม่";
       err.style.display = "block";
       return;
     }
 
-    // 3. ส่งอีเมลรีเซ็ตรหัสผ่านผ่าน Supabase Auth โดยตรง
+    btn.textContent = "กำลังส่งคำขอ...";
+
+    // 3. เมื่อพบว่ามีอีเมลในระบบจริง ถึงจะทำการส่งอีเมลรีเซ็ตรหัสผ่าน
     const { error: resetErr } = await sbClient.auth.resetPasswordForEmail(targetEmail, {
       redirectTo: "https://krapongbeer.github.io/CAD_Messenger/"
     });

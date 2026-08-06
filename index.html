@@ -2577,8 +2577,8 @@ function applyTheme(mode) {
       iconEl.textContent = "🌙";
       iconEl.title = "โหมดมืด (กลางคืน)";
     } else {
-      iconEl.textContent = effectiveTheme === "dark" ? "🌙" : "☀️";
-      iconEl.title = `โหมดอัตโนมัติ (ตอนนี้สลับเป็น: ${effectiveTheme === "dark" ? "กลางคืน 🌙" : "กลางวัน ☀️"})`;
+      iconEl.textContent = "🌓";
+      iconEl.title = `โหมดอัตโนมัติ (ตอนนี้ปรับโหมดเป็น: ${effectiveTheme === "dark" ? "กลางคืน" : "กลางวัน"})`;
     }
   }
 

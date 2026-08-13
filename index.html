@@ -2435,7 +2435,10 @@ async function loadOverview() {
 
 function parseRecordDate(r) {
   if (!r) return new Date();
-  let src = r.date || r.timestamp;
+  let src = r;
+  if (typeof r === "object" && r !== null && !(r instanceof Date)) {
+    src = r.date || r.timestamp;
+  }
   if (!src) return new Date();
   
   if (typeof src === "string") {

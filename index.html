@@ -386,12 +386,19 @@ input, select, textarea, button, .f-input, table, td, th, code {
   display: inline-flex;
   align-items: center;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--cmu-purple-dark);
   white-space: nowrap;
   letter-spacing: -0.4px;
   margin: 0 !important;
   padding: 0 !important;
   gap: 0 !important;
+  transition: color 0.3s ease;
+}
+[data-theme="dark"] .brand-title {
+  color: #ffffff;
+}
+.t-logo .brand-title {
+  color: #ffffff !important;
 }
 .brand-title em {
   color: var(--cmu-gold);

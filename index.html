@@ -2288,6 +2288,11 @@ async function doLogout() {
     clearInterval(autoRefreshInterval);
     autoRefreshInterval = null;
   }
+  
+  if (ME) {
+    await logAuditEvent("USER_LOGOUT", ME.email, "User logged out manually");
+  }
+  
   await sbClient.auth.signOut();
   ME = null; recData = []; usersData = [];
   Object.keys(charts).forEach(k => { if(charts[k]){ charts[k].destroy(); delete charts[k]; } });
@@ -3181,17 +3186,16 @@ async function loadAuditLogs() {
       .from("audit_logs")
       .select("*")
       .order("timestamp", { ascending: false })
-      .limit(100);
+      .limit(10);
 
-    if (!error && data && data.length > 0) {
+    if (!error && data) {
       auditLogsData = data;
     } else {
-      auditLogsData = JSON.parse(localStorage.getItem("cmu_audit_logs") || "[]");
+      auditLogsData = [];
     }
     renderAuditLogsTable(auditLogsData);
   } catch(e) {
-    auditLogsData = JSON.parse(localStorage.getItem("cmu_audit_logs") || "[]");
-    renderAuditLogsTable(auditLogsData);
+    renderAuditLogsTable([]);
   }
 }
 

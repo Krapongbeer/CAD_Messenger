@@ -2240,9 +2240,10 @@ function startApp() {
   // Clear any existing interval to prevent duplicates
   if (autoRefreshInterval) {
     clearInterval(autoRefreshInterval);
+    autoRefreshInterval = null;
   }
-  // Setup automatic background refresh every 10 seconds for reliable fallback
-  autoRefreshInterval = setInterval(triggerDataRefresh, 10000);
+  // Setup automatic background refresh disabled to save Database Read Quota.
+  // We now strictly rely on Supabase Realtime Subscription below.
 
   // Supabase Realtime Subscription: ดึงและอัปเดตหน้าเว็บแบบเรียลไทม์เมื่อข้อมูลใน Supabase มีการเปลี่ยนแปลง
   try {

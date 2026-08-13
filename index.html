@@ -1729,9 +1729,10 @@ tr:hover td { background: var(--cmu-purple-bg); }
               <div class="tbl-title">จัดการผู้ใช้งานและอนุมัติสิทธิ์</div>
               <div style="font-size:12px;color:var(--text-muted)">อนุมัติผู้สมัครใหม่ หรือแก้ไขสิทธิ์การเข้าถึงข้อมูลระบบ (Admin / Executive / Staff)</div>
             </div>
-            <div style="display:flex;gap:10px;align-items:center">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
               <input id="user-search" placeholder="ค้นหา ชื่อ / Username / แผนก..." style="padding:6px 12px;font-size:12px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--card-bg);color:var(--text-main)" oninput="filterUsersTable()"/>
               <button class="btn btn-primary btn-sm" onclick="loadUsers()">โหลดใหม่</button>
+              <button class="btn btn-secondary btn-sm" onclick="openAuditLogModal()" style="background:var(--cmu-gold);color:#000;font-weight:600">📋 ประวัติกิจกรรม (Audit Log)</button>
             </div>
           </div>
 
@@ -1763,6 +1764,39 @@ tr:hover td { background: var(--cmu-purple-bg); }
         </div>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Audit Log Viewer (Admin Only) -->
+<div class="modal-overlay" id="modal-audit-logs">
+  <div class="modal-box" style="max-width:880px;width:95%">
+    <div class="modal-head">
+      <div class="modal-title">📋 ประวัติบันทึกกิจกรรมระบบ (Audit Log Viewer)</div>
+      <button class="modal-close" onclick="document.getElementById('modal-audit-logs').classList.remove('show')">✕</button>
+    </div>
+    <div style="padding:16px;background:var(--cmu-purple-subtle);border-bottom:1px solid var(--border-color);display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <input id="audit-search" placeholder="ค้นหา อีเมล / คำสั่ง / เป้าหมาย..." style="padding:8px 14px;font-size:13px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--card-bg);color:var(--text-main);flex:1;min-width:200px" oninput="filterAuditLogsTable()"/>
+      <button class="btn btn-primary btn-sm" onclick="loadAuditLogs()">🔄 รีเฟรชข้อมูล</button>
+    </div>
+    <div class="tbl-scroll" style="max-height:450px;overflow-y:auto">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:165px">วัน-เวลา (Timestamp)</th>
+            <th>ผู้ทำรายการ (User)</th>
+            <th>กิจกรรม (Action)</th>
+            <th>เป้าหมาย (Target)</th>
+            <th>รายละเอียด (Details)</th>
+          </tr>
+        </thead>
+        <tbody id="audit-logs-tb">
+          <tr><td colspan="5" style="text-align:center;color:#888;padding:24px">กำลังโหลดข้อมูลประวัติกิจกรรม...</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="document.getElementById('modal-audit-logs').classList.remove('show')">ปิดหน้าต่าง</button>
     </div>
   </div>
 </div>
@@ -3095,7 +3129,9 @@ async function saveUserInfo() {
 //  UTILITY ENGINE & SECURITY HARDENING
 // ========================================================================
 
-// Audit Log Engine
+// Audit Log Engine & Viewer
+let auditLogsData = [];
+
 async function logAuditEvent(action, target, details) {
   try {
     const userEmail = ME ? ME.email : "system/anonymous";
@@ -3120,6 +3156,80 @@ async function logAuditEvent(action, target, details) {
   } catch(e) {
     console.log("Audit log info:", e);
   }
+}
+
+async function openAuditLogModal() {
+  if (!ME || ME.role !== "admin") {
+    toast("เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถดูประวัติกิจกรรมได้", "err");
+    return;
+  }
+  document.getElementById("modal-audit-logs").classList.add("show");
+  loadAuditLogs();
+}
+
+async function loadAuditLogs() {
+  try {
+    const { data, error } = await sbClient
+      .from("audit_logs")
+      .select("*")
+      .order("timestamp", { ascending: false })
+      .limit(100);
+
+    if (!error && data && data.length > 0) {
+      auditLogsData = data;
+    } else {
+      auditLogsData = JSON.parse(localStorage.getItem("cmu_audit_logs") || "[]");
+    }
+    renderAuditLogsTable(auditLogsData);
+  } catch(e) {
+    auditLogsData = JSON.parse(localStorage.getItem("cmu_audit_logs") || "[]");
+    renderAuditLogsTable(auditLogsData);
+  }
+}
+
+function renderAuditLogsTable(logs) {
+  const container = document.getElementById("audit-logs-tb");
+  if (!container) return;
+
+  if (!logs || logs.length === 0) {
+    container.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#888;padding:24px">ยังไม่มีประวัติบันทึกกิจกรรมในระบบ</td></tr>';
+    return;
+  }
+
+  container.innerHTML = logs.map(l => {
+    const actionBadge = formatAuditActionBadge(l.action);
+    const timeStr = formatThaiFullDate(l.timestamp) + " " + formatThaiTime(l.timestamp);
+    return `<tr>
+      <td style="white-space:nowrap;font-size:11.5px;color:var(--text-muted)">${esc(timeStr)}</td>
+      <td><strong>${esc(l.user_email || '-')}</strong><br><span class="tag tag-active" style="font-size:10px">${esc(l.user_role || 'guest')}</span></td>
+      <td>${actionBadge}</td>
+      <td><code>${esc(l.target || '-')}</code></td>
+      <td style="font-size:11px;color:var(--text-muted);white-space:pre-wrap">${esc(l.details || '-')}</td>
+    </tr>`;
+  }).join("");
+}
+
+function formatAuditActionBadge(action) {
+  switch(action) {
+    case "USER_APPROVED": return '<span class="tag tag-delivered">✅ อนุมัติผู้ใช้ใหม่</span>';
+    case "USER_ROLE_CHANGED": return '<span class="tag tag-pending">🔄 เปลี่ยนระดับสิทธิ์</span>';
+    case "USER_STATUS_CHANGED": return '<span class="tag tag-pending">🚫 ปรับสถานะใช้งาน</span>';
+    case "USER_DELETED": return '<span class="tag tag-disabled">🗑️ ลบบัญชีถาวร</span>';
+    case "PDF_REPORT_EXPORTED": return '<span class="tag tag-active">🖨️ ออกรายงาน PDF</span>';
+    case "PASSWORD_RESET_REQUESTED":
+    case "USER_PASSWORD_RESET_ADMIN": return '<span class="tag tag-pending">🔑 รีเซ็ตรหัสผ่าน</span>';
+    default: return `<span class="tag tag-pending">${esc(action)}</span>`;
+  }
+}
+
+function filterAuditLogsTable() {
+  const q = (document.getElementById("audit-search").value || "").toLowerCase();
+  const filtered = auditLogsData.filter(l => {
+    return !q || [l.action, l.target, l.user_email, l.user_role, l.details].some(v =>
+      String(v || "").toLowerCase().indexOf(q) !== -1
+    );
+  });
+  renderAuditLogsTable(filtered);
 }
 
 // Generate Secure One-Time Reset Token

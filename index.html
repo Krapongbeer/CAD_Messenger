@@ -1934,6 +1934,8 @@ async function doLogin() {
       role: role,
       department: department
     };
+    
+    await logAuditEvent("USER_LOGIN", ME.email, "User logged in successfully");
 
     if (forceChange) {
       startApp();
@@ -3212,6 +3214,8 @@ function renderAuditLogsTable(logs) {
 
 function formatAuditActionBadge(action) {
   switch(action) {
+    case "USER_LOGIN": return '<span class="tag tag-active" style="background:#0284c7;color:#fff;border-color:#0284c7">🔓 เข้าสู่ระบบ</span>';
+    case "USER_LOGOUT": return '<span class="tag tag-disabled" style="background:#64748b;color:#fff;border-color:#64748b">🔒 ออกจากระบบ</span>';
     case "USER_APPROVED": return '<span class="tag tag-delivered">✅ อนุมัติผู้ใช้ใหม่</span>';
     case "USER_ROLE_CHANGED": return '<span class="tag tag-pending">🔄 เปลี่ยนระดับสิทธิ์</span>';
     case "USER_STATUS_CHANGED": return '<span class="tag tag-pending">🚫 ปรับสถานะใช้งาน</span>';

@@ -1632,12 +1632,17 @@ tr:hover td { background: var(--cmu-purple-bg); }
           <div class="filter-group"><div class="filter-label">เดือน</div><select id="ov-month" onchange="loadOverview()"><option value="">ทุกเดือน (ตลอดทั้งปี)</option></select></div>
           <div class="filter-group"><div class="filter-label">ปี (พ.ศ.)</div><select id="ov-year" onchange="loadOverview()"></select></div>
         </div>
-        <div class="kpi-grid" id="ov-kpi"></div>
+        <div class="kpi-grid" id="ov-kpi" style="grid-template-columns:repeat(auto-fit, minmax(180px,1fr))"></div>
         <div class="charts-grid">
           <div class="chart-card"><div class="chart-title">จำนวนรายเดือน เอกสาร/จดหมาย/พัสดุ</div><div class="chart-wrap"><canvas id="ch-monthly"></canvas></div></div>
           <div class="chart-card"><div class="chart-title">สัดส่วนผู้ส่ง (Top 5)</div><div class="chart-wrap"><canvas id="ch-sender"></canvas></div></div>
         </div>
-        <div class="chart-card" style="margin-bottom:20px"><div class="chart-title">ผู้รับสูงสุด</div><div class="bar-list" id="receiver-bars"></div></div>
+        <div class="charts-grid" style="margin-top:20px;grid-template-columns:repeat(auto-fit, minmax(280px,1fr))">
+          <div class="chart-card"><div class="chart-title">สัดส่วนประเภทพัสดุ (Doughnut Chart)</div><div class="chart-wrap"><canvas id="ch-type"></canvas></div></div>
+          <div class="chart-card"><div class="chart-title">หน่วยงานที่รับพัสดุสูงสุด Top 5 (Horizontal Bar)</div><div class="chart-wrap"><canvas id="ch-dept"></canvas></div></div>
+          <div class="chart-card" style="display:flex;flex-direction:column;max-height:280px"><div class="chart-title">⚡ กิจกรรมพัสดุล่าสุดแบบเรียลไทม์</div><div style="flex:1;overflow-y:auto;font-size:12.5px" id="ov-live-ticker"><div style="color:#888;text-align:center;padding:40px">กำลังติดตามกิจกรรม...</div></div></div>
+        </div>
+        <div class="chart-card" style="margin-top:20px;margin-bottom:20px;display:none"><div class="chart-title">ผู้รับสูงสุด</div><div class="bar-list" id="receiver-bars"></div></div>
 
         <!-- Dynamic KPI Drill-down Table Section -->
         <div class="tbl-wrap" id="kpi-drill-table-section">
@@ -2412,6 +2417,107 @@ async function triggerSheetSync() {
   setTimeout(loadOverview, 1500);
 }
 
+function classifyParcelType(r) {
+  if (!r) return "Parcel/Box";
+  const detail = String(r.detail || "").toLowerCase();
+  const track = String(r.tracking_no || "").toUpperCase();
+  
+  if (detail.includes("ด่วน") || detail.includes("ems") || detail.includes("express") || track.startsWith("E")) {
+    return "Express";
+  }
+  if (detail.includes("จดหมาย") || detail.includes("เอกสาร") || detail.includes("ซอง") || detail.includes("หนังสือ") || detail.includes("letter") || detail.includes("doc") || track.startsWith("R") || track.startsWith("C")) {
+    return "Letter/Doc";
+  }
+  return "Parcel/Box";
+}
+
+async function loadLiveTicker() {
+  const el = document.getElementById("ov-live-ticker");
+  if (!el) return;
+  try {
+    const { data, error } = await sbClient
+      .from("records")
+      .select("tracking_no, status, signature, sender, receiver, timestamp")
+      .order("timestamp", { ascending: false })
+      .limit(5);
+      
+    if (error || !data) throw error || new Error("No data");
+    
+    el.innerHTML = data.map(r => formatTickerItem(r)).join("");
+  } catch (e) {
+    el.innerHTML = `<div style="color:#888;text-align:center;padding:40px">ไม่มีกิจกรรมพัสดุล่าสุด</div>`;
+  }
+}
+
+function formatTickerItem(r) {
+  const d = new Date(r.timestamp);
+  const timeStr = pad(d.getHours()) + ":" + pad(d.getMinutes()) + " น.";
+  const isDelivered = isRecordDelivered(r);
+  
+  let actionText = "";
+  let icon = "";
+  if (isDelivered) {
+    icon = "✅";
+    actionText = `ส่งมอบให้ <strong>${esc(r.receiver)}</strong> เรียบร้อยแล้ว`;
+  } else {
+    icon = "📦";
+    actionText = `รับเข้าระบบจาก <strong>${esc(r.sender)}</strong>`;
+  }
+  
+  return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border-color);animation:fadeIn 0.5s ease;">
+    <div style="font-size:18px">${icon}</div>
+    <div style="flex:1;line-height:1.4">
+      <div>${actionText}</div>
+      <div style="font-size:11px;color:var(--text-muted)">
+        เลขพัสดุ: <code>${esc(r.tracking_no)}</code> • ${timeStr}
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderHorizontalBar(id, labels, vals, label, color) {
+  if (charts[id]) {
+    charts[id].destroy();
+    delete charts[id];
+  }
+  const el = document.getElementById(id);
+  if (!el) return;
+  
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const gridColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)";
+  const textColor = isDark ? "#f3eefa" : "#2d2930";
+  
+  charts[id] = new Chart(el, {
+    type: "bar",
+    data: {
+      labels: labels,
+      datasets: [{
+        label: label,
+        data: vals,
+        backgroundColor: color || "rgba(157, 78, 221, 0.65)",
+        borderRadius: 6
+      }]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, color: textColor },
+          grid: { color: gridColor }
+        },
+        y: {
+          ticks: { color: textColor },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
 async function loadOverview() {
   const year = document.getElementById("ov-year").value;
   const month = document.getElementById("ov-month").value;
@@ -2485,6 +2591,9 @@ let lastOverviewRecords = [];
 let currentKpiFilter = "all";
 
 function filterDashboardByKpi(filterType) {
+  if (filterType === "clearance") {
+    filterType = "today";
+  }
   currentKpiFilter = filterType;
   const year = document.getElementById("ov-year").value;
   const month = document.getElementById("ov-month").value;
@@ -2532,7 +2641,10 @@ function renderOverview(records, year, month) {
     if (d.toDateString() === todayStr) todayCount++;
   });
   
-  // เรนเดอร์ KPI Cards พร้อม Click Handler และ Active Badge State
+  const todayRecords = filtered.filter(r => parseRecordDate(r).toDateString() === todayStr);
+  const todayDelivered = todayRecords.filter(r => isRecordDelivered(r)).length;
+  const clearanceRate = todayRecords.length > 0 ? Math.round((todayDelivered / todayRecords.length) * 100) : 100;
+
   const monthText = targetMonth ? MONTHS[targetMonth] : "ทุกเดือน";
   const thaiYear = targetYear + 543;
   const periodBracketText = `(${monthText} ${thaiYear})`;
@@ -2541,6 +2653,7 @@ function renderOverview(records, year, month) {
     { key: "today", label: "รายการของวันนี้", value: todayCount, sub: "รับเอกสาร/จดหมาย/พัสดุ ภายในวันนี้" },
     { key: "delivered", label: "ส่งสำเร็จแล้ว", value: completedCount, sub: "มีลายเซ็นต์รับมอบเรียบร้อย" },
     { key: "pending", label: "รอดำเนินการ", value: pendingCount, sub: "รายการคงค้างยังไม่รับมอบ" },
+    { key: "clearance", label: "อัตราการเคลียร์งานวันนี้", value: `${clearanceRate}%`, sub: `ส่งมอบสำเร็จ ${todayDelivered} จาก ${todayRecords.length} ชิ้น` },
     { key: "all", label: "จำนวนงานรวม (ตัวกรอง)", value: filtered.length, subHtml: `<span class="kpi-badge">${periodBracketText}</span>` }
   ];
   
@@ -2565,9 +2678,31 @@ function renderOverview(records, year, month) {
   } else {
     renderDoughnut("ch-sender", topSenders.map(e => e[0]), topSenders.map(e => e[1]));
   }
-  
-  // รายการผู้รับพัสดุสูงสุด
+
+  // เรนเดอร์แผนภูมิประเภทพัสดุ (Doughnut)
+  let expressCount = 0;
+  let letterCount = 0;
+  let boxCount = 0;
+  filtered.forEach(r => {
+    const type = classifyParcelType(r);
+    if (type === "Express") expressCount++;
+    else if (type === "Letter/Doc") letterCount++;
+    else boxCount++;
+  });
+  renderDoughnut("ch-type", ["⚡ ด่วน/EMS", "✉️ จดหมาย/ซอง", "📦 พัสดุกล่อง"], [expressCount, letterCount, boxCount]);
+
+  // เรนเดอร์แผนภูมิหน่วยงานผู้รับสูงสุด Top 5 (Horizontal Bar)
   const topReceivers = sortTop(receivers, 5);
+  if (topReceivers.length === 0) {
+    renderHorizontalBar("ch-dept", ["ไม่มีข้อมูล"], [0]);
+  } else {
+    renderHorizontalBar("ch-dept", topReceivers.map(e => e[0]), topReceivers.map(e => e[1]), "จำนวนพัสดุที่รับ");
+  }
+
+  // โหลดกิจกรรมแบบเรียลไทม์
+  loadLiveTicker();
+
+  // รายการผู้รับพัสดุสูงสุด
   const maxR = topReceivers.length ? topReceivers[0][1] : 1;
   document.getElementById("receiver-bars").innerHTML = topReceivers.map((e, i) => {
     return `<div class="bar-row">

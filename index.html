@@ -2551,10 +2551,11 @@ function renderRowHtml(r) {
 async function loadMonthly() {
   const year = document.getElementById("mo-year").value;
   try {
-    let query = sbClient.from("records").select("timestamp, created_at, date");
+    let query = sbClient.from("records").select("*");
     if (ME.role === "staff") query = query.eq("record_by_email", ME.email);
     
-    const { data: records } = await query;
+    const { data: records, error: fetchErr } = await query;
+    if (fetchErr) throw fetchErr;
     const targetYear = parseInt(year);
     const monthlyData = Array(13).fill(0);
     let yearTotal = 0;
@@ -2583,10 +2584,11 @@ async function loadMonthly() {
 
 async function loadYearly() {
   try {
-    let query = sbClient.from("records").select("timestamp, created_at, date");
+    let query = sbClient.from("records").select("*");
     if (ME.role === "staff") query = query.eq("record_by_email", ME.email);
     
-    const { data: records } = await query;
+    const { data: records, error: fetchErr } = await query;
+    if (fetchErr) throw fetchErr;
     const yearly = {};
     
     records.forEach(r => {
@@ -3149,7 +3151,10 @@ async function logAuditEvent(action, target, details) {
     };
 
     // Try storing in Supabase audit_logs
-    await sbClient.from("audit_logs").insert(logItem).catch(() => {});
+    const { error: auditErr } = await sbClient.from("audit_logs").insert(logItem);
+    if (auditErr) {
+      console.error("Audit Insert Error:", auditErr);
+    }
 
     // Backup to localStorage Audit Log
     const existing = JSON.parse(localStorage.getItem("cmu_audit_logs") || "[]");

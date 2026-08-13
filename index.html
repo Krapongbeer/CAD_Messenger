@@ -2433,6 +2433,17 @@ async function loadOverview() {
   }
 }
 
+function isRecordDelivered(r) {
+  if (!r) return false;
+  if (r.signature && r.signature.trim() !== "") return true;
+  const status = String(r.status || "").toLowerCase().trim();
+  const deliveredStatuses = [
+    "delivered", "success", "yes", "done", "true",
+    "สำเร็จ", "ส่งมอบแล้ว", "เซ็นรับแล้ว", "รับแล้ว", "เซ็นชื่อแล้ว", "รับของแล้ว", "เรียบร้อย"
+  ];
+  return deliveredStatuses.includes(status);
+}
+
 function parseRecordDate(r) {
   if (!r) return new Date();
   let src = r;
@@ -2501,7 +2512,7 @@ function renderOverview(records, year, month) {
   });
   
   // คำนวณสถานะพัสดุ
-  const completedCount = filtered.filter(r => r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว").length;
+  const completedCount = filtered.filter(r => isRecordDelivered(r)).length;
   const pendingCount = filtered.length - completedCount;
   
   // นับสถิติตามผู้ส่ง
@@ -2577,11 +2588,11 @@ function renderOverview(records, year, month) {
     if (resetBtn) resetBtn.style.display = "inline-block";
   } else if (currentKpiFilter === "delivered") {
     displayTitle = `✅ รายการเอกสาร/จดหมาย/พัสดุ ที่ส่งสำเร็จแล้ว (${completedCount} รายการ)`;
-    displayRecords = filtered.filter(r => r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว");
+    displayRecords = filtered.filter(r => isRecordDelivered(r));
     if (resetBtn) resetBtn.style.display = "inline-block";
   } else if (currentKpiFilter === "pending") {
     displayTitle = `⏳ รายการเอกสาร/จดหมาย/พัสดุ รอดำเนินการคงค้าง (${pendingCount} รายการ)`;
-    displayRecords = filtered.filter(r => !(r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว"));
+    displayRecords = filtered.filter(r => !isRecordDelivered(r));
     if (resetBtn) resetBtn.style.display = "inline-block";
   } else {
     displayTitle = `📦 รายการเอกสาร/จดหมาย/พัสดุ ทั้งหมด (ปี ${targetYear + 543}${targetMonth ? ' เดือน ' + MONTHS[targetMonth] : ''})`;
@@ -2598,7 +2609,7 @@ function renderOverview(records, year, month) {
 }
 
 function renderRowHtml(r) {
-  const isDelivered = r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว";
+  const isDelivered = isRecordDelivered(r);
   const badgeClass = isDelivered ? "tag-delivered" : "tag-transit";
   const badgeText = isDelivered ? "ส่งมอบแล้ว" : "รอดำเนินการ";
   
@@ -2735,7 +2746,7 @@ function filterRec() {
   
   document.getElementById("rec-count").textContent = filtered.length + " รายการ";
   document.getElementById("rec-tb").innerHTML = filtered.map(r => {
-    const isDelivered = r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว";
+    const isDelivered = isRecordDelivered(r);
     const badgeClass = isDelivered ? "tag-delivered" : "tag-transit";
     const badgeText = isDelivered ? "ส่งมอบแล้ว" : "รอดำเนินการ";
     
@@ -2821,7 +2832,7 @@ async function renderReportPreview() {
     finalRecords.sort((a, b) => (b.id || 0) - (a.id || 0) || parseRecordDate(b) - parseRecordDate(a));
 
     const totalCount = finalRecords.length;
-    const completedCount = finalRecords.filter(r => r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว").length;
+    const completedCount = finalRecords.filter(r => isRecordDelivered(r)).length;
     const pendingCount = totalCount - completedCount;
 
     const nowStr = formatThaiFullDate(new Date()) + " เวลา " + new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) + " น.";
@@ -2829,7 +2840,7 @@ async function renderReportPreview() {
 
     const tableRows = finalRecords.length > 0
       ? finalRecords.map((r, idx) => {
-          const isDelivered = r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว";
+          const isDelivered = isRecordDelivered(r);
           const statusBadge = isDelivered
             ? `<span style="color:#059669;font-weight:700;white-space:nowrap;display:inline-block">✓ ส่งมอบแล้ว</span>`
             : `<span style="color:#d97706;font-weight:700;white-space:nowrap;display:inline-block">⏳ รอดำเนินการ</span>`;

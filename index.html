@@ -658,6 +658,39 @@ input, select, textarea, button, .f-input, table, td, th, code {
   flex-wrap: wrap;
   align-items: flex-end;
 }
+/* View Mode Segmented Control Toggle */
+.view-mode-toggle {
+  display: inline-flex;
+  background: var(--cmu-purple-subtle);
+  padding: 3px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  align-items: center;
+}
+.mode-btn {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  outline: none;
+}
+.mode-btn:hover {
+  color: var(--cmu-purple);
+}
+.mode-btn.active {
+  background: var(--cmu-purple);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(92,36,131,0.2);
+}
 .filter-group {
   display: flex;
   flex-direction: column;
@@ -1628,21 +1661,34 @@ tr:hover td { background: var(--cmu-purple-bg); }
 
       <!-- PAGE: OVERVIEW -->
       <div id="page-overview" class="page active">
-        <div class="filter-bar">
-          <div class="filter-group"><div class="filter-label">เดือน</div><select id="ov-month" onchange="loadOverview()"><option value="">ทุกเดือน (ตลอดทั้งปี)</option></select></div>
-          <div class="filter-group"><div class="filter-label">ปี (พ.ศ.)</div><select id="ov-year" onchange="loadOverview()"></select></div>
+        <div class="filter-bar" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px">
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <div class="filter-group"><div class="filter-label">เดือน</div><select id="ov-month" onchange="loadOverview()"><option value="">ทุกเดือน (ตลอดทั้งปี)</option></select></div>
+            <div class="filter-group"><div class="filter-label">ปี (พ.ศ.)</div><select id="ov-year" onchange="loadOverview()"></select></div>
+          </div>
+          <div class="view-mode-toggle" style="margin-bottom:0">
+            <button id="mode-btn-basic" class="mode-btn active" onclick="toggleViewMode('basic')">👤 แดชบอร์ดทั่วไป</button>
+            <button id="mode-btn-advanced" class="mode-btn" onclick="toggleViewMode('advanced')">📊 วิเคราะห์เชิงลึก</button>
+          </div>
         </div>
         <div class="kpi-grid" id="ov-kpi" style="grid-template-columns:repeat(auto-fit, minmax(180px,1fr))"></div>
         <div class="charts-grid">
           <div class="chart-card"><div class="chart-title">จำนวนรายเดือน เอกสาร/จดหมาย/พัสดุ</div><div class="chart-wrap"><canvas id="ch-monthly"></canvas></div></div>
           <div class="chart-card"><div class="chart-title">สัดส่วนผู้ส่ง (Top 5)</div><div class="chart-wrap"><canvas id="ch-sender"></canvas></div></div>
         </div>
-        <div class="charts-grid" style="margin-top:20px;grid-template-columns:repeat(auto-fit, minmax(280px,1fr))">
+        
+        <!-- Advanced Mode Analytics Row -->
+        <div id="advanced-charts-row" class="charts-grid" style="margin-top:20px;grid-template-columns:repeat(auto-fit, minmax(280px,1fr));display:none">
           <div class="chart-card"><div class="chart-title">สัดส่วนประเภทพัสดุ (Doughnut Chart)</div><div class="chart-wrap"><canvas id="ch-type"></canvas></div></div>
           <div class="chart-card"><div class="chart-title">หน่วยงานที่รับพัสดุสูงสุด Top 5 (Horizontal Bar)</div><div class="chart-wrap"><canvas id="ch-dept"></canvas></div></div>
           <div class="chart-card" style="display:flex;flex-direction:column;max-height:280px"><div class="chart-title">⚡ กิจกรรมพัสดุล่าสุดแบบเรียลไทม์</div><div style="flex:1;overflow-y:auto;font-size:12.5px" id="ov-live-ticker"><div style="color:#888;text-align:center;padding:40px">กำลังติดตามกิจกรรม...</div></div></div>
         </div>
-        <div class="chart-card" style="margin-top:20px;margin-bottom:20px;display:none"><div class="chart-title">ผู้รับสูงสุด</div><div class="bar-list" id="receiver-bars"></div></div>
+        
+        <!-- Basic Mode Receivers Bar Card -->
+        <div id="basic-receiver-card" class="chart-card" style="margin-top:20px;margin-bottom:20px;display:block">
+          <div class="chart-title">ผู้รับสูงสุด</div>
+          <div class="bar-list" id="receiver-bars"></div>
+        </div>
 
         <!-- Dynamic KPI Drill-down Table Section -->
         <div class="tbl-wrap" id="kpi-drill-table-section">
@@ -2589,6 +2635,17 @@ function parseRecordDate(r) {
 
 let lastOverviewRecords = [];
 let currentKpiFilter = "all";
+let currentViewMode = "basic";
+
+function toggleViewMode(mode) {
+  currentViewMode = mode;
+  document.getElementById("mode-btn-basic").classList.toggle("active", mode === "basic");
+  document.getElementById("mode-btn-advanced").classList.toggle("active", mode === "advanced");
+  
+  const year = document.getElementById("ov-year").value;
+  const month = document.getElementById("ov-month").value;
+  renderOverview(lastOverviewRecords, year, month);
+}
 
 function filterDashboardByKpi(filterType) {
   if (filterType === "clearance") {
@@ -2652,10 +2709,12 @@ function renderOverview(records, year, month) {
   const kpis = [
     { key: "today", label: "รายการของวันนี้", value: todayCount, sub: "รับเอกสาร/จดหมาย/พัสดุ ภายในวันนี้" },
     { key: "delivered", label: "ส่งสำเร็จแล้ว", value: completedCount, sub: "มีลายเซ็นต์รับมอบเรียบร้อย" },
-    { key: "pending", label: "รอดำเนินการ", value: pendingCount, sub: "รายการคงค้างยังไม่รับมอบ" },
-    { key: "clearance", label: "อัตราการเคลียร์งานวันนี้", value: `${clearanceRate}%`, sub: `ส่งมอบสำเร็จ ${todayDelivered} จาก ${todayRecords.length} ชิ้น` },
-    { key: "all", label: "จำนวนงานรวม (ตัวกรอง)", value: filtered.length, subHtml: `<span class="kpi-badge">${periodBracketText}</span>` }
+    { key: "pending", label: "รอดำเนินการ", value: pendingCount, sub: "รายการคงค้างยังไม่รับมอบ" }
   ];
+  if (currentViewMode === "advanced") {
+    kpis.push({ key: "clearance", label: "อัตราการเคลียร์งานวันนี้", value: `${clearanceRate}%`, sub: `ส่งมอบสำเร็จ ${todayDelivered} จาก ${todayRecords.length} ชิ้น` });
+  }
+  kpis.push({ key: "all", label: "จำนวนงานรวม (ตัวกรอง)", value: filtered.length, subHtml: `<span class="kpi-badge">${periodBracketText}</span>` });
   
   document.getElementById("ov-kpi").innerHTML = kpis.map(k => {
     const isActive = currentKpiFilter === k.key ? " active-kpi-filter" : "";
@@ -2679,38 +2738,49 @@ function renderOverview(records, year, month) {
     renderDoughnut("ch-sender", topSenders.map(e => e[0]), topSenders.map(e => e[1]));
   }
 
-  // เรนเดอร์แผนภูมิประเภทพัสดุ (Doughnut)
-  let expressCount = 0;
-  let letterCount = 0;
-  let boxCount = 0;
-  filtered.forEach(r => {
-    const type = classifyParcelType(r);
-    if (type === "Express") expressCount++;
-    else if (type === "Letter/Doc") letterCount++;
-    else boxCount++;
-  });
-  renderDoughnut("ch-type", ["⚡ ด่วน/EMS", "✉️ จดหมาย/ซอง", "📦 พัสดุกล่อง"], [expressCount, letterCount, boxCount]);
-
-  // เรนเดอร์แผนภูมิหน่วยงานผู้รับสูงสุด Top 5 (Horizontal Bar)
+  const advRow = document.getElementById("advanced-charts-row");
+  const basicCard = document.getElementById("basic-receiver-card");
   const topReceivers = sortTop(receivers, 5);
-  if (topReceivers.length === 0) {
-    renderHorizontalBar("ch-dept", ["ไม่มีข้อมูล"], [0]);
+
+  if (currentViewMode === "advanced") {
+    if (advRow) advRow.style.display = "grid";
+    if (basicCard) basicCard.style.display = "none";
+
+    // เรนเดอร์แผนภูมิประเภทพัสดุ (Doughnut)
+    let expressCount = 0;
+    let letterCount = 0;
+    let boxCount = 0;
+    filtered.forEach(r => {
+      const type = classifyParcelType(r);
+      if (type === "Express") expressCount++;
+      else if (type === "Letter/Doc") letterCount++;
+      else boxCount++;
+    });
+    renderDoughnut("ch-type", ["⚡ ด่วน/EMS", "✉️ จดหมาย/ซอง", "📦 พัสดุกล่อง"], [expressCount, letterCount, boxCount]);
+
+    // เรนเดอร์แผนภูมิหน่วยงานผู้รับสูงสุด Top 5 (Horizontal Bar)
+    if (topReceivers.length === 0) {
+      renderHorizontalBar("ch-dept", ["ไม่มีข้อมูล"], [0]);
+    } else {
+      renderHorizontalBar("ch-dept", topReceivers.map(e => e[0]), topReceivers.map(e => e[1]), "จำนวนพัสดุที่รับ");
+    }
+
+    // โหลดกิจกรรมแบบเรียลไทม์
+    loadLiveTicker();
   } else {
-    renderHorizontalBar("ch-dept", topReceivers.map(e => e[0]), topReceivers.map(e => e[1]), "จำนวนพัสดุที่รับ");
+    if (advRow) advRow.style.display = "none";
+    if (basicCard) basicCard.style.display = "block";
+
+    // รายการผู้รับพัสดุสูงสุด
+    const maxR = topReceivers.length ? topReceivers[0][1] : 1;
+    document.getElementById("receiver-bars").innerHTML = topReceivers.map((e, i) => {
+      return `<div class="bar-row">
+        <div class="bar-lbl" title="${esc(e[0])}">${esc(e[0])}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(e[1]/maxR*100)}%;background:${COLORS[i%COLORS.length]}"></div></div>
+        <div class="bar-n">${e[1]}</div>
+      </div>`;
+    }).join("") || '<div style="color:#aaa;padding:16px;text-align:center">ไม่มีข้อมูลพัสดุ</div>';
   }
-
-  // โหลดกิจกรรมแบบเรียลไทม์
-  loadLiveTicker();
-
-  // รายการผู้รับพัสดุสูงสุด
-  const maxR = topReceivers.length ? topReceivers[0][1] : 1;
-  document.getElementById("receiver-bars").innerHTML = topReceivers.map((e, i) => {
-    return `<div class="bar-row">
-      <div class="bar-lbl" title="${esc(e[0])}">${esc(e[0])}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(e[1]/maxR*100)}%;background:${COLORS[i%COLORS.length]}"></div></div>
-      <div class="bar-n">${e[1]}</div>
-    </div>`;
-  }).join("") || '<div style="color:#aaa;padding:16px;text-align:center">ไม่มีข้อมูลพัสดุ</div>';
   
   // กรองแสดงตารางผลลัพธ์ตามการคลิกเลือกบน KPI Card (Interactive KPI Drill-Down Table)
   let displayTitle = "";

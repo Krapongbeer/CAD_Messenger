@@ -2669,42 +2669,52 @@ async function renderReportPreview() {
     let query = sbClient.from("records").select("*").order("id", { ascending: false });
     if (ME.role === "staff") query = query.eq("record_by_email", ME.email);
 
-    let filterDesc = "";
-    if (currentRptMode === "ym") {
-      const year = document.getElementById("rpt-year").value || new Date().getFullYear();
-      const month = document.getElementById("rpt-month").value;
-
-      const startDate = `${year}-01-01`;
-      const endDate = `${year}-12-31`;
-      query = query.gte("date", startDate).lte("date", endDate);
-
-      const thaiYear = parseInt(year) + 543;
-      const monthText = month ? MONTHS[parseInt(month)] : "รวมทั้งปี";
-      filterDesc = `ประจำปี พ.ศ. ${thaiYear} (เดือน: ${monthText})`;
-    } else {
-      const from = document.getElementById("rpt-from").value;
-      const to = document.getElementById("rpt-to").value;
-      if (from && to) {
-        query = query.gte("date", from).lte("date", to);
-        filterDesc = `ตั้งแต่วันที่ ${formatThaiDate(from)} ถึงวันที่ ${formatThaiDate(to)}`;
-      } else {
-        filterDesc = `ช่วงวันที่ระบุ`;
-      }
-    }
-
-    const { data: records, error } = await query;
+    const { data: rawRecords, error } = await query;
     if (error) throw error;
 
-    let finalRecords = records || [];
+    const records = rawRecords || [];
+    let finalRecords = [];
+    let filterDesc = "";
 
-    // Filter by month client-side if month specified in ym mode
-    if (currentRptMode === "ym") {
-      const month = document.getElementById("rpt-month").value;
-      if (month) {
-        const targetM = parseInt(month);
-        finalRecords = finalRecords.filter(r => (parseRecordDate(r).getMonth() + 1) === targetM);
+    const mode = currentRptMode || rptMode || "ym";
+
+    if (mode === "ym") {
+      const yearVal = document.getElementById("rpt-year").value || new Date().getFullYear();
+      const monthVal = document.getElementById("rpt-month").value;
+
+      const targetYear = parseInt(yearVal, 10);
+      const targetMonth = monthVal ? parseInt(monthVal, 10) : null;
+
+      finalRecords = records.filter(r => {
+        const d = parseRecordDate(r);
+        const yMatches = d.getFullYear() === targetYear;
+        const mMatches = targetMonth ? (d.getMonth() + 1) === targetMonth : true;
+        return yMatches && mMatches;
+      });
+
+      const thaiYear = targetYear + 543;
+      const monthText = targetMonth ? MONTHS[targetMonth] : "รวมทั้งปี";
+      filterDesc = `ประจำปี พ.ศ. ${thaiYear} (เดือน: ${monthText})`;
+    } else {
+      const fromVal = document.getElementById("rpt-from").value;
+      const toVal = document.getElementById("rpt-to").value;
+
+      if (fromVal && toVal) {
+        const fromDate = new Date(fromVal + "T00:00:00");
+        const toDate = new Date(toVal + "T23:59:59");
+
+        finalRecords = records.filter(r => {
+          const d = parseRecordDate(r);
+          return d >= fromDate && d <= toDate;
+        });
+        filterDesc = `ตั้งแต่วันที่ ${formatThaiDate(fromVal)} ถึงวันที่ ${formatThaiDate(toVal)}`;
+      } else {
+        finalRecords = [...records];
+        filterDesc = `ช่วงวันที่ระบุทั้งหมด`;
       }
     }
+
+    finalRecords.sort((a, b) => (b.id || 0) - (a.id || 0) || parseRecordDate(b) - parseRecordDate(a));
 
     const totalCount = finalRecords.length;
     const completedCount = finalRecords.filter(r => r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว").length;
@@ -2713,23 +2723,25 @@ async function renderReportPreview() {
     const nowStr = formatThaiFullDate(new Date()) + " เวลา " + new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) + " น.";
     const authorName = (ME && (ME.fullname || ME.username)) ? `${ME.fullname || ME.username} (${ME.email || ''})` : 'ผู้ดูแลระบบ SmartCAD-Messenger';
 
-    const tableRows = finalRecords.map((r, idx) => {
-      const isDelivered = r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว";
-      const statusBadge = isDelivered
-        ? `<span style="color:#059669;font-weight:700;white-space:nowrap;display:inline-block">✓ ส่งมอบแล้ว</span>`
-        : `<span style="color:#d97706;font-weight:700;white-space:nowrap;display:inline-block">⏳ รอดำเนินการ</span>`;
+    const tableRows = finalRecords.length > 0
+      ? finalRecords.map((r, idx) => {
+          const isDelivered = r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว";
+          const statusBadge = isDelivered
+            ? `<span style="color:#059669;font-weight:700;white-space:nowrap;display:inline-block">✓ ส่งมอบแล้ว</span>`
+            : `<span style="color:#d97706;font-weight:700;white-space:nowrap;display:inline-block">⏳ รอดำเนินการ</span>`;
 
-      return `<tr>
-        <td style="text-align:center;white-space:nowrap;font-size:11.5px">${idx + 1}</td>
-        <td style="white-space:nowrap"><strong>${esc(r.tracking_no || '-')}</strong></td>
-        <td style="text-align:center;white-space:nowrap;font-size:11.5px">${formatThaiDate(r.date || r.timestamp)}</td>
-        <td>${esc(r.sender || '-')}</td>
-        <td>${esc(r.receiver || '-')}</td>
-        <td style="text-align:center;white-space:nowrap">${statusBadge}</td>
-        <td style="font-size:11.5px;line-height:1.4">${esc(r.detail || '-')}</td>
-        <td style="font-size:11px;color:#64748b;text-align:center;white-space:nowrap">${formatThaiTime(r.timestamp)}</td>
-      </tr>`;
-    }).join("");
+          return `<tr>
+            <td style="text-align:center;white-space:nowrap;font-size:11.5px">${idx + 1}</td>
+            <td style="white-space:nowrap"><strong>${esc(r.tracking_no || '-')}</strong></td>
+            <td style="text-align:center;white-space:nowrap;font-size:11.5px">${formatThaiDate(r.date || r.timestamp)}</td>
+            <td>${esc(r.sender || '-')}</td>
+            <td>${esc(r.receiver || '-')}</td>
+            <td style="text-align:center;white-space:nowrap">${statusBadge}</td>
+            <td style="font-size:11.5px;line-height:1.4">${esc(r.detail || '-')}</td>
+            <td style="font-size:11px;color:#64748b;text-align:center;white-space:nowrap">${formatThaiTime(r.timestamp)}</td>
+          </tr>`;
+        }).join("")
+      : `<tr><td colspan="8" style="text-align:center;color:#888;padding:32px">ไม่พบข้อมูลรับ-ส่งพัสดุตามเงื่อนไขที่เลือก (${filterDesc})</td></tr>`;
 
     docContainer.innerHTML = `
       <div class="report-header">

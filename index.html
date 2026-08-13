@@ -1562,8 +1562,10 @@ tr:hover td { background: var(--cmu-purple-bg); }
     </div>
     
     <div class="f-err" id="edit-user-err"></div>
-    <button class="auth-btn" style="margin-bottom:8px" onclick="saveUserInfo()">บันทึกการแก้ไข</button>
-    <button class="btn" style="width:100%" onclick="document.getElementById('modal-edit-user').classList.remove('show')">ยกเลิก</button>
+    <div style="display:flex;gap:12px;margin-top:16px;">
+      <button class="btn" style="flex:1;justify-content:center;height:42px" onclick="document.getElementById('modal-edit-user').classList.remove('show')">✕ ยกเลิก</button>
+      <button class="btn btn-primary" style="flex:1;justify-content:center;height:42px" onclick="saveUserInfo()">💾 บันทึกการแก้ไข</button>
+    </div>
   </div>
 </div>
 

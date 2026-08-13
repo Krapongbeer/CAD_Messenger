@@ -17,7 +17,12 @@ function doPost(e) {
 
 function handleRequest(e) {
   try {
-    const params = e ? (e.parameter || {}) : {};
+    let payload = {};
+    if (e && e.postData && e.postData.contents) {
+      try { payload = JSON.parse(e.postData.contents); } catch(pe) {}
+    }
+    
+    const params = Object.assign({}, e ? (e.parameter || {}) : {}, payload);
     const secret = params.secret || "";
     
     if (secret !== WEBHOOK_SECRET) {
@@ -31,7 +36,13 @@ function handleRequest(e) {
       const email = params.identifier || params.email || "";
       const tempPass = params.temp_password || "";
       const resetLink = params.reset_url || "https://krapongbeer.github.io/CAD_Messenger/";
-      const fullname = params.fullname || email;
+      
+      let user = params.user || {};
+      if (typeof user === "string") {
+        try { user = JSON.parse(user); } catch(pe) {}
+      }
+      
+      const fullname = user.fullname || params.fullname || email;
       
       if (email) {
         sendPasswordEmail(email, fullname, tempPass, action, resetLink);

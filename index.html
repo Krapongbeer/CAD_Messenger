@@ -2548,7 +2548,7 @@ function renderRowHtml(r) {
 async function loadMonthly() {
   const year = document.getElementById("mo-year").value;
   try {
-    let query = sbClient.from("records").select("timestamp");
+    let query = sbClient.from("records").select("timestamp, created_at, date");
     if (ME.role === "staff") query = query.eq("record_by_email", ME.email);
     
     const { data: records } = await query;
@@ -2557,7 +2557,7 @@ async function loadMonthly() {
     let yearTotal = 0;
     
     records.forEach(r => {
-      const d = new Date(r.timestamp);
+      const d = parseRecordDate(r);
       if (d.getFullYear() === targetYear) {
         monthlyData[d.getMonth() + 1]++;
         yearTotal++;
@@ -2580,14 +2580,14 @@ async function loadMonthly() {
 
 async function loadYearly() {
   try {
-    let query = sbClient.from("records").select("timestamp");
+    let query = sbClient.from("records").select("timestamp, created_at, date");
     if (ME.role === "staff") query = query.eq("record_by_email", ME.email);
     
     const { data: records } = await query;
     const yearly = {};
     
     records.forEach(r => {
-      const y = new Date(r.timestamp).getFullYear();
+      const y = parseRecordDate(r).getFullYear();
       yearly[y] = (yearly[y] || 0) + 1;
     });
     

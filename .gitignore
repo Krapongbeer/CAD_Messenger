@@ -7,13 +7,15 @@
 *.zip
 *.tar.gz
 *.rar
+backups/
 
-# Scratch, Draft & Helper Script Files
+# Scratch, Draft, Academic Research & Helper Script Files
 *.rtf
 index_good.html
 appsscript_sync_good.gs
 appsscript_sync.js
 tools/
+research_report/
 
 # OS Metadata
 .DS_Store

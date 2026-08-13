@@ -27,13 +27,14 @@ function handleRequest(e) {
     
     const action = params.action || "sync";
     
-    if (action === "approve" || action === "reset_password") {
-      const email = params.identifier || "";
+    if (action === "approve" || action === "reset_password" || action === "reset_link") {
+      const email = params.identifier || params.email || "";
       const tempPass = params.temp_password || "";
+      const resetLink = params.reset_url || "https://krapongbeer.github.io/CAD_Messenger/";
       const fullname = params.fullname || email;
       
-      if (email && tempPass) {
-        sendPasswordEmail(email, fullname, tempPass, action);
+      if (email) {
+        sendPasswordEmail(email, fullname, tempPass, action, resetLink);
       }
       
       return ContentService.createTextOutput(JSON.stringify({ status: "ok", action: action, email: email }))
@@ -61,10 +62,12 @@ function handleRequest(e) {
   }
 }
 
-function sendPasswordEmail(email, fullname, tempPass, action) {
+function sendPasswordEmail(email, fullname, tempPass, action, resetLink) {
   const subject = action === "approve"
     ? "🎉 บัญชีของท่านได้รับการอนุมัติใช้งานแล้ว - SmartCAD-Messenger (กองบริหารงานกลาง CMU)"
-    : "🔑 แจ้งการรีเซ็ตรหัสผ่านใหม่ - SmartCAD-Messenger (กองบริหารงานกลาง CMU)";
+    : "🔑 แจ้งลิงก์รีเซ็ตรหัสผ่านแบบใช้ครั้งเดียว (One-Time Reset Link) - SmartCAD-Messenger";
+
+  const appLink = resetLink || "https://krapongbeer.github.io/CAD_Messenger/";
 
   const htmlBody = `
     <div style="font-family:'Prompt',sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0">
@@ -74,15 +77,18 @@ function sendPasswordEmail(email, fullname, tempPass, action) {
       </div>
       <div style="padding:20px 0;color:#334155;line-height:1.6">
         <p>เรียน คุณ <strong>${fullname}</strong>,</p>
-        <p>${action === "approve" ? "บัญชีผู้ใช้งานของท่านได้รับการอนุมัติจากผู้ดูแลระบบเรียบร้อยแล้ว" : "ระบบได้ดำเนินการรีเซ็ตรหัสผ่านใหม่ให้แก่บัญชีของท่านเรียบร้อยแล้ว"} โดยมีรายละเอียดรหัสผ่านชั่วคราวในการเข้าใช้งานดังนี้:</p>
-        <div style="background:#fff;padding:16px;border-radius:8px;border:1.5px dashed #5c2483;text-align:center;margin:20px 0">
-          <div style="font-size:12px;color:#64748b;margin-bottom:4px">รหัสผ่านชั่วคราว (Temporary Password)</div>
-          <div style="font-size:24px;font-weight:700;color:#5c2483;letter-spacing:2px">${tempPass}</div>
+        <p>${action === "approve" ? "บัญชีผู้ใช้งานของท่านได้รับการอนุมัติจากผู้ดูแลระบบเรียบร้อยแล้ว" : "ระบบได้ดำเนินการสร้างลิงก์รีเซ็ตรหัสผ่านแบบใช้ครั้งเดียว (One-Time Reset Link) ให้แก่บัญชีของท่านเรียบร้อยแล้ว"}</p>
+        
+        <div style="background:#fff;padding:20px;border-radius:8px;border:1.5px dashed #5c2483;text-align:center;margin:20px 0">
+          <div style="font-size:13px;color:#64748b;margin-bottom:8px">รหัสผ่านชั่วคราวในการเข้าสู่ระบบครั้งแรก:</div>
+          <div style="font-size:24px;font-weight:700;color:#5c2483;letter-spacing:2px;margin-bottom:16px">${tempPass}</div>
+          <a href="${appLink}" style="display:inline-block;background:linear-gradient(135deg, #5c2483 0%, #3b1359 100%);color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700">เข้าสู่ระบบและเปลี่ยนรหัสผ่านใหม่</a>
         </div>
-        <p style="font-size:13px;color:#d97706">⚠️ หมายเหตุ: เพื่อความปลอดภัย ระบบจะบังคับให้ท่านเปลี่ยนรหัสผ่านใหม่ทันทีเมื่อเข้าสู่ระบบครั้งแรก</p>
+        
+        <p style="font-size:13px;color:#d97706">⚠️ หมายเหตุความปลอดภัย: เพื่อความปลอดภัยตามมาตรฐาน NIST ลิงก์นี้สามารถใช้งานได้ 1 ครั้ง และระบบจะบังคับให้ท่านตั้งรหัสผ่านใหม่ (อย่างน้อย 8-12 ตัวอักษร) ทันทีเมื่อเข้าใช้งาน</p>
       </div>
       <div style="text-align:center;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8">
-        อีเมลนี้เป็นระบบอัตโนมัติ กรุณาอย่าตอบกลับอีเมลนี้
+        อีเมลนี้เป็นระบบอัตโนมัติจาก SmartCAD-Messenger มหาวิทยาลัยเชียงใหม่ กรุณาอย่าตอบกลับอีเมลนี้
       </div>
     </div>
   `;

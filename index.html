@@ -2101,8 +2101,9 @@ async function doChangePassword() {
   const err = document.getElementById("change-pass-err");
   const btn = document.getElementById("change-pass-btn");
 
-  if (!newP || newP.length < 6) {
-    err.textContent = "รหัสผ่านใหม่ต้องมีความยาวไม่น้อยกว่า 6 ตัวอักษร";
+  const vRes = validatePasswordStrict(newP);
+  if (!vRes.valid) {
+    err.textContent = vRes.msg;
     err.style.display = "block";
     return;
   }
@@ -2801,6 +2802,11 @@ async function renderReportPreview() {
 }
 
 function generateReportPDF() {
+  logAuditEvent("PDF_REPORT_EXPORTED", "A4 PDF Report Document", {
+    mode: currentRptMode || rptMode || "ym",
+    year: document.getElementById("rpt-year") ? document.getElementById("rpt-year").value : "",
+    month: document.getElementById("rpt-month") ? document.getElementById("rpt-month").value : ""
+  });
   renderReportPreview().then(() => {
     setTimeout(() => {
       window.print();
@@ -2909,6 +2915,10 @@ function genTempPass() {
 
 // อนุมัติผู้ใช้ / รีเซ็ตรหัสผ่าน -> ทำงานผ่าน Supabase RPC โดยตรง และส่งสัญญาณหา Apps Script ในหลังบ้าน
 async function triggerUserWebhook(userId, fullname, email, action) {
+  if (ME.role !== "admin") {
+    toast("เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่ทำรายการนี้ได้", "err");
+    return;
+  }
   const confirmMsg = action === "approve"
     ? `ยืนยันการอนุมัติการใช้งานบัญชี ${email} ?`
     : `ยืนยันการรีเซ็ตรหัสผ่านของ ${email} ?`;
@@ -2922,8 +2932,10 @@ async function triggerUserWebhook(userId, fullname, email, action) {
     // 1. อัปเดตสถานะในตาราง profiles ทันที
     if (action === "approve") {
       await sbClient.from("profiles").update({ status: "active", force_change_password: true }).eq("id", userId);
+      logAuditEvent("USER_APPROVED", email, { target_id: userId, fullname: fullname });
     } else {
       await sbClient.from("profiles").update({ force_change_password: true }).eq("id", userId);
+      logAuditEvent("USER_PASSWORD_RESET_ADMIN", email, { target_id: userId, fullname: fullname });
     }
 
     // 2. เรียกใช้ RPC ใน Supabase (ถ้ามี)
@@ -2959,6 +2971,10 @@ async function triggerUserWebhook(userId, fullname, email, action) {
 }
 
 async function setUserStatus(userId, status) {
+  if (ME.role !== "admin") {
+    toast("เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่ทำรายการนี้ได้", "err");
+    return;
+  }
   if (!confirm(`ยืนยันการปรับสถานะผู้ใช้งานสิทธิ์นี้หรือไม่?`)) return;
   try {
     const { error } = await sbClient
@@ -2967,6 +2983,7 @@ async function setUserStatus(userId, status) {
       .eq("id", userId);
       
     if (error) throw error;
+    logAuditEvent("USER_STATUS_CHANGED", userId, { new_status: status });
     toast("ปรับสถานะเรียบร้อย", "ok");
     loadUsers();
   } catch (e) {
@@ -2975,6 +2992,10 @@ async function setUserStatus(userId, status) {
 }
 
 async function deleteUser(userId, fullname, email) {
+  if (ME.role !== "admin") {
+    toast("เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่ทำรายการนี้ได้", "err");
+    return;
+  }
   if (userId === ME.id) {
     toast("ท่านไม่สามารถลบบัญชีของตัวเองได้", "err");
     return;
@@ -2986,6 +3007,7 @@ async function deleteUser(userId, fullname, email) {
   try {
     // 1. ลบโปรไฟล์จากตาราง profiles
     await sbClient.from("profiles").delete().eq("id", userId);
+    logAuditEvent("USER_DELETED", email, { target_id: userId, fullname: fullname });
 
     // 2. ส่งสัญญาณหา Apps Script ให้ช่วยลบบัญชีออกจาก Supabase Auth โดยใช้ Service Key
     const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=delete_user&user_id=${encodeURIComponent(userId)}&email=${encodeURIComponent(email)}`;
@@ -3008,6 +3030,11 @@ async function deleteUser(userId, fullname, email) {
 }
 
 async function updateUserRole(userId, newRole) {
+  if (ME.role !== "admin") {
+    toast("เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สลับสิทธิ์ผู้ใช้ได้", "err");
+    loadUsers();
+    return;
+  }
   try {
     const { error } = await sbClient
       .from("profiles")
@@ -3015,6 +3042,7 @@ async function updateUserRole(userId, newRole) {
       .eq("id", userId);
       
     if (error) throw error;
+    logAuditEvent("USER_ROLE_CHANGED", userId, { new_role: newRole });
     toast("ปรับระดับสิทธิ์สำเร็จ", "ok");
   } catch (e) {
     toast("ปรับสิทธิ์ล้มเหลว", "err");
@@ -3064,8 +3092,59 @@ async function saveUserInfo() {
 }
 
 // ========================================================================
-//  UTILITY ENGINE
+//  UTILITY ENGINE & SECURITY HARDENING
 // ========================================================================
+
+// Audit Log Engine
+async function logAuditEvent(action, target, details) {
+  try {
+    const userEmail = ME ? ME.email : "system/anonymous";
+    const userRole = ME ? ME.role : "guest";
+    const logItem = {
+      action: action,
+      target: target || "-",
+      details: typeof details === "object" ? JSON.stringify(details) : String(details || ""),
+      user_email: userEmail,
+      user_role: userRole,
+      timestamp: new Date().toISOString()
+    };
+
+    // Try storing in Supabase audit_logs
+    await sbClient.from("audit_logs").insert(logItem).catch(() => {});
+
+    // Backup to localStorage Audit Log
+    const existing = JSON.parse(localStorage.getItem("cmu_audit_logs") || "[]");
+    existing.unshift(logItem);
+    if (existing.length > 200) existing.pop();
+    localStorage.setItem("cmu_audit_logs", JSON.stringify(existing));
+  } catch(e) {
+    console.log("Audit log info:", e);
+  }
+}
+
+// Generate Secure One-Time Reset Token
+function genOneTimeResetToken() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let token = "RST_";
+  for (let i = 0; i < 32; i++) {
+    token += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return token;
+}
+
+// Password Complexity Validator (Min 8-12 Chars + NIST Rules)
+function validatePasswordStrict(pass) {
+  if (!pass || pass.length < 8) return { valid: false, msg: "รหัสผ่านต้องมีความยาวอย่างน้อย 8-12 ตัวอักษรขึ้นไป" };
+  const hasUpper = /[A-Z]/.test(pass);
+  const hasLower = /[a-z]/.test(pass);
+  const hasNum = /[0-9]/.test(pass);
+  const hasSpec = /[@$!%*#?&^_-]/.test(pass);
+
+  if (!(hasUpper && hasLower && hasNum && hasSpec)) {
+    return { valid: false, msg: "รหัสผ่านต้องมีตัวอักษรพิมพ์ใหญ่ พิมพ์เล็ก ตัวเลข และอักขระพิเศษอย่างน้อยประเภทละ 1 ตัว" };
+  }
+  return { valid: true };
+}
 
 function checkNistPasswordStrength(pass) {
   const fill = document.getElementById("pass-meter-fill");
@@ -3078,24 +3157,25 @@ function checkNistPasswordStrength(pass) {
   }
   
   let score = 0;
-  if (pass.length >= 6) score++;
-  if (pass.length >= 10) score++;
+  if (pass.length >= 8) score++;
+  if (pass.length >= 12) score++;
   if (/[A-Z]/.test(pass)) score++;
+  if (/[a-z]/.test(pass)) score++;
   if (/[0-9]/.test(pass)) score++;
-  if (/[@$!%*#?&]/.test(pass)) score++;
+  if (/[@$!%*#?&^_-]/.test(pass)) score++;
   
-  const pct = score * 20;
+  const pct = Math.min(100, Math.round((score / 6) * 100));
   fill.style.width = pct + "%";
   
-  if (score <= 1) {
+  if (pass.length < 8) {
     fill.style.backgroundColor = "var(--danger)";
-    txt.textContent = "ความแข็งแกร่งของรหัสผ่าน: อ่อนแอเกินไป";
+    txt.textContent = "ความแข็งแกร่ง: ❌ อ่อนแอเกินไป (ต้องมีอย่างน้อย 8-12 ตัวอักษร)";
   } else if (score <= 3) {
     fill.style.backgroundColor = "var(--warning)";
-    txt.textContent = "ความแข็งแกร่งของรหัสผ่าน: ปานกลาง";
+    txt.textContent = "ความแข็งแกร่ง: ⚠️ ปานกลาง (ควรเพิ่มอักขระพิเศษ/ตัวพิมพ์ใหญ่)";
   } else {
     fill.style.backgroundColor = "var(--success)";
-    txt.textContent = "ความแข็งแกร่งของรหัสผ่าน: ดีมาก (ปลอดภัย)";
+    txt.textContent = "ความแข็งแกร่ง: ✅ รหัสผ่านปลอดภัยตามมาตรฐาน NIST (8-12+ ตัวอักษร)";
   }
 }
 

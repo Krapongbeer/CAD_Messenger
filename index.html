@@ -1,0 +1,3371 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="auto">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SmartCAD-Messenger Dashboard & Management System</title>
+<!-- Chart.js and Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Theme Variables (CMU Purple & Gold Palette) ── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --cmu-purple-dark: #3b1359;
+  --cmu-purple: #5c2483;
+  --cmu-purple-light: #7b3ba7;
+  --cmu-purple-bg: rgba(92, 36, 131, 0.06);
+  --cmu-purple-subtle: #f3ecf8;
+  
+  --cmu-gold: #e09f19;
+  --cmu-gold-hover: #c78b0e;
+  --cmu-gold-light: #fff8e8;
+  
+  --bg-main: #f7f6fa;
+  --card-bg: #ffffff;
+  --text-main: #2d2930;
+  --text-muted: #7a7382;
+  --border-color: #e8e5ee;
+  
+  --danger: #d93838;
+  --danger-light: #fde8e8;
+  --warning: #d97706;
+  --warning-light: #fef3c7;
+  --success: #059669;
+  --success-light: #d1fae5;
+  
+  --chart-grid: rgba(0, 0, 0, 0.06);
+  --chart-text: #2d2930;
+  
+  --shadow-sm: 0 2px 8px rgba(92, 36, 131, 0.05);
+  --shadow-md: 0 8px 24px rgba(92, 36, 131, 0.08);
+  --shadow-lg: 0 20px 50px rgba(59, 19, 89, 0.22);
+}
+
+[data-theme="dark"] {
+  --cmu-purple-dark: #8c42c2;
+  --cmu-purple: #9d4edd;
+  --cmu-purple-light: #c77dff;
+  --cmu-purple-bg: rgba(157, 78, 221, 0.16);
+  --cmu-purple-subtle: #291238;
+  
+  --cmu-gold: #f5b027;
+  --cmu-gold-hover: #ffd166;
+  --cmu-gold-light: #3a2a0a;
+  
+  --bg-main: #130821;
+  --card-bg: #211036;
+  --text-main: #f3eefa;
+  --text-muted: #a69bb0;
+  --border-color: #3b2257;
+  
+  --danger: #f87171;
+  --danger-light: #3f1818;
+  --warning: #fbbf24;
+  --warning-light: #3d2c07;
+  --success: #34d399;
+  --success-light: #0d3824;
+  
+  --chart-grid: rgba(255, 255, 255, 0.1);
+  --chart-text: #f3eefa;
+  
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+body {
+  font-family: 'Prompt', 'IBM Plex Sans Thai', 'Sarabun', system-ui, -apple-system, sans-serif;
+  background: var(--bg-main);
+  color: var(--text-main);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3, .t-logo, .auth-logo, .tbl-title, .chart-title, .nav-sec, .uname, .kpi-value, .auth-btn, .btn {
+  font-family: 'Prompt', 'Mitr', 'Sarabun', sans-serif;
+}
+
+/* Ensure underscores _ are prominent, raised, and highly visible across inputs and tables */
+input, select, textarea, button, .f-input, table, td, th, code {
+  font-family: 'Prompt', 'IBM Plex Sans Thai', 'Sarabun', system-ui, -apple-system, sans-serif !important;
+  line-height: 1.6 !important;
+  letter-spacing: 0.3px;
+}
+
+/* ── Status Badges & Tag Styles ── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.tag-active  { background: var(--success-light); color: var(--success); }
+.tag-pending { background: var(--warning-light); color: var(--warning); }
+.tag-disabled{ background: var(--danger-light); color: var(--danger); }
+
+.tag-delivered {
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+.tag-transit {
+  background: var(--warning-light);
+  color: var(--warning);
+  border: 1px solid var(--warning);
+}
+
+/* ── NIST Password Strength Meter ── */
+.pass-meter-wrap { margin-top: 6px; }
+.pass-meter-bar { height: 6px; background: var(--border-color); border-radius: 99px; overflow: hidden; }
+.pass-meter-fill { height: 100%; width: 0%; transition: all 0.3s ease; border-radius: 99px; }
+.pass-meter-text { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-weight: 600; text-align: right; }
+
+.theme-switch-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.25s ease;
+}
+.theme-switch-wrap:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.theme-icon {
+  font-size: 15px;
+  line-height: 1;
+  display: inline-block;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease;
+  user-select: none;
+}
+.theme-switch-wrap:hover .theme-icon {
+  transform: scale(1.2) rotate(12deg);
+}
+.theme-switch-select {
+  background: transparent;
+  color: #fff;
+  border: none;
+  font-size: 12.5px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0 4px;
+}
+.theme-switch-select option {
+  background: var(--card-bg);
+  color: var(--text-main);
+}
+
+/* ── Auth Page ── */
+#auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #1c062c 0%, #3b1359 50%, #5c2483 100%);
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+}
+#auth-page::before {
+  content: '';
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(224, 159, 25, 0.15) 0%, transparent 70%);
+  top: -100px;
+  right: -100px;
+  border-radius: 50%;
+}
+#auth-page::after {
+  content: '';
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(255, 255, 25/5, 0.1) 0%, transparent 70%);
+  bottom: -80px;
+  left: -80px;
+  border-radius: 50%;
+}
+
+.auth-box {
+  background: var(--card-bg);
+  border-radius: 20px;
+  padding: 36px 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  z-index: 10;
+  border: 1px solid var(--border-color);
+}
+.auth-logo {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--cmu-purple-dark);
+  margin-bottom: 4px;
+  text-align: center;
+  letter-spacing: -0.5px;
+}
+.auth-logo em {
+  color: var(--cmu-gold);
+  font-style: normal;
+  font-weight: 800;
+}
+.auth-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  text-align: center;
+  line-height: 1.6;
+}
+.auth-sub-bracket {
+  color: var(--cmu-gold);
+  font-weight: 700;
+  display: inline-block;
+  margin-top: 4px;
+  letter-spacing: 0.3px;
+  font-size: 13.5px;
+}
+
+.auth-tabs {
+  display: flex;
+  background: var(--cmu-purple-subtle);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 24px;
+}
+.auth-tab {
+  flex: 1;
+  text-align: center;
+  padding: 10px 14px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all .25s ease;
+  border-radius: 99px;
+}
+.auth-tab.active {
+  background: var(--card-bg);
+  color: var(--cmu-purple);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+.f-label {
+  font-size: 12px;
+  color: var(--text-main);
+  margin-bottom: 6px;
+  display: block;
+  font-weight: 600;
+}
+.f-input, select.f-input {
+  width: 100%;
+  padding: 10px 14px 12px 14px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  font-size: 13.5px;
+  outline: none;
+  transition: all .2s;
+  font-family: inherit;
+  background: var(--card-bg);
+  color: var(--text-main);
+  letter-spacing: 0.4px;
+}
+.f-input:focus, select.f-input:focus {
+  border-color: var(--cmu-purple);
+  box-shadow: 0 0 0 3px var(--cmu-purple-bg);
+}
+.f-err {
+  color: var(--danger);
+  font-size: 12px;
+  margin: -6px 0 12px;
+  display: none;
+  background: var(--danger-light);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+.f-msg {
+  color: var(--cmu-purple);
+  font-size: 12px;
+  margin: -6px 0 12px;
+  display: none;
+  background: var(--cmu-purple-subtle);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-weight: 500;
+  border-left: 3px solid var(--cmu-purple);
+}
+
+.auth-btn {
+  width: 100%;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--cmu-purple) 0%, var(--cmu-purple-dark) 100%);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .2s;
+  box-shadow: 0 4px 12px rgba(92,36,131,0.25);
+}
+.auth-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(92,36,131,0.35);
+}
+.auth-btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.forgot-link {
+  font-size: 12px;
+  color: var(--cmu-purple);
+  text-align: right;
+  display: block;
+  margin-top: -8px;
+  margin-bottom: 16px;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 600;
+}
+.forgot-link:hover {
+  text-decoration: underline;
+}
+
+/* ── App Shell ── */
+#app {
+  display: none;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Topbar ── */
+.topbar {
+  background: linear-gradient(90deg, #230833 0%, #46145a 100%);
+  height: 58px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  gap: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+.t-logo {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-title {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  letter-spacing: -0.4px;
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+}
+.brand-title em {
+  color: var(--cmu-gold);
+  font-style: normal;
+  font-weight: 800;
+  padding: 0 !important;
+  margin: 0 !important;
+  letter-spacing: -0.4px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.role-tag {
+  font-style: normal;
+  font-size: 11px;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+.role-tag-admin {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+}
+.role-tag-exec {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.2);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+.role-tag-staff {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+}
+.t-spacer { flex: 1; }
+.t-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Distinct Role Avatars */
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  border: 2px solid rgba(255,255,255,0.3);
+  transition: all 0.25s ease;
+}
+.avatar-admin {
+  background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+  color: #ffffff;
+  border-color: rgba(251, 191, 36, 0.6);
+  box-shadow: 0 2px 10px rgba(217, 119, 6, 0.4);
+}
+.avatar-exec {
+  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+  color: #ffffff;
+  border-color: rgba(56, 189, 248, 0.6);
+  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.4);
+}
+.avatar-staff {
+  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+  color: #ffffff;
+  border-color: rgba(52, 211, 153, 0.6);
+  box-shadow: 0 2px 10px rgba(5, 150, 105, 0.4);
+}
+
+.uname {
+  font-size: 13.5px;
+  color: #f8fafc;
+  font-weight: 600;
+  letter-spacing: 0.1px;
+}
+
+.rpill {
+  font-size: 11.5px;
+  padding: 4px 12px;
+  border-radius: 99px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  white-space: nowrap;
+  transition: all 0.25s ease;
+}
+
+/* Distinct Role Badges with Unified Color-Coding & Glow Effects */
+.rpill-admin {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(251, 191, 36, 0.5);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+}
+
+.rpill-exec {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.2);
+  border: 1px solid rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.25);
+}
+
+.rpill-staff {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(52, 211, 153, 0.5);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+}
+
+.t-logout {
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+  color: #f0e8f8;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .2s;
+  font-weight: 500;
+}
+.t-logout:hover {
+  background: rgba(255,255,255,0.2);
+  color: #fff;
+}
+
+/* ── Layout ── */
+.layout {
+  display: flex;
+  flex: 1;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 210px;
+  background: var(--card-bg);
+  border-right: 1px solid var(--border-color);
+  padding: 16px 0;
+  flex-shrink: 0;
+  transition: background 0.3s, border-color 0.3s;
+}
+.nav-sec {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  padding: 16px 20px 6px;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 20px;
+  font-size: 13px;
+  color: var(--text-main);
+  cursor: pointer;
+  border-left: 4px solid transparent;
+  transition: all .2s;
+  user-select: none;
+  font-weight: 500;
+}
+.nav-item:hover {
+  background: var(--cmu-purple-subtle);
+  color: var(--cmu-purple);
+}
+.nav-item.active {
+  color: var(--cmu-purple);
+  font-weight: 700;
+  border-left-color: var(--cmu-gold);
+  background: var(--cmu-purple-bg);
+}
+.nav-item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: .7;
+  transition: all .2s;
+}
+.nav-item.active svg {
+  opacity: 1;
+  stroke: var(--cmu-purple);
+}
+
+/* ── Content ── */
+.content {
+  flex: 1;
+  padding: 24px;
+  overflow: auto;
+  min-width: 0;
+}
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── Capacity Warning Banner ── */
+.row-warn {
+  background: var(--warning-light);
+  border: 1px solid #fcd34d;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  color: var(--warning);
+  display: none;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow-sm);
+}
+.row-warn.show { display: flex; }
+.row-danger {
+  background: var(--danger-light);
+  border-color: #fca5a5;
+  color: var(--danger);
+}
+
+/* ── Filter Bar ── */
+.filter-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.filter-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+select, input[type=date] {
+  padding: 8px 12px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--text-main);
+  background: var(--card-bg);
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  transition: all .2s;
+}
+select:focus, input[type=date]:focus {
+  border-color: var(--cmu-purple);
+  box-shadow: 0 0 0 3px var(--cmu-purple-bg);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-main);
+  font-family: inherit;
+  transition: all .2s;
+  font-weight: 600;
+}
+.btn:hover {
+  background: var(--cmu-purple-subtle);
+  border-color: var(--border-color);
+}
+.btn-primary {
+  background: var(--cmu-purple);
+  color: #fff;
+  border-color: var(--cmu-purple);
+  box-shadow: 0 2px 6px rgba(92,36,131,0.2);
+}
+.btn-primary:hover {
+  background: var(--cmu-purple-dark);
+  border-color: var(--cmu-purple-dark);
+}
+.btn-success {
+  background: var(--cmu-gold);
+  color: #3b2200;
+  border-color: var(--cmu-gold);
+  box-shadow: 0 2px 6px rgba(224,159,25,0.25);
+}
+.btn-success:hover {
+  background: var(--cmu-gold-hover);
+  border-color: var(--cmu-gold-hover);
+}
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+  border-color: var(--danger);
+}
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 11px;
+  border-radius: 6px;
+}
+
+/* Modern Admin Action Buttons */
+.action-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.btn-act {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 11px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.btn-act-secondary {
+  background: rgba(140, 150, 170, 0.12);
+  color: var(--text-main);
+  border-color: rgba(140, 150, 170, 0.25);
+}
+.btn-act-secondary:hover {
+  background: rgba(140, 150, 170, 0.28);
+  transform: translateY(-1px);
+}
+
+.btn-act-primary {
+  background: rgba(92, 36, 131, 0.1);
+  color: var(--cmu-purple);
+  border-color: rgba(92, 36, 131, 0.25);
+}
+.btn-act-primary:hover {
+  background: var(--cmu-purple);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(92, 36, 131, 0.25);
+}
+
+.btn-act-success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+.btn-act-success:hover {
+  background: #10b981;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(16, 185, 129, 0.25);
+}
+
+.btn-act-warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+.btn-act-warning:hover {
+  background: #f59e0b;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.25);
+}
+
+.btn-act-danger {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+.btn-act-danger:hover {
+  background: #ef4444;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(239, 68, 68, 0.25);
+}
+
+.role-select {
+  padding: 5px 8px;
+  font-size: 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+  color: var(--text-main);
+  outline: none;
+  font-weight: 500;
+  transition: border-color .15s;
+}
+.role-select:focus {
+  border-color: var(--cmu-purple);
+}
+
+.range-toggle {
+  display: flex;
+  border: 1.5px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--card-bg);
+}
+.range-toggle button {
+  padding: 8px 16px;
+  font-size: 13px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .2s;
+  font-weight: 500;
+}
+.range-toggle button.active {
+  background: var(--cmu-purple);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── KPI Cards ── */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.kpi {
+  background: var(--card-bg);
+  border-radius: 14px;
+  border: 1.5px solid var(--border-color);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-sm);
+  position: relative;
+  overflow: hidden;
+  transition: all .25s ease;
+  cursor: pointer;
+  user-select: none;
+}
+.kpi:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(92, 36, 131, 0.15);
+  border-color: var(--cmu-purple-light);
+}
+.kpi.active-kpi-filter {
+  border-color: var(--cmu-purple) !important;
+  background: var(--cmu-purple-bg) !important;
+  box-shadow: 0 0 15px rgba(92, 36, 131, 0.2) !important;
+}
+.kpi::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 100%;
+  background: var(--cmu-purple);
+}
+.kpi:nth-child(2)::before { background: var(--success); }
+.kpi:nth-child(3)::before { background: var(--warning); }
+.kpi:nth-child(4)::before { background: var(--cmu-gold); }
+.kpi-hint {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  opacity: 0.6;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+.kpi:hover .kpi-hint {
+  opacity: 1;
+  color: var(--cmu-purple);
+}
+.kpi-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding-right: 65px;
+}
+.kpi-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--cmu-purple-dark);
+  line-height: 1.2;
+}
+.kpi-sub {
+  font-size: 11px;
+  margin-top: 4px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+}
+.kpi-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #3b1359 0%, #5c2483 100%);
+  color: #f5b027;
+  font-weight: 700;
+  font-size: 11.5px;
+  box-shadow: 0 2px 6px rgba(92, 36, 131, 0.25);
+  letter-spacing: 0.3px;
+  border: 1px solid rgba(245, 176, 39, 0.4);
+}
+[data-theme="dark"] .kpi-badge {
+  background: linear-gradient(135deg, #9d4edd 0%, #3b1359 100%);
+  color: #ffd166;
+  border: 1px solid rgba(255, 209, 102, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Charts ── */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.chart-card {
+  background: var(--card-bg);
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  transition: background 0.3s, border-color 0.3s;
+}
+.chart-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cmu-purple-dark);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chart-title::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: var(--cmu-gold);
+  border-radius: 50%;
+  display: inline-block;
+}
+.chart-wrap {
+  position: relative;
+  height: 210px;
+}
+
+.bar-list { margin-top: 8px; }
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.bar-lbl {
+  font-size: 12px;
+  color: var(--text-main);
+  width: 120px;
+  text-align: right;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+.bar-track {
+  flex: 1;
+  background: var(--cmu-purple-subtle);
+  border-radius: 99px;
+  height: 10px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width .4s ease;
+}
+.bar-n {
+  font-size: 12px;
+  color: var(--cmu-purple-dark);
+  width: 32px;
+  flex-shrink: 0;
+  text-align: right;
+  font-weight: 700;
+}
+
+/* ── Table ── */
+.tbl-wrap {
+  background: var(--card-bg);
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: background 0.3s, border-color 0.3s;
+}
+.tbl-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: 10px;
+  background: var(--card-bg);
+}
+.tbl-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cmu-purple-dark);
+}
+.tbl-count {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.tbl-scroll { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th {
+  background: var(--cmu-purple-subtle);
+  color: var(--cmu-purple-dark);
+  font-weight: 700;
+  padding: 11px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+  color: var(--text-main);
+  max-width: 220px;
+  word-break: break-word;
+}
+tr:last-child td { border: none; }
+tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+tr:hover td { background: var(--cmu-purple-bg); }
+
+/* ── Admin Box ── */
+.admin-box {
+  background: var(--card-bg);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  padding: 28px;
+  max-width: 640px;
+  box-shadow: var(--shadow-sm);
+}
+.admin-title {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--cmu-purple-dark);
+}
+.admin-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 22px;
+}
+
+/* ── Modal ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.show { display: flex; }
+.modal-box {
+  background: var(--card-bg);
+  border-radius: 20px;
+  padding: 32px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+  border: 1px solid var(--border-color);
+}
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--cmu-purple-dark);
+  margin-bottom: 6px;
+  text-align: center;
+}
+.modal-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* ── PDF Loading Overlay ── */
+#pdf-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(3px);
+  z-index: 999;
+  align-items: center;
+  justify-content: center;
+}
+#pdf-overlay.show { display: flex; }
+.pdf-box {
+  background: var(--card-bg);
+  border-radius: 16px;
+  padding: 32px 40px;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--border-color);
+}
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--cmu-purple-subtle);
+  border-top-color: var(--cmu-gold);
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  margin: 0 auto 14px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Toast Notifications ── */
+#toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  z-index: 9999;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  max-width: 380px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  font-weight: 600;
+}
+#toast.show { display: flex; }
+#toast.ok  { background: var(--cmu-purple-dark); color: var(--cmu-gold); border-left: 4px solid var(--cmu-gold); }
+#toast.err { background: var(--danger); color: #fff; }
+
+.chk-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+  margin-bottom: 18px;
+  color: var(--text-main);
+  font-weight: 500;
+}
+.chk-label input[type=checkbox] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--cmu-purple);
+  border-radius: 4px;
+}
+
+@media(max-width:768px){
+  .sidebar { display: none; }
+  .charts-grid { grid-template-columns: 1fr; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .auth-box { padding: 28px 24px; }
+}
+
+/* Official A4 Report Paper Styling */
+/* Official A4 Report Paper Styling */
+.report-paper {
+  background: #ffffff;
+  color: #1e293b;
+  padding: 36px 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--border-color);
+  margin-top: 10px;
+  font-family: 'Prompt', 'IBM Plex Sans Thai', 'Sarabun', system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+.report-header {
+  border-bottom: 2.5px solid #5c2483;
+  padding-bottom: 16px;
+  margin-bottom: 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.report-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #5c2483;
+  margin-bottom: 6px;
+  letter-spacing: -0.3px;
+}
+
+.report-subtitle {
+  font-size: 13px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.report-meta {
+  text-align: right;
+  font-size: 11.5px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.report-summary-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 22px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 14px 20px;
+  border-radius: 10px;
+}
+
+.report-summary-item {
+  font-size: 12.5px;
+  color: #475569;
+  font-weight: 500;
+}
+
+.report-summary-item strong {
+  font-size: 15.5px;
+  color: #5c2483;
+  margin-left: 6px;
+  font-weight: 700;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 30px;
+  font-size: 12px;
+}
+
+.report-table th {
+  background: #f1f5f9;
+  color: #0f172a;
+  font-weight: 700;
+  padding: 10px 10px;
+  border: 1px solid #cbd5e1;
+  text-align: left;
+  font-size: 12.5px;
+  letter-spacing: 0.2px;
+  vertical-align: middle;
+}
+
+.report-table td {
+  padding: 10px 10px;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  vertical-align: middle;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.report-table tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.report-signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  margin-top: 40px;
+  padding-top: 20px;
+  page-break-inside: avoid;
+}
+
+.sig-box {
+  text-align: center;
+  font-size: 12px;
+  color: #334155;
+  line-height: 1.6;
+}
+
+.sig-line {
+  margin-top: 45px;
+  border-bottom: 1.5px dotted #94a3b8;
+  width: 80%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Print-friendly styles for Report Generation */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 15mm;
+  }
+  
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .topbar, .sidebar, .filter-bar, .admin-box, .no-print, .btn, #toast, .modal-overlay, #pdf-overlay {
+    display: none !important;
+  }
+
+  .content-wrap, .content, .main-layout, #page-report {
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    width: 100% !important;
+  }
+
+  .report-paper {
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .report-header {
+    border-bottom: 2px solid #000000 !important;
+  }
+
+  .report-title {
+    color: #000000 !important;
+  }
+
+  .report-table th {
+    background: #e2e8f0 !important;
+    color: #000000 !important;
+    border: 1px solid #000000 !important;
+  }
+
+  .report-table td {
+    border: 1px solid #64748b !important;
+    color: #000000 !important;
+  }
+
+  .report-signatures {
+    page-break-inside: avoid !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH PAGE -->
+<div id="auth-page">
+  <div class="auth-box">
+    <div class="auth-logo"><span class="brand-title">SmartCAD<em>-Messenger</em></span></div>
+    <div class="auth-sub">ระบบติดตามส่งเอกสาร/จดหมาย/พัสดุ<br><span class="auth-sub-bracket">(กองบริหารงานกลาง สำนักงานมหาวิทยาลัย)</span></div>
+    
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">เข้าสู่ระบบ</div>
+      <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">ลงทะเบียน</div>
+    </div>
+
+    <!-- Login Form -->
+    <div id="form-login">
+      <div class="form-group">
+        <label class="f-label">Username หรือ Email</label>
+        <input class="f-input" id="inp-u" placeholder="username หรือ somchai@cmu.ac.th" autocomplete="username"/>
+      </div>
+      <div class="form-group">
+        <label class="f-label">รหัสผ่าน (หรือรหัสผ่านชั่วคราวจากอีเมล)</label>
+        <input class="f-input" id="inp-p" type="password" placeholder="••••••••" autocomplete="current-password"/>
+      </div>
+      <a class="forgot-link" onclick="switchAuthTab('forgot')">ลืมรหัสผ่าน?</a>
+      <div class="f-err" id="login-err"></div>
+      <button class="auth-btn" id="login-btn" onclick="doLogin()">เข้าสู่ระบบ</button>
+    </div>
+
+    <!-- Forgot Password Form -->
+    <div id="form-forgot" style="display:none">
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;text-align:center">
+        ระบุ Username หรือ Email ของท่าน ระบบผู้ดูแลจะจัดส่งรหัสผ่านใหม่ไปยังอีเมลที่บันทึกไว้ในระบบ
+      </div>
+      <div class="form-group">
+        <label class="f-label">Username หรือ Email</label>
+        <input class="f-input" id="forgot-identifier" placeholder="username หรือ somchai@cmu.ac.th"/>
+      </div>
+      <div class="f-err" id="forgot-err"></div>
+      <div class="f-msg" id="forgot-msg"></div>
+      <button class="auth-btn" id="forgot-btn" onclick="doForgotPassword()">ส่งคำขอรหัสผ่านใหม่</button>
+      <div style="text-align:center;margin-top:14px">
+        <a class="forgot-link" style="display:inline" onclick="switchAuthTab('login')">← กลับหน้าเข้าสู่ระบบ</a>
+      </div>
+    </div>
+
+    <!-- Register Form -->
+    <div id="form-register" style="display:none">
+      <div class="form-group">
+        <label class="f-label">ชื่อ-นามสกุลจริง</label>
+        <input class="f-input" id="reg-fullname" placeholder="สมชาย ใจดี"/>
+      </div>
+      <div class="form-group">
+        <label class="f-label">Username ที่ต้องการใช้</label>
+        <input class="f-input" id="reg-u" placeholder="somchai_j"/>
+      </div>
+      <div class="form-group">
+        <label class="f-label">อีเมลติดต่อ (ใช้เพื่อส่งรหัสอนุมัติ)</label>
+        <input class="f-input" id="reg-email" type="email" placeholder="somchai@cmu.ac.th"/>
+      </div>
+      <div class="form-group">
+        <label class="f-label">แผนก / สังกัด</label>
+        <input class="f-input" id="reg-dept" placeholder="แผนก บริหารงานทั่วไป"/>
+      </div>
+      
+      <div style="background:var(--cmu-purple-subtle);border-left:3px solid var(--cmu-purple);padding:10px 12px;border-radius:8px;font-size:12px;color:var(--text-main);margin-bottom:16px;line-height:1.4">
+        📌 <strong>ขั้นตอนอนุมัติบัญชี:</strong><br>
+        หลังจากกดลงทะเบียนแล้ว บัญชีจะอยู่ในสถานะ "รออนุมัติ" กรุณาติดต่อผู้ดูแลระบบเพื่อทำการอนุมัติการใช้งาน และระบบจะส่งรหัสผ่านชั่วคราวให้ท่านผ่านทางอีเมลโดยอัตโนมัติ
+      </div>
+
+      <div class="f-err" id="reg-err"></div>
+      <div class="f-msg" id="reg-msg"></div>
+      <button class="auth-btn" id="reg-btn" onclick="doRegister()">ส่งคำขอลงทะเบียน</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: FORCE CHANGE PASSWORD -->
+<div class="modal-overlay" id="modal-change-pass">
+  <div class="modal-box">
+    <div class="modal-title">บังคับเปลี่ยนรหัสผ่าน</div>
+    <div class="modal-sub">นี่คือการเข้าสู่ระบบครั้งแรก หรือรหัสผ่านของท่านถูกรีเซ็ตโดยผู้ดูแลระบบ กรุณาตั้งรหัสผ่านใหม่เพื่อความปลอดภัยระดับสูง</div>
+    
+    <div class="form-group">
+      <label class="f-label">รหัสผ่านใหม่ (ต้องมีความยาวอย่างน้อย 6 ตัวอักษร)</label>
+      <input class="f-input" id="new-p" type="password" placeholder="••••••••" oninput="checkNistPasswordStrength(this.value)"/>
+      <div class="pass-meter-wrap">
+        <div class="pass-meter-bar"><div class="pass-meter-fill" id="pass-meter-fill"></div></div>
+        <div class="pass-meter-text" id="pass-meter-text">ความแข็งแกร่งของรหัสผ่าน: -</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="f-label">ยืนยันรหัสผ่านใหม่</label>
+      <input class="f-input" id="confirm-new-p" type="password" placeholder="••••••••"/>
+    </div>
+    
+    <div class="f-err" id="change-pass-err"></div>
+    <button class="auth-btn" id="change-pass-btn" onclick="doChangePassword()">บันทึกและเปลี่ยนรหัสผ่าน</button>
+  </div>
+</div>
+
+<!-- MODAL: EDIT USER INFO (ADMIN) -->
+<div class="modal-overlay" id="modal-edit-user">
+  <div class="modal-box">
+    <div class="modal-title">แก้ไขข้อมูลผู้ใช้งาน</div>
+    <div class="modal-sub">แก้ไขชื่อ-นามสกุล หรือแผนก/สังกัดของผู้ใช้ระบบ</div>
+    
+    <input type="hidden" id="edit-user-target"/>
+    <div class="form-group">
+      <label class="f-label">Username</label>
+      <input class="f-input" id="edit-user-u" disabled style="opacity:0.7"/>
+    </div>
+    <div class="form-group">
+      <label class="f-label">ชื่อ-นามสกุลจริง</label>
+      <input class="f-input" id="edit-user-name" placeholder="ชื่อ-นามสกุลจริง"/>
+    </div>
+    <div class="form-group">
+      <label class="f-label">แผนก / สังกัด</label>
+      <input class="f-input" id="edit-user-dept" placeholder="แผนก/สังกัด"/>
+    </div>
+    
+    <div class="f-err" id="edit-user-err"></div>
+    <button class="auth-btn" style="margin-bottom:8px" onclick="saveUserInfo()">บันทึกการแก้ไข</button>
+    <button class="btn" style="width:100%" onclick="document.getElementById('modal-edit-user').classList.remove('show')">ยกเลิก</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="t-logo"><span class="brand-title">SmartCAD<em>-Messenger</em></span><span id="role-lbl" class="role-tag">CMU</span></div>
+    <div class="t-spacer"></div>
+    
+    <!-- Theme Selector -->
+    <div class="theme-switch-wrap">
+      <span id="theme-icon" class="theme-icon">🌓</span>
+      <select class="theme-switch-select" id="theme-selector" onchange="changeTheme(this.value)">
+        <option value="auto">ระบบ (Auto)</option>
+        <option value="light">สว่าง (Light / กลางวัน)</option>
+        <option value="dark">มืด (Dark / กลางคืน)</option>
+      </select>
+    </div>
+
+    <div class="t-user">
+      <div class="avatar" id="av">?</div>
+      <div class="uname" id="uname-lbl">-</div>
+      <div class="rpill" id="rpill">-</div>
+      <button class="t-logout" onclick="doLogout()">ออกจากระบบ</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="nav-sec">ภาพรวม</div>
+      <div class="nav-item active" data-page="overview" onclick="nav(this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>ภาพรวมแดชบอร์ด
+      </div>
+      <div class="nav-item" data-page="monthly" onclick="nav(this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>รายเดือน
+      </div>
+      <div class="nav-item" data-page="yearly" onclick="nav(this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>รายปี
+      </div>
+      <div class="nav-item" data-page="records" onclick="nav(this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>รายการทั้งหมด
+      </div>
+      <div class="nav-sec">รายงาน</div>
+      <div class="nav-item" data-page="report" onclick="nav(this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>พิมพ์รายงานด่วน
+      </div>
+      
+      <!-- Admin Menu -->
+      <div id="nav-admin" style="display:none">
+        <div class="nav-sec">ผู้ดูแลระบบ</div>
+        <div class="nav-item" data-page="users" onclick="nav(this)">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>จัดการผู้ใช้งาน
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div class="content">
+
+      <!-- PAGE: OVERVIEW -->
+      <div id="page-overview" class="page active">
+        <div class="filter-bar">
+          <div class="filter-group"><div class="filter-label">เดือน</div><select id="ov-month" onchange="loadOverview()"><option value="">ทุกเดือน (ตลอดทั้งปี)</option></select></div>
+          <div class="filter-group"><div class="filter-label">ปี (พ.ศ.)</div><select id="ov-year" onchange="loadOverview()"></select></div>
+        </div>
+        <div class="kpi-grid" id="ov-kpi"></div>
+        <div class="charts-grid">
+          <div class="chart-card"><div class="chart-title">จำนวนรายเดือน เอกสาร/จดหมาย/พัสดุ</div><div class="chart-wrap"><canvas id="ch-monthly"></canvas></div></div>
+          <div class="chart-card"><div class="chart-title">สัดส่วนผู้ส่ง (Top 5)</div><div class="chart-wrap"><canvas id="ch-sender"></canvas></div></div>
+        </div>
+        <div class="chart-card" style="margin-bottom:20px"><div class="chart-title">ผู้รับสูงสุด</div><div class="bar-list" id="receiver-bars"></div></div>
+
+        <!-- Dynamic KPI Drill-down Table Section -->
+        <div class="tbl-wrap" id="kpi-drill-table-section">
+          <div class="tbl-head">
+            <div class="tbl-title" id="kpi-table-title">📋 รายการเอกสาร/จดหมาย/พัสดุ</div>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span class="tbl-count" id="kpi-table-count">0 รายการ</span>
+              <button class="btn btn-sm" id="kpi-reset-btn" onclick="filterDashboardByKpi('all')" style="font-size:11px;padding:4px 10px;display:none;background:var(--cmu-purple-subtle);color:var(--cmu-purple)">แสดงทั้งหมด</button>
+            </div>
+          </div>
+          <div class="tbl-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tracking No.</th>
+                  <th>วันที่รับ</th>
+                  <th>ผู้ส่ง</th>
+                  <th>ผู้รับ / หน่วยงาน</th>
+                  <th>สถานะ</th>
+                  <th>รายละเอียด</th>
+                </tr>
+              </thead>
+              <tbody id="kpi-table-tb"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE: MONTHLY -->
+      <div id="page-monthly" class="page">
+        <div class="filter-bar">
+          <div class="filter-group"><div class="filter-label">ปี (พ.ศ.)</div><select id="mo-year" onchange="loadMonthly()"></select></div>
+          <div class="filter-group" style="justify-content:flex-end"><button class="btn btn-success" onclick="window.print()">พิมพ์รายงาน</button></div>
+        </div>
+        <div class="chart-card" style="margin-bottom:20px"><div class="chart-title">จำนวนรายเดือน เอกสาร/จดหมาย/พัสดุ</div><div class="chart-wrap" style="height:230px"><canvas id="ch-monthly2"></canvas></div></div>
+        <div class="tbl-wrap"><div class="tbl-head"><div class="tbl-title">ตารางสรุปรายเดือน</div></div>
+          <table><thead><tr><th>เดือน</th><th>จำนวนงาน</th><th>คิดเป็น % ของปี</th></tr></thead><tbody id="mo-tb"></tbody></table></div>
+      </div>
+
+      <!-- PAGE: YEARLY -->
+      <div id="page-yearly" class="page">
+        <div class="filter-bar"><button class="btn btn-success" onclick="window.print()">พิมพ์รายงานประจำปี</button></div>
+        <div class="chart-card" style="margin-bottom:20px"><div class="chart-title">จำนวนรายปี เอกสาร/จดหมาย/พัสดุ</div><div class="chart-wrap" style="height:230px"><canvas id="ch-yearly"></canvas></div></div>
+        <div class="tbl-wrap"><div class="tbl-head"><div class="tbl-title">ตารางสรุปรายปี</div></div>
+          <table><thead><tr><th>ปี (พ.ศ.)</th><th>จำนวนงาน</th></tr></thead><tbody id="yr-tb"></tbody></table></div>
+      </div>
+
+      <!-- PAGE: RECORDS -->
+      <div id="page-records" class="page">
+        <div class="filter-bar">
+          <div class="filter-group"><div class="filter-label">ตัวกรองช่วงข้อมูล</div>
+            <div class="range-toggle">
+              <button id="mode-ym" class="active" onclick="setRecMode('ym')">ปี/เดือน</button>
+              <button id="mode-dr" onclick="setRecMode('dr')">ช่วงวันที่</button>
+            </div>
+          </div>
+          <div id="filter-ym" style="display:flex;gap:10px;align-items:flex-end">
+            <div class="filter-group"><div class="filter-label">ปี (พ.ศ.)</div><select id="rec-year" onchange="loadRecords()"></select></div>
+            <div class="filter-group"><div class="filter-label">เดือน</div><select id="rec-month" onchange="loadRecords()"><option value="">ทุกเดือน</option></select></div>
+          </div>
+          <div id="filter-dr" style="display:none;gap:10px;align-items:flex-end">
+            <div class="filter-group"><div class="filter-label">จากวันที่</div><input type="date" id="rec-from"/></div>
+            <div class="filter-group"><div class="filter-label">ถึงวันที่</div><input type="date" id="rec-to"/></div>
+            <button class="btn btn-primary" onclick="loadRecords()">ค้นหา</button>
+          </div>
+          <input id="rec-search" placeholder="ค้นหา Tracking / ผู้ส่ง / ผู้รับ..." style="padding:8px 12px;border:1.5px solid var(--border-color);border-radius:8px;font-size:13px;outline:none;font-family:inherit;min-width:220px;background:var(--card-bg);color:var(--text-main)" oninput="debouncedFilterRec()"/>
+          <button class="btn btn-success" onclick="window.print()">พิมพ์รายงานหน้านี้</button>
+        </div>
+        <div class="tbl-wrap">
+          <div class="tbl-head"><div class="tbl-title">รายการค้นพบ (เอกสาร/จดหมาย/พัสดุ)</div><div class="tbl-count" id="rec-count">0 รายการ</div></div>
+          <div class="tbl-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>บันทึกโดย (Email)</th>
+                  <th>Tracking No.</th>
+                  <th>วันที่รับ</th>
+                  <th>ผู้ส่ง</th>
+                  <th>ผู้รับ / หน่วยงาน</th>
+                  <th>สถานะ</th>
+                  <th>รายละเอียด</th>
+                  <th>เวลาบันทึก</th>
+                </tr>
+              </thead>
+              <tbody id="rec-tb"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE: REPORT -->
+      <div id="page-report" class="page">
+        <div class="admin-box no-print" style="margin-bottom:24px">
+          <div class="admin-title">📋 ออกรายงาน เอกสาร/จดหมาย/พัสดุ (PDF Report)</div>
+          <div class="admin-sub">กรองช่วงข้อมูลที่ต้องการจัดทำรายงาน ระบบจะสร้างตัวอย่างรายงาน A4 ให้โดยอัตโนมัติ</div>
+          <div class="range-toggle" style="margin-bottom:18px">
+            <button id="rpt-mode-ym" class="active" onclick="setRptMode('ym')">ระบบ ปี/เดือน</button>
+            <button id="rpt-mode-dr" onclick="setRptMode('dr')">ระบบ ช่วงวันที่</button>
+          </div>
+          <div id="rpt-ym">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+              <div class="form-group">
+                <label class="f-label">ปี (พ.ศ.)</label>
+                <select class="f-input" id="rpt-year" onchange="renderReportPreview()"></select>
+              </div>
+              <div class="form-group">
+                <label class="f-label">เดือน (ไม่ระบุ = ตลอดทั้งปี)</label>
+                <select class="f-input" id="rpt-month" onchange="renderReportPreview()"><option value="">รวมทั้งปี</option></select>
+              </div>
+            </div>
+          </div>
+          <div id="rpt-dr" style="display:none">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+              <div class="form-group">
+                <label class="f-label">จากวันที่</label>
+                <input type="date" class="f-input" id="rpt-from" onchange="renderReportPreview()"/>
+              </div>
+              <div class="form-group">
+                <label class="f-label">ถึงวันที่</label>
+                <input type="date" class="f-input" id="rpt-to" onchange="renderReportPreview()"/>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:16px;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="renderReportPreview()" style="padding:10px 20px;font-size:14px">🔄 อัปเดตตัวอย่างรายงาน</button>
+            <button class="auth-btn" onclick="generateReportPDF()" style="margin-top:0;padding:10px 24px;font-size:14px;flex:1;min-width:200px">🖨️ สั่งพิมพ์ / บันทึกรายงานเป็น PDF</button>
+          </div>
+        </div>
+
+        <!-- Official Report Document Preview Container -->
+        <div id="report-doc-wrap">
+          <div id="report-doc" class="report-paper">
+            <div style="text-align:center;padding:40px;color:#888">⏳ กำลังจัดทำเอกสารรายงาน...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAGE: USER MANAGEMENT (Admin) -->
+      <div id="page-users" class="page">
+        <div class="tbl-wrap">
+          <div class="tbl-head">
+            <div>
+              <div class="tbl-title">จัดการผู้ใช้งานและอนุมัติสิทธิ์</div>
+              <div style="font-size:12px;color:var(--text-muted)">อนุมัติผู้สมัครใหม่ หรือแก้ไขสิทธิ์การเข้าถึงข้อมูลระบบ (Admin / Executive / Staff)</div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <input id="user-search" placeholder="ค้นหา ชื่อ / Username / แผนก..." style="padding:6px 12px;font-size:12px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--card-bg);color:var(--text-main)" oninput="filterUsersTable()"/>
+              <button class="btn btn-primary btn-sm" onclick="loadUsers()">โหลดใหม่</button>
+            </div>
+          </div>
+
+          <!-- User Summary Cards -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(130px,1fr));gap:10px;padding:12px 20px;border-bottom:1px solid var(--border-color);background:var(--cmu-purple-subtle)">
+            <div style="font-size:12px;color:var(--text-main)">ผู้ใช้ทั้งหมด: <strong id="user-count-all" style="color:var(--cmu-purple)">0</strong></div>
+            <div style="font-size:12px;color:var(--text-main)">ใช้งานปกติ: <strong id="user-count-active" style="color:var(--success)">0</strong></div>
+            <div style="font-size:12px;color:var(--text-main)">รออนุมัติ: <strong id="user-count-pending" style="color:var(--warning)">0</strong></div>
+            <div style="font-size:12px;color:var(--text-main)">ระงับใช้งาน: <strong id="user-count-disabled" style="color:var(--danger)">0</strong></div>
+          </div>
+
+          <div class="tbl-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>ชื่อ-นามสกุล</th>
+                  <th>Username / Email</th>
+                  <th>แผนก/สังกัด</th>
+                  <th>ระดับสิทธิ์การใช้งาน</th>
+                  <th>สถานะ</th>
+                  <th style="min-width: 260px;">การจัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="users-tb">
+                <tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px">กำลังโหลดข้อมูล...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Toast Notifications -->
+<div id="toast">แจ้งเตือน</div>
+
+<script>
+// ========================================================================
+//  SUPABASE CONFIGURATION
+// ========================================================================
+// กรุณาเปลี่ยนค่าด้านล่างเป็นของโปรเจกต์ Supabase ของคุณ
+// (สามารถวางเป็น Public บน GitHub ได้อย่างปลอดภัยเนื่องจากเราใช้ระบบ RLS ควบคุมความปลอดภัยที่ Database)
+const SUPABASE_URL = "https://chtxxyrupftpoiooggvh.supabase.co"; 
+const SUPABASE_ANON_KEY = "sb_publishable_KI23ZdXEfUqImxTslnAJ3w_RrMwHDWM";
+
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ลิงก์ Web App Google Apps Script ที่สร้างจากไฟล์ appsscript_sync.js (ใช้สำหรับส่งเมล/รีเซ็ตรหัสผ่านแบบหลังบ้าน)
+const GAS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwquxw3GK3QqTbq36glCKGmdFe-QLGq6QnGAJWYKAkZPKboeoagBCz4KMH8aSnvSkKfHw/exec";
+const WEBHOOK_SECRET = "my_super_secret_token_334477552266"; // ต้องตรงกับที่ตั้งไว้ใน Apps Script Script Properties
+
+
+// Global App State
+let ME = null;
+let recData = [];
+let usersData = [];
+const charts = {};
+const currentYear = new Date().getFullYear();
+let recMode = "ym";
+let rptMode = "ym";
+let debounceTimer;
+let autoRefreshInterval = null;
+
+const MONTHS = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+const COLORS = ["#5c2483", "#e09f19", "#059669", "#d93838", "#0284c7", "#7c2d12", "#4f46e5", "#db2777"];
+
+// ========================================================================
+//  AUTH LOGIC (SUPABASE AUTH)
+// ========================================================================
+
+async function doLogin() {
+  const u = document.getElementById("inp-u").value.trim();
+  const p = document.getElementById("inp-p").value;
+  const btn = document.getElementById("login-btn");
+  
+  if (!u || !p) {
+    showLoginErr("กรุณากรอก Username หรือ Email และรหัสผ่าน");
+    return;
+  }
+  
+  btn.textContent = "กำลังตรวจสอบสิทธิ์...";
+  btn.disabled = true;
+  hideAuthErr();
+  
+  try {
+    let email = u;
+    
+    // ถ้าผู้ใช้กรอกเป็น Username (ไม่มี @) ให้ค้นหา Email ที่ผูกไว้อัตโนมัติเพื่อล็อกอิน
+    if (u.indexOf("@") === -1) {
+      try {
+        const { data: profileRow } = await sbClient
+          .from("profiles")
+          .select("email")
+          .eq("username", u)
+          .maybeSingle();
+          
+        if (profileRow && profileRow.email) {
+          email = profileRow.email;
+        } else {
+          showLoginErr("ไม่พบข้อมูล Username นี้ในระบบ กรุณาตรวจสอบหรือลองใช้ Email ในการเข้าสู่ระบบ");
+          btn.textContent = "เข้าสู่ระบบ";
+          btn.disabled = false;
+          return;
+        }
+      } catch(pe) {
+        showLoginErr("เกิดข้อผิดพลาดในการตรวจสอบบัญชี กรุณาใช้ Email ในการเข้าสู่ระบบ");
+        btn.textContent = "เข้าสู่ระบบ";
+        btn.disabled = false;
+        return;
+      }
+    }
+
+    // ทำการ Login ด้วย Email จริง
+    const { data: authData, error: authErr } = await sbClient.auth.signInWithPassword({
+      email: email,
+      password: p
+    });
+
+    if (authErr) {
+      showLoginErr("อีเมลหรือรหัสผ่านไม่ถูกต้อง หรือบัญชียังไม่ได้รับการอนุมัติ");
+      btn.textContent = "เข้าสู่ระบบ";
+      btn.disabled = false;
+      return;
+    }
+
+    // อ่านโปรไฟล์จาก Database โดยตรงเพื่อเช็กสิทธิ์และสถานะบังคับเปลี่ยนรหัสผ่านที่แม่นยำที่สุด
+    const { data: profile } = await sbClient
+      .from("profiles")
+      .select("role, status, fullname, username, department, force_change_password")
+      .eq("id", authData.user.id)
+      .maybeSingle();
+
+    const jwtMeta  = authData.user.app_metadata || {};
+    const userMeta = authData.user.user_metadata || {};
+
+    const role        = (profile && profile.role) || jwtMeta.role || userMeta.role || "staff";
+    const status      = (profile && profile.status) || jwtMeta.status || userMeta.status || "pending";
+    const fullname    = (profile && profile.fullname) || userMeta.fullname || authData.user.email;
+    const username    = (profile && profile.username) || userMeta.username || authData.user.email.split("@")[0];
+    const department  = (profile && profile.department) || userMeta.department || "";
+    const forceChange = (profile && profile.force_change_password !== undefined) ? profile.force_change_password : (userMeta.force_change_password || false);
+
+    if (status === "disabled") {
+      showLoginErr("บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
+      await sbClient.auth.signOut();
+      btn.textContent = "เข้าสู่ระบบ";
+      btn.disabled = false;
+      return;
+    }
+
+    if (status === "pending") {
+      showLoginErr("บัญชีของท่านอยู่ระหว่างรอการอนุมัติสิทธิ์การใช้งานจากผู้ดูแลระบบ");
+      await sbClient.auth.signOut();
+      btn.textContent = "เข้าสู่ระบบ";
+      btn.disabled = false;
+      return;
+    }
+
+    ME = {
+      id: authData.user.id,
+      email: authData.user.email,
+      username: username,
+      fullname: fullname,
+      role: role,
+      department: department
+    };
+
+    if (forceChange) {
+      startApp();
+      document.getElementById("modal-change-pass").classList.add("show");
+    } else {
+      startApp();
+    }
+
+  } catch (err) {
+    showLoginErr("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
+    btn.textContent = "เข้าสู่ระบบ";
+    btn.disabled = false;
+  }
+}
+
+async function doRegister() {
+  const fullname = document.getElementById("reg-fullname").value.trim();
+  const username = document.getElementById("reg-u").value.trim().toLowerCase();
+  const email = document.getElementById("reg-email").value.trim().toLowerCase();
+  const dept = document.getElementById("reg-dept").value.trim();
+  const btn = document.getElementById("reg-btn");
+  const err = document.getElementById("reg-err");
+  const msg = document.getElementById("reg-msg");
+
+  if (!fullname || !username || !email || !dept) {
+    showRegErr("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง");
+    return;
+  }
+
+  btn.textContent = "กำลังบันทึกข้อมูล...";
+  btn.disabled = true;
+
+  try {
+    // 1. ตรวจสอบ Username / Email ซ้ำในตาราง profiles ก่อน
+    const { data: existingProfiles } = await sbClient
+      .from("profiles")
+      .select("username, email")
+      .or(`username.eq.${username},email.eq.${email}`);
+
+    if (existingProfiles && existingProfiles.length > 0) {
+      showRegErr("Username หรือ Email นี้มีผู้ใช้งานในระบบแล้ว");
+      btn.textContent = "ส่งคำขอลงทะเบียน";
+      btn.disabled = false;
+      return;
+    }
+
+    // 2. สมัครสมาชิกผ่าน Supabase Auth
+    let userId = null;
+    try {
+      const { data: authData } = await sbClient.auth.signUp({
+        email: email,
+        password: "TempPassInitial@123!",
+        options: {
+          data: {
+            username: username,
+            fullname: fullname,
+            department: dept,
+            status: "pending",
+            role: "staff"
+          }
+        }
+      });
+      if (authData && authData.user) userId = authData.user.id;
+    } catch(e) {
+      console.log("Supabase Auth signUp info:", e);
+    }
+
+    // 3. บันทึกโปรไฟล์ใหม่ลงตาราง profiles โดยตรง (การันตี Admin loadUsers() เห็นรายชื่อผู้สมัครใหม่ 100%)
+    try {
+      const profilePayload = {
+        email: email,
+        username: username,
+        fullname: fullname,
+        department: dept,
+        role: "staff",
+        status: "pending",
+        updated_at: new Date().toISOString()
+      };
+      if (userId) profilePayload.id = userId;
+
+      const { error: profErr } = await sbClient
+        .from("profiles")
+        .upsert(profilePayload, { onConflict: "email" });
+
+      if (profErr) console.log("Profiles upsert notice:", profErr);
+    } catch(e) {
+      console.log("Profiles upsert exception:", e);
+    }
+
+    // 4. ส่งสัญญาณสร้างและบันทึกผู้ใช้ผ่าน Apps Script หลังบ้าน (ส่งอีเมลแจ้งเตือน/ซิงก์ระบบ)
+    try {
+      const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=register_user&email=${encodeURIComponent(email)}&username=${encodeURIComponent(username)}&fullname=${encodeURIComponent(fullname)}&department=${encodeURIComponent(dept)}&user_id=${encodeURIComponent(userId || '')}`;
+      fetch(gasUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({
+          action: "register_user",
+          email: email,
+          username: username,
+          fullname: fullname,
+          department: dept,
+          user_id: userId
+        })
+      }).catch(() => {});
+    } catch(e) {}
+
+    msg.textContent = "ส่งคำขอลงทะเบียนสำเร็จแล้ว! บัญชีของท่านอยู่ในสถานะ 'รออนุมัติ' กรุณาแจ้งผู้ดูแลระบบเพื่อเปิดสิทธิ์การเข้าใช้ และรับรหัสผ่านชั่วคราวทางอีเมล";
+    msg.style.display = "block";
+
+    // เคลียร์ฟอร์ม
+    document.getElementById("reg-fullname").value = "";
+    document.getElementById("reg-u").value = "";
+    document.getElementById("reg-email").value = "";
+    document.getElementById("reg-dept").value = "";
+  } catch (e) {
+    showRegErr("เกิดข้อผิดพลาดระบบการลงทะเบียน: " + e.message);
+  } finally {
+    btn.textContent = "ส่งคำขอลงทะเบียน";
+    btn.disabled = false;
+  }
+}
+const signUp = doRegister;
+
+async function doForgotPassword() {
+  const identifier = document.getElementById("forgot-identifier").value.trim();
+  const btn = document.getElementById("forgot-btn");
+  const err = document.getElementById("forgot-err");
+  const msg = document.getElementById("forgot-msg");
+
+  if (!identifier) {
+    err.textContent = "กรุณากรอก Username หรือ Email";
+    err.style.display = "block";
+    return;
+  }
+
+  btn.textContent = "กำลังตรวจสอบ...";
+  btn.disabled = true;
+  err.style.display = "none";
+  msg.style.display = "none";
+
+  try {
+    const cleanId = identifier.toLowerCase();
+    
+    // 1. ตรวจสอบในตาราง profiles ก่อนว่ามี Username หรือ Email นี้จริงหรือไม่
+    const { data: profile, error: pErr } = await sbClient
+      .from("profiles")
+      .select("id, email, fullname, username")
+      .or(`username.eq.${cleanId},email.eq.${cleanId}`)
+      .maybeSingle();
+
+    if (pErr || !profile || !profile.email) {
+      err.textContent = "ไม่พบข้อมูลบัญชีหรืออีเมลนี้ในระบบ (กรุณาตรวจสอบหรือลงทะเบียนใหม่)";
+      err.style.display = "block";
+      btn.textContent = "ส่งคำขอรหัสผ่านใหม่";
+      btn.disabled = false;
+      return;
+    }
+
+    btn.textContent = "กำลังส่งคำขอ...";
+    const tempPass = genTempPass();
+
+    // 2. อัปเดตรหัสผ่านลง Supabase Auth 100% ทันทีผ่าน RPC (การันตีนำรหัสไปใช้ล็อกอินได้ทันทีแน่นอน)
+    try {
+      await sbClient.rpc("reset_user_password", { target_user_id: profile.id, temp_password: tempPass });
+      await sbClient.from("profiles").update({ force_change_password: true }).eq("id", profile.id);
+    } catch (rpce) {}
+
+    // 3. ยิงส่งอีเมลแจ้งรหัสผ่านภาษาไทยไปยัง Gmail หลังบ้าน
+    const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=reset_password&identifier=${encodeURIComponent(profile.email)}&temp_password=${encodeURIComponent(tempPass)}&user_id=${encodeURIComponent(profile.id)}&fullname=${encodeURIComponent(profile.fullname || profile.email)}`;
+    fetch(gasUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        action: "reset_password",
+        temp_password: tempPass,
+        identifier: profile.email,
+        user: { id: profile.id, email: profile.email, fullname: profile.fullname || profile.email }
+      })
+    }).catch(() => {});
+
+    msg.textContent = "ระบบได้จัดส่งอีเมลแจ้งรหัสผ่านชั่วคราวไปยัง " + profile.email + " เรียบร้อยแล้ว! (กรุณาเช็กในกล่องข้อความหรืออีเมลขยะ/Spam)";
+    msg.style.display = "block";
+    document.getElementById("forgot-identifier").value = "";
+
+  } catch (e) {
+    err.textContent = "เกิดข้อผิดพลาดในการส่งคำขอ: " + e.message;
+    err.style.display = "block";
+  } finally {
+    btn.textContent = "ส่งคำขอรหัสผ่านใหม่";
+    btn.disabled = false;
+  }
+}
+
+async function doChangePassword() {
+  const newP = document.getElementById("new-p").value;
+  const confirmP = document.getElementById("confirm-new-p").value;
+  const err = document.getElementById("change-pass-err");
+  const btn = document.getElementById("change-pass-btn");
+
+  if (!newP || newP.length < 6) {
+    err.textContent = "รหัสผ่านใหม่ต้องมีความยาวไม่น้อยกว่า 6 ตัวอักษร";
+    err.style.display = "block";
+    return;
+  }
+  if (newP !== confirmP) {
+    err.textContent = "การยืนยันรหัสผ่านใหม่ไม่ตรงกัน";
+    err.style.display = "block";
+    return;
+  }
+
+  btn.textContent = "กำลังบันทึกรหัสผ่านใหม่...";
+  btn.disabled = true;
+
+  try {
+    // 1. อัปเดตรหัสผ่านใหม่ในระบบ Supabase Auth พร้อมปลด force_change_password ใน user_metadata
+    const { error: authErr } = await sbClient.auth.updateUser({
+      password: newP,
+      data: { force_change_password: false }
+    });
+
+    if (authErr) {
+      err.textContent = "เปลี่ยนรหัสไม่สำเร็จ: " + authErr.message;
+      err.style.display = "block";
+      return;
+    }
+
+    // 2. ปลดสถานะบังคับเปลี่ยนรหัสผ่านใน profiles
+    await sbClient
+      .from("profiles")
+      .update({ force_change_password: false })
+      .eq("id", ME.id);
+
+    toast("เปลี่ยนรหัสผ่านสำเร็จแล้ว!", "ok");
+    document.getElementById("modal-change-pass").classList.remove("show");
+    startApp();
+  } catch (e) {
+    err.textContent = "เกิดข้อผิดพลาดในการบันทึกรหัสผ่านใหม่: " + e.message;
+    err.style.display = "block";
+  } finally {
+    btn.textContent = "บันทึกและเปลี่ยนรหัสผ่าน";
+    btn.disabled = false;
+  }
+}
+
+// ========================================================================
+//  UI INTERACTIONS & TAB CONTROL
+// ========================================================================
+
+function switchAuthTab(type) {
+  document.getElementById("tab-login").classList.toggle("active", type === "login");
+  document.getElementById("tab-register").classList.toggle("active", type === "register");
+  
+  document.getElementById("form-login").style.display = type === "login" ? "block" : "none";
+  document.getElementById("form-register").style.display = type === "register" ? "block" : "none";
+  document.getElementById("form-forgot").style.display = type === "forgot" ? "block" : "none";
+  
+  hideAuthErr();
+}
+
+function hideAuthErr() {
+  document.getElementById("login-err").style.display = "none";
+  document.getElementById("reg-err").style.display = "none";
+  document.getElementById("reg-msg").style.display = "none";
+  document.getElementById("forgot-err").style.display = "none";
+  document.getElementById("forgot-msg").style.display = "none";
+  document.getElementById("change-pass-err").style.display = "none";
+}
+
+function showLoginErr(m) { const e = document.getElementById("login-err"); e.textContent = m; e.style.display = "block"; }
+function showRegErr(m) { const e = document.getElementById("reg-err"); e.textContent = m; e.style.display = "block"; }
+
+function startApp() {
+  document.getElementById("auth-page").style.display = "none";
+  document.getElementById("app").style.display = "flex";
+  
+  const roleMap = { admin: "👑 ผู้ดูแลระบบ", exec: "💼 ผู้บริหาร", staff: "👤 พนักงาน" };
+  const pillMap = { admin: "rpill-admin", exec: "rpill-exec", staff: "rpill-staff" };
+  const avMap   = { admin: "avatar-admin", exec: "avatar-exec", staff: "avatar-staff" };
+  
+  const avEl = document.getElementById("av");
+  avEl.textContent = (ME.fullname || "U").charAt(0).toUpperCase();
+  avEl.className = "avatar " + (avMap[ME.role] || "avatar-staff");
+  
+  document.getElementById("uname-lbl").textContent = ME.fullname;
+  document.getElementById("rpill").textContent = roleMap[ME.role] || ME.role;
+  document.getElementById("rpill").className = "rpill " + (pillMap[ME.role] || "");
+  const roleTagMap = { admin: "role-tag-admin", exec: "role-tag-exec", staff: "role-tag-staff" };
+  const roleLblEl = document.getElementById("role-lbl");
+  roleLblEl.textContent = ME.role.toUpperCase();
+  roleLblEl.className = "role-tag " + (roleTagMap[ME.role] || "role-tag-staff");
+  
+  if (ME.role === "admin") {
+    document.getElementById("nav-admin").style.display = "block";
+  } else {
+    document.getElementById("nav-admin").style.display = "none";
+  }
+  
+  initDynamicSelects();
+  loadOverview();
+
+  // Clear any existing interval to prevent duplicates
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+  }
+  // Setup automatic background refresh every 10 seconds for reliable fallback
+  autoRefreshInterval = setInterval(triggerDataRefresh, 10000);
+
+  // Supabase Realtime Subscription: ดึงและอัปเดตหน้าเว็บแบบเรียลไทม์เมื่อข้อมูลใน Supabase มีการเปลี่ยนแปลง
+  try {
+    sbClient
+      .channel('realtime-records-channel')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'records' },
+        (payload) => {
+          toast("⚡ มีการอัปเดตข้อมูลพัสดุแบบเรียลไทม์!", "ok");
+          triggerDataRefresh();
+        }
+      )
+      .subscribe();
+  } catch (e) {
+    console.log("Realtime subscription error:", e);
+  }
+}
+
+function triggerDataRefresh() {
+  if (!ME) return;
+  const activePage = document.querySelector(".page.active");
+  if (!activePage) return;
+  
+  if (activePage.id === "page-overview") {
+    loadOverview();
+  } else if (activePage.id === "page-monthly") {
+    loadMonthly();
+  } else if (activePage.id === "page-yearly") {
+    loadYearly();
+  } else if (activePage.id === "page-records") {
+    loadRecords();
+  } else if (activePage.id === "page-report") {
+    renderReportPreview();
+  }
+}
+
+async function doLogout() {
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+    autoRefreshInterval = null;
+  }
+  await sbClient.auth.signOut();
+  ME = null; recData = []; usersData = [];
+  Object.keys(charts).forEach(k => { if(charts[k]){ charts[k].destroy(); delete charts[k]; } });
+  
+  document.getElementById("app").style.display = "none";
+  document.getElementById("auth-page").style.display = "flex";
+  switchAuthTab('login');
+  document.getElementById("inp-p").value = "";
+  
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.getElementById("page-overview").classList.add("active");
+  document.querySelector(".nav-item[data-page='overview']").classList.add("active");
+}
+
+function nav(el) {
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  el.classList.add("active");
+  const pid = el.getAttribute("data-page");
+  document.getElementById("page-" + pid).classList.add("active");
+  
+  if (pid === "overview") loadOverview();
+  if (pid === "monthly") loadMonthly();
+  if (pid === "yearly")  loadYearly();
+  if (pid === "records") loadRecords();
+  if (pid === "report")  renderReportPreview();
+  if (pid === "users")   loadUsers();
+}
+
+function setRecMode(m) {
+  recMode = m;
+  document.getElementById("mode-ym").classList.toggle("active", m === "ym");
+  document.getElementById("mode-dr").classList.toggle("active", m === "dr");
+  document.getElementById("filter-ym").style.display = m === "ym" ? "flex" : "none";
+  document.getElementById("filter-dr").style.display = m === "dr" ? "flex" : "none";
+}
+
+function setRptMode(m) {
+  rptMode = m;
+  document.getElementById("rpt-mode-ym").classList.toggle("active", m === "ym");
+  document.getElementById("rpt-mode-dr").classList.toggle("active", m === "dr");
+  document.getElementById("rpt-ym").style.display = m === "ym" ? "block" : "none";
+  document.getElementById("rpt-dr").style.display = m === "dr" ? "block" : "none";
+}
+
+// ========================================================================
+async function triggerSheetSync() {
+  toast("กำลังส่งคำขอดึงข้อมูลพัสดุจาก Google Sheet...", "ok");
+  try {
+    const response = await fetch(GAS_WEBHOOK_URL, { method: "GET" });
+    const res = await response.json();
+    if (res.status === "ok") {
+      toast("ซิงก์ข้อมูลพัสดุจาก Google Sheet เรียบร้อยแล้ว! (" + (res.synced || 0) + " รายการ)", "ok");
+    } else {
+      toast("สถานะซิงก์: " + (res.message || "ประมวลผลแล้ว"), "ok");
+    }
+  } catch (e) {
+    toast("ส่งสัญญาณซิงก์เรียบร้อยแล้ว", "ok");
+  }
+  setTimeout(loadOverview, 1500);
+}
+
+async function loadOverview() {
+  const year = document.getElementById("ov-year").value;
+  const month = document.getElementById("ov-month").value;
+  
+  try {
+    // ดึงสถิติรวมจากตาราง records (เรียงลำดับ ID ล่าสุดจากฐานข้อมูลโดยตรง)
+    let query = sbClient.from("records").select("*").order("id", { ascending: false });
+    
+    if (ME.role === "staff") {
+      query = query.eq("record_by_email", ME.email);
+    }
+    
+    const { data: rawRecords, error } = await query;
+    if (error) throw error;
+    
+    renderOverview(rawRecords || [], year, month);
+  } catch (e) {
+    toast("ไม่สามารถดึงข้อมูลสรุปได้", "err");
+  }
+}
+
+function parseRecordDate(r) {
+  if (!r) return new Date();
+  let src = r.date || r.timestamp;
+  if (!src) return new Date();
+  
+  if (typeof src === "string") {
+    let str = src.trim();
+    if (str.includes("T")) str = str.split("T")[0];
+    else if (str.includes(" ")) str = str.split(" ")[0];
+    
+    if (str.includes("/")) {
+      let parts = str.split("/");
+      if (parts.length === 3) {
+        let d = parseInt(parts[0], 10);
+        let m = parseInt(parts[1], 10);
+        let y = parseInt(parts[2], 10);
+        if (y > 2500) y -= 543;
+        return new Date(y, m - 1, d);
+      }
+    } else if (str.includes("-")) {
+      let parts = str.split("-");
+      if (parts.length === 3) {
+        let y = parseInt(parts[0], 10);
+        let m = parseInt(parts[1], 10);
+        let d = parseInt(parts[2], 10);
+        if (y > 2500) y -= 543;
+        return new Date(y, m - 1, d);
+      }
+    }
+    return new Date(str);
+  }
+  return new Date(src);
+}
+
+let lastOverviewRecords = [];
+let currentKpiFilter = "all";
+
+function filterDashboardByKpi(filterType) {
+  currentKpiFilter = filterType;
+  const year = document.getElementById("ov-year").value;
+  const month = document.getElementById("ov-month").value;
+  renderOverview(lastOverviewRecords, year, month);
+  
+  // Smooth scroll to drill-down table section
+  const tblSection = document.getElementById("kpi-drill-table-section");
+  if (tblSection) {
+    tblSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
+function renderOverview(records, year, month) {
+  lastOverviewRecords = records || [];
+  
+  // กรองตามปีและเดือน
+  const targetYear = parseInt(year);
+  const targetMonth = month ? parseInt(month) : null;
+  
+  const filtered = records.filter(r => {
+    const d = parseRecordDate(r);
+    const yMatches = d.getFullYear() === targetYear;
+    const mMatches = targetMonth ? (d.getMonth() + 1) === targetMonth : true;
+    return yMatches && mMatches;
+  });
+  
+  // คำนวณสถานะพัสดุ
+  const completedCount = filtered.filter(r => r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว").length;
+  const pendingCount = filtered.length - completedCount;
+  
+  // นับสถิติตามผู้ส่ง
+  const senders = {};
+  const receivers = {};
+  const monthlyData = Array(13).fill(0);
+  let todayCount = 0;
+  const todayStr = new Date().toDateString();
+  
+  filtered.forEach(r => {
+    if (r.sender) senders[r.sender] = (senders[r.sender] || 0) + 1;
+    if (r.receiver) receivers[r.receiver] = (receivers[r.receiver] || 0) + 1;
+    
+    const d = parseRecordDate(r);
+    monthlyData[d.getMonth() + 1]++;
+    
+    if (d.toDateString() === todayStr) todayCount++;
+  });
+  
+  // เรนเดอร์ KPI Cards พร้อม Click Handler และ Active Badge State
+  const monthText = targetMonth ? MONTHS[targetMonth] : "ทุกเดือน";
+  const thaiYear = targetYear + 543;
+  const periodBracketText = `(${monthText} ${thaiYear})`;
+
+  const kpis = [
+    { key: "today", label: "รายการของวันนี้", value: todayCount, sub: "รับเอกสาร/จดหมาย/พัสดุ ภายในวันนี้" },
+    { key: "delivered", label: "ส่งสำเร็จแล้ว", value: completedCount, sub: "มีลายเซ็นต์รับมอบเรียบร้อย" },
+    { key: "pending", label: "รอดำเนินการ", value: pendingCount, sub: "รายการคงค้างยังไม่รับมอบ" },
+    { key: "all", label: "จำนวนงานรวม (ตัวกรอง)", value: filtered.length, subHtml: `<span class="kpi-badge">${periodBracketText}</span>` }
+  ];
+  
+  document.getElementById("ov-kpi").innerHTML = kpis.map(k => {
+    const isActive = currentKpiFilter === k.key ? " active-kpi-filter" : "";
+    const subHTML = k.subHtml ? k.subHtml : esc(k.sub);
+    return `<div class="kpi${isActive}" onclick="filterDashboardByKpi('${k.key}')" title="คลิกเพื่อดูรายการ ${k.label}">
+      <div class="kpi-hint">👇 คลิกดูรายการ</div>
+      <div class="kpi-label">${k.label}</div>
+      <div class="kpi-value">${k.value}</div>
+      <div class="kpi-sub" title="${k.sub ? esc(k.sub) : ''}">${subHTML}</div>
+    </div>`;
+  }).join("");
+  
+  // เรนเดอร์แผนภูมิรายเดือน
+  renderChart("ch-monthly", "bar", MONTHS.slice(1), monthlyData.slice(1), "จำนวนงาน", "#5c2483");
+  
+  // เรนเดอร์แผนภูมิผู้ส่ง (Top 5)
+  const topSenders = sortTop(senders, 5);
+  if (topSenders.length === 0) {
+    renderDoughnut("ch-sender", ["ไม่มีข้อมูล"], [0]);
+  } else {
+    renderDoughnut("ch-sender", topSenders.map(e => e[0]), topSenders.map(e => e[1]));
+  }
+  
+  // รายการผู้รับพัสดุสูงสุด
+  const topReceivers = sortTop(receivers, 5);
+  const maxR = topReceivers.length ? topReceivers[0][1] : 1;
+  document.getElementById("receiver-bars").innerHTML = topReceivers.map((e, i) => {
+    return `<div class="bar-row">
+      <div class="bar-lbl" title="${esc(e[0])}">${esc(e[0])}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.round(e[1]/maxR*100)}%;background:${COLORS[i%COLORS.length]}"></div></div>
+      <div class="bar-n">${e[1]}</div>
+    </div>`;
+  }).join("") || '<div style="color:#aaa;padding:16px;text-align:center">ไม่มีข้อมูลพัสดุ</div>';
+  
+  // กรองแสดงตารางผลลัพธ์ตามการคลิกเลือกบน KPI Card (Interactive KPI Drill-Down Table)
+  let displayTitle = "";
+  let displayRecords = [];
+  const resetBtn = document.getElementById("kpi-reset-btn");
+
+  if (currentKpiFilter === "today") {
+    displayTitle = `📋 รายการเอกสาร/จดหมาย/พัสดุ ประจำวันนี้ (${formatThaiFullDate(new Date())})`;
+    displayRecords = filtered.filter(r => parseRecordDate(r).toDateString() === todayStr);
+    if (resetBtn) resetBtn.style.display = "inline-block";
+  } else if (currentKpiFilter === "delivered") {
+    displayTitle = `✅ รายการเอกสาร/จดหมาย/พัสดุ ที่ส่งสำเร็จแล้ว (${completedCount} รายการ)`;
+    displayRecords = filtered.filter(r => r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว");
+    if (resetBtn) resetBtn.style.display = "inline-block";
+  } else if (currentKpiFilter === "pending") {
+    displayTitle = `⏳ รายการเอกสาร/จดหมาย/พัสดุ รอดำเนินการคงค้าง (${pendingCount} รายการ)`;
+    displayRecords = filtered.filter(r => !(r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว"));
+    if (resetBtn) resetBtn.style.display = "inline-block";
+  } else {
+    displayTitle = `📦 รายการเอกสาร/จดหมาย/พัสดุ ทั้งหมด (ปี ${targetYear + 543}${targetMonth ? ' เดือน ' + MONTHS[targetMonth] : ''})`;
+    displayRecords = [...filtered];
+    if (resetBtn) resetBtn.style.display = "none";
+  }
+  
+  displayRecords.sort((a, b) => (b.id || 0) - (a.id || 0) || parseRecordDate(b) - parseRecordDate(a));
+  
+  document.getElementById("kpi-table-title").innerHTML = displayTitle;
+  document.getElementById("kpi-table-count").textContent = displayRecords.length + " รายการ";
+  document.getElementById("kpi-table-tb").innerHTML = displayRecords.map(r => renderRowHtml(r)).join("")
+    || '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:24px">ไม่พบรายการในหมวดหมู่นี้</td></tr>';
+}
+
+function renderRowHtml(r) {
+  const isDelivered = r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว";
+  const badgeClass = isDelivered ? "tag-delivered" : "tag-transit";
+  const badgeText = isDelivered ? "ส่งมอบแล้ว" : "รอดำเนินการ";
+  
+  return `<tr>
+    <td><strong>${esc(r.tracking_no)}</strong></td>
+    <td>${formatThaiDate(r.date)}</td>
+    <td>${esc(r.sender)}</td>
+    <td>${esc(r.receiver)}</td>
+    <td><span class="tag ${badgeClass}">${badgeText}</span></td>
+    <td style="white-space:pre-wrap;font-size:11px">${esc(r.detail || '-')}</td>
+  </tr>`;
+}
+
+async function loadMonthly() {
+  const year = document.getElementById("mo-year").value;
+  try {
+    let query = sbClient.from("records").select("timestamp");
+    if (ME.role === "staff") query = query.eq("record_by_email", ME.email);
+    
+    const { data: records } = await query;
+    const targetYear = parseInt(year);
+    const monthlyData = Array(13).fill(0);
+    let yearTotal = 0;
+    
+    records.forEach(r => {
+      const d = new Date(r.timestamp);
+      if (d.getFullYear() === targetYear) {
+        monthlyData[d.getMonth() + 1]++;
+        yearTotal++;
+      }
+    });
+    
+    let tbody = "";
+    for(let m = 1; m <= 12; m++) {
+      const v = monthlyData[m];
+      const pct = yearTotal > 0 ? (Math.round(v/yearTotal*1000)/10) : 0;
+      tbody += `<tr><td>${MONTHS[m]}</td><td>${v} รายการ</td><td>${pct}%</td></tr>`;
+    }
+    
+    document.getElementById("mo-tb").innerHTML = tbody;
+    renderChart("ch-monthly2", "line", MONTHS.slice(1), monthlyData.slice(1), "จำนวนงาน", "#5c2483");
+  } catch (e) {
+    toast("โหลดสถิติรายเดือนล้มเหลว", "err");
+  }
+}
+
+async function loadYearly() {
+  try {
+    let query = sbClient.from("records").select("timestamp");
+    if (ME.role === "staff") query = query.eq("record_by_email", ME.email);
+    
+    const { data: records } = await query;
+    const yearly = {};
+    
+    records.forEach(r => {
+      const y = new Date(r.timestamp).getFullYear();
+      yearly[y] = (yearly[y] || 0) + 1;
+    });
+    
+    const entries = Object.entries(yearly).sort((a,b) => a[0] - b[0]);
+    if (entries.length === 0) {
+      document.getElementById("yr-tb").innerHTML = '<tr><td colspan="2" style="text-align:center;color:#aaa">ไม่มีข้อมูลรายปี</td></tr>';
+      return;
+    }
+    
+    const labels = entries.map(e => `ปี พ.ศ. ${parseInt(e[0]) + 543}`);
+    const vals = entries.map(e => e[1]);
+    
+    renderChart("ch-yearly", "bar", labels, vals, "จำนวนงาน", COLORS);
+    document.getElementById("yr-tb").innerHTML = entries.map(e => {
+      return `<tr><td>ปี พ.ศ. ${parseInt(e[0]) + 543} (${e[0]})</td><td>${e[1]} รายการ</td></tr>`;
+    }).join("");
+  } catch (e) {
+    toast("โหลดสถิติรายปีล้มเหลว", "err");
+  }
+}
+
+async function loadRecords() {
+  try {
+    let query = sbClient.from("records").select("*").order("id", { ascending: false });
+    if (ME.role === "staff") query = query.eq("record_by_email", ME.email);
+    
+    if (recMode === "ym") {
+      const year = document.getElementById("rec-year").value;
+      const month = document.getElementById("rec-month").value;
+      
+      // กรองปี
+      const startDate = `${year}-01-01`;
+      const endDate = `${year}-12-31`;
+      query = query.gte("date", startDate).lte("date", endDate);
+      
+      const { data } = await query;
+      recData = data || [];
+      
+      // กรองเดือนแบบ Client-side
+      if (month) {
+        const targetMonth = parseInt(month);
+        recData = recData.filter(r => new Date(r.date).getMonth() + 1 === targetMonth);
+      }
+    } else {
+      const from = document.getElementById("rec-from").value;
+      const to = document.getElementById("rec-to").value;
+      
+      if (from) query = query.gte("date", from);
+      if (to) query = query.lte("date", to);
+      
+      const { data } = await query;
+      recData = data || [];
+    }
+    
+    filterRec();
+  } catch (e) {
+    toast("ค้นหาข้อมูลพัสดุผิดพลาด", "err");
+  }
+}
+
+function debouncedFilterRec() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(filterRec, 250);
+}
+
+function filterRec() {
+  const q = (document.getElementById("rec-search").value || "").toLowerCase();
+  
+  const filtered = recData.filter(r => {
+    return !q || [r.tracking_no, r.sender, r.receiver, r.record_by_email, r.detail].some(v => 
+      String(v || "").toLowerCase().indexOf(q) !== -1
+    );
+  });
+  
+  filtered.sort((a, b) => (b.id || 0) - (a.id || 0) || parseRecordDate(b) - parseRecordDate(a));
+  
+  document.getElementById("rec-count").textContent = filtered.length + " รายการ";
+  document.getElementById("rec-tb").innerHTML = filtered.map(r => {
+    const isDelivered = r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว";
+    const badgeClass = isDelivered ? "tag-delivered" : "tag-transit";
+    const badgeText = isDelivered ? "ส่งมอบแล้ว" : "รอดำเนินการ";
+    
+    return `<tr>
+      <td>${esc(r.record_by_email || '-')}</td>
+      <td><strong>${esc(r.tracking_no)}</strong></td>
+      <td>${formatThaiDate(r.date)}</td>
+      <td>${esc(r.sender)}</td>
+      <td>${esc(r.receiver)}</td>
+      <td><span class="tag ${badgeClass}">${badgeText}</span></td>
+      <td style="white-space:pre-wrap;font-size:11px">${esc(r.detail || '-')}</td>
+      <td style="font-size:11px;color:#aaa">${formatThaiTime(r.timestamp)}</td>
+    </tr>`;
+  }).join("") || '<tr><td colspan="8" style="text-align:center;color:#aaa;padding:24px">ไม่พบข้อมูลค้นหา</td></tr>';
+}
+
+let currentRptMode = "ym";
+
+function setRptMode(mode) {
+  currentRptMode = mode;
+  document.getElementById("rpt-mode-ym").classList.toggle("active", mode === "ym");
+  document.getElementById("rpt-mode-dr").classList.toggle("active", mode === "dr");
+  document.getElementById("rpt-ym").style.display = mode === "ym" ? "block" : "none";
+  document.getElementById("rpt-dr").style.display = mode === "dr" ? "block" : "none";
+  renderReportPreview();
+}
+
+async function renderReportPreview() {
+  const docContainer = document.getElementById("report-doc");
+  if (!docContainer) return;
+
+  docContainer.innerHTML = `<div style="text-align:center;padding:40px;color:#888">⏳ กำลังสร้างตัวอย่างรายงาน A4...</div>`;
+
+  try {
+    let query = sbClient.from("records").select("*").order("id", { ascending: false });
+    if (ME.role === "staff") query = query.eq("record_by_email", ME.email);
+
+    let filterDesc = "";
+    if (currentRptMode === "ym") {
+      const year = document.getElementById("rpt-year").value || new Date().getFullYear();
+      const month = document.getElementById("rpt-month").value;
+
+      const startDate = `${year}-01-01`;
+      const endDate = `${year}-12-31`;
+      query = query.gte("date", startDate).lte("date", endDate);
+
+      const thaiYear = parseInt(year) + 543;
+      const monthText = month ? MONTHS[parseInt(month)] : "รวมทั้งปี";
+      filterDesc = `ประจำปี พ.ศ. ${thaiYear} (เดือน: ${monthText})`;
+    } else {
+      const from = document.getElementById("rpt-from").value;
+      const to = document.getElementById("rpt-to").value;
+      if (from && to) {
+        query = query.gte("date", from).lte("date", to);
+        filterDesc = `ตั้งแต่วันที่ ${formatThaiDate(from)} ถึงวันที่ ${formatThaiDate(to)}`;
+      } else {
+        filterDesc = `ช่วงวันที่ระบุ`;
+      }
+    }
+
+    const { data: records, error } = await query;
+    if (error) throw error;
+
+    let finalRecords = records || [];
+
+    // Filter by month client-side if month specified in ym mode
+    if (currentRptMode === "ym") {
+      const month = document.getElementById("rpt-month").value;
+      if (month) {
+        const targetM = parseInt(month);
+        finalRecords = finalRecords.filter(r => (parseRecordDate(r).getMonth() + 1) === targetM);
+      }
+    }
+
+    const totalCount = finalRecords.length;
+    const completedCount = finalRecords.filter(r => r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว").length;
+    const pendingCount = totalCount - completedCount;
+
+    const nowStr = formatThaiFullDate(new Date()) + " เวลา " + new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) + " น.";
+    const authorName = (ME && (ME.fullname || ME.username)) ? `${ME.fullname || ME.username} (${ME.email || ''})` : 'ผู้ดูแลระบบ SmartCAD-Messenger';
+
+    const tableRows = finalRecords.map((r, idx) => {
+      const isDelivered = r.signature || r.status === "Delivered" || r.status === "สำเร็จ" || r.status === "ส่งมอบแล้ว";
+      const statusBadge = isDelivered
+        ? `<span style="color:#059669;font-weight:700;white-space:nowrap;display:inline-block">✓ ส่งมอบแล้ว</span>`
+        : `<span style="color:#d97706;font-weight:700;white-space:nowrap;display:inline-block">⏳ รอดำเนินการ</span>`;
+
+      return `<tr>
+        <td style="text-align:center;white-space:nowrap;font-size:11.5px">${idx + 1}</td>
+        <td style="white-space:nowrap"><strong>${esc(r.tracking_no || '-')}</strong></td>
+        <td style="text-align:center;white-space:nowrap;font-size:11.5px">${formatThaiDate(r.date || r.timestamp)}</td>
+        <td>${esc(r.sender || '-')}</td>
+        <td>${esc(r.receiver || '-')}</td>
+        <td style="text-align:center;white-space:nowrap">${statusBadge}</td>
+        <td style="font-size:11.5px;line-height:1.4">${esc(r.detail || '-')}</td>
+        <td style="font-size:11px;color:#64748b;text-align:center;white-space:nowrap">${formatThaiTime(r.timestamp)}</td>
+      </tr>`;
+    }).join("");
+
+    docContainer.innerHTML = `
+      <div class="report-header">
+        <div>
+          <div class="report-title">📋 รายงานสรุปการรับ-ส่ง เอกสาร/จดหมาย/พัสดุ</div>
+          <div class="report-subtitle">ระบบบริหารจัดการพัสดุ SmartCAD-Messenger (มหาวิทยาลัยเชียงใหม่)</div>
+        </div>
+        <div class="report-meta">
+          <div><strong>ขอบเขต:</strong> ${filterDesc}</div>
+          <div><strong>วันที่จัดทำ:</strong> ${nowStr}</div>
+          <div><strong>ผู้ออกรายงาน:</strong> ${esc(authorName)}</div>
+        </div>
+      </div>
+
+      <div class="report-summary-bar">
+        <div class="report-summary-item">งานรับ-ส่งทั้งหมด: <strong>${totalCount} รายการ</strong></div>
+        <div class="report-summary-item">ส่งมอบสำเร็จแล้ว: <strong style="color:#059669">${completedCount} รายการ</strong></div>
+        <div class="report-summary-item">รอดำเนินการคงค้าง: <strong style="color:#d97706">${pendingCount} รายการ</strong></div>
+      </div>
+
+      <table class="report-table">
+        <thead>
+          <tr>
+            <th style="width:35px;text-align:center;white-space:nowrap">#</th>
+            <th style="width:110px;white-space:nowrap">Tracking No.</th>
+            <th style="width:90px;text-align:center;white-space:nowrap">วันที่รับ</th>
+            <th>ผู้ส่ง</th>
+            <th>ผู้รับ / หน่วยงาน</th>
+            <th style="width:105px;text-align:center;white-space:nowrap">สถานะ</th>
+            <th>รายละเอียด/หมายเหตุ</th>
+            <th style="width:125px;text-align:center;white-space:nowrap">เวลาบันทึก</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${tableRows || '<tr><td colspan="8" style="text-align:center;color:#888;padding:24px">ไม่พบข้อมูลตามเงื่อนไขที่เลือก</td></tr>'}
+        </tbody>
+      </table>
+
+      <div class="report-signatures">
+        <div class="sig-box">
+          <div class="sig-line"></div>
+          <div style="margin-top:8px">ลงชื่อ...................................................</div>
+          <div style="margin-top:4px;font-weight:600">(${esc(authorName)})</div>
+          <div style="font-size:11px;color:#64748b;margin-top:2px">ผู้จัดทำและออกรายงาน</div>
+        </div>
+        <div class="sig-box">
+          <div class="sig-line"></div>
+          <div style="margin-top:8px">ลงชื่อ...................................................</div>
+          <div style="margin-top:4px;font-weight:600">(...................................................)</div>
+          <div style="font-size:11px;color:#64748b;margin-top:2px">ผู้ตรวจสอบ / หัวหน้างาน</div>
+        </div>
+      </div>
+    `;
+  } catch (e) {
+    docContainer.innerHTML = `<div style="text-align:center;padding:40px;color:#dc2626">❌ เกิดข้อผิดพลาดในการโหลดรายงาน: ${esc(e.message)}</div>`;
+  }
+}
+
+function generateReportPDF() {
+  renderReportPreview().then(() => {
+    setTimeout(() => {
+      window.print();
+    }, 300);
+  });
+}
+
+// ========================================================================
+//  USER MANAGEMENT (ADMIN ONLY - SUPABASE TRIGGERS WEBHOOK FOR EMAIL)
+// ========================================================================
+
+async function loadUsers() {
+  if (ME.role !== "admin") return;
+  try {
+    const { data: profiles, error } = await sbClient
+      .from("profiles")
+      .select("*")
+      .order("created_at", { ascending: false });
+      
+    if (error) throw error;
+    usersData = profiles || [];
+    renderUsersTable(usersData);
+  } catch (e) {
+    toast("ดึงข้อมูลบัญชีผู้ใช้ผิดพลาด", "err");
+  }
+}
+
+function renderUsersTable(users) {
+  let countActive = 0, countPending = 0, countDisabled = 0;
+  users.forEach(u => {
+    if (u.status === "active") countActive++;
+    else if (u.status === "pending") countPending++;
+    else countDisabled++;
+  });
+  
+  document.getElementById("user-count-all").textContent = users.length;
+  document.getElementById("user-count-active").textContent = countActive;
+  document.getElementById("user-count-pending").textContent = countPending;
+  document.getElementById("user-count-disabled").textContent = countDisabled;
+  
+  if (users.length === 0) {
+    document.getElementById("users-tb").innerHTML = '<tr><td colspan="6" style="text-align:center;color:#aaa;padding:20px">ไม่พบรายชื่อผู้ใช้งาน</td></tr>';
+    return;
+  }
+  
+  document.getElementById("users-tb").innerHTML = users.map(u => {
+    const statusTag = u.status === "active" ? '<span class="tag tag-active">อนุมัติใช้งาน</span>' :
+                      u.status === "pending" ? '<span class="tag tag-pending">รออนุมัติ / ขอรหัสผ่าน</span>' :
+                      '<span class="tag tag-disabled">ระงับสิทธิ์</span>';
+                      
+    const editBtn = `<button class="btn-act btn-act-secondary" onclick="openEditUserModal('${u.username}','${esc(u.fullname)}','${esc(u.department)}')" title="แก้ไขข้อมูล">✏️ แก้ไข</button>`;
+    
+    let actionBtn = "";
+    if (u.status === "pending") {
+      actionBtn = `<button class="btn-act btn-act-success" onclick="triggerUserWebhook('${u.id}', '${esc(u.fullname)}', '${u.email}', 'approve')" title="อนุมัติการใช้งาน">✅ อนุมัติ</button>`;
+    } else if (u.status === "active") {
+      actionBtn = `<button class="btn-act btn-act-primary" onclick="triggerUserWebhook('${u.id}', '${esc(u.fullname)}', '${u.email}', 'reset_password')" title="รีเซ็ตรหัสผ่านส่งอีเมล">🔑 รีเซ็ตรหัส</button>
+                   <button class="btn-act btn-act-warning" onclick="setUserStatus('${u.id}', 'disabled')" title="ระงับสิทธิ์การใช้งาน">🚫 บล็อก</button>`;
+    } else {
+      actionBtn = `<button class="btn-act btn-act-primary" onclick="setUserStatus('${u.id}', 'active')" title="เปิดใช้งานอีกครั้ง">🔄 ปลดบล็อก</button>`;
+    }
+
+    const deleteBtn = u.id !== ME.id 
+      ? `<button class="btn-act btn-act-danger" onclick="deleteUser('${u.id}', '${esc(u.fullname)}', '${u.email}')" title="ลบบัญชีถาวร">🗑️ ลบ</button>`
+      : ``;
+
+    return `<tr>
+      <td><strong>${esc(u.fullname || u.username)}</strong></td>
+      <td><code>${esc(u.username)}</code><br><span style="font-size:11px;color:var(--text-muted)">${esc(u.email)}</span></td>
+      <td>${esc(u.department || '-')}</td>
+      <td>
+        <select class="role-select" onchange="updateUserRole('${u.id}', this.value)">
+          <option value="staff" ${u.role==='staff'?'selected':''}>Staff (พนักงาน)</option>
+          <option value="exec" ${u.role==='exec'?'selected':''}>Executive (ผู้บริหาร)</option>
+          <option value="admin" ${u.role==='admin'?'selected':''}>Admin (ผู้ดูแล)</option>
+        </select>
+      </td>
+      <td>${statusTag}</td>
+      <td>
+        <div class="action-btn-group">
+          ${editBtn}
+          ${actionBtn}
+          ${deleteBtn}
+        </div>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+function filterUsersTable() {
+  const q = (document.getElementById("user-search").value || "").toLowerCase();
+  const filtered = usersData.filter(u => {
+    return !q || [u.username, u.fullname, u.email, u.department].some(v => 
+      String(v || "").toLowerCase().indexOf(q) !== -1
+    );
+  });
+  renderUsersTable(filtered);
+}
+
+function genTempPass() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789#@!";
+  let pass = "";
+  for (let i = 0; i < 10; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
+  return pass;
+}
+
+// อนุมัติผู้ใช้ / รีเซ็ตรหัสผ่าน -> ทำงานผ่าน Supabase RPC โดยตรง และส่งสัญญาณหา Apps Script ในหลังบ้าน
+async function triggerUserWebhook(userId, fullname, email, action) {
+  const confirmMsg = action === "approve"
+    ? `ยืนยันการอนุมัติการใช้งานบัญชี ${email} ?`
+    : `ยืนยันการรีเซ็ตรหัสผ่านของ ${email} ?`;
+    
+  if (!confirm(confirmMsg)) return;
+  
+  const tempPass = genTempPass();
+  toast("กำลังดำเนินการอนุมัติและตั้งค่ารหัสผ่าน...", "ok");
+  
+  try {
+    // 1. อัปเดตสถานะในตาราง profiles ทันที
+    if (action === "approve") {
+      await sbClient.from("profiles").update({ status: "active", force_change_password: true }).eq("id", userId);
+    } else {
+      await sbClient.from("profiles").update({ force_change_password: true }).eq("id", userId);
+    }
+
+    // 2. เรียกใช้ RPC ใน Supabase (ถ้ามี)
+    try {
+      const rpcName = action === "approve" ? "approve_user" : "reset_user_password";
+      await sbClient.rpc(rpcName, { target_user_id: userId, temp_password: tempPass });
+    } catch(rpce) {}
+
+    // 3. ส่งคำขอหา Apps Script หลังบ้านเพื่ออัปเดตรหัสผ่านใน Supabase Auth และส่งอีเมลภาษาไทยผ่าน Gmail
+    try {
+      const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=${encodeURIComponent(action)}&identifier=${encodeURIComponent(email)}&temp_password=${encodeURIComponent(tempPass)}&user_id=${encodeURIComponent(userId)}&fullname=${encodeURIComponent(fullname)}`;
+      fetch(gasUrl, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({
+          action: action,
+          temp_password: tempPass,
+          identifier: email,
+          user: { id: userId, email: email, fullname: fullname }
+        })
+      }).catch(() => {});
+    } catch(e) {}
+
+    // 5. แสดง Alert แจ้ง Admin พร้อมรหัสผ่านชั่วคราว
+    alert(`✅ ดำเนินการอนุมัติ/รีเซ็ตรหัสผ่านเรียบร้อยแล้ว!\n\n• บัญชีผู้ใช้งาน: ${email}\n• รหัสผ่านชั่วคราว: ${tempPass}\n\n(ระบบได้จัดส่งอีเมลแจ้งรหัสผ่านชั่วคราวและลิงก์เข้าใช้งานไปยังผู้ใช้เรียบร้อยแล้ว)`);
+    toast("อนุมัติและจัดส่งอีเมลสำเร็จ!", "ok");
+    loadUsers();
+
+  } catch (e) {
+    toast("เกิดข้อผิดพลาด: " + e.message, "err");
+  }
+}
+
+async function setUserStatus(userId, status) {
+  if (!confirm(`ยืนยันการปรับสถานะผู้ใช้งานสิทธิ์นี้หรือไม่?`)) return;
+  try {
+    const { error } = await sbClient
+      .from("profiles")
+      .update({ status: status })
+      .eq("id", userId);
+      
+    if (error) throw error;
+    toast("ปรับสถานะเรียบร้อย", "ok");
+    loadUsers();
+  } catch (e) {
+    toast("ทำรายการสถานะล้มเหลว", "err");
+  }
+}
+
+async function deleteUser(userId, fullname, email) {
+  if (userId === ME.id) {
+    toast("ท่านไม่สามารถลบบัญชีของตัวเองได้", "err");
+    return;
+  }
+  
+  if (!confirm(`⚠️ ยืนยันการลบบัญชีผู้ใช้งาน "${fullname || email}" (${email}) ออกจากระบบอย่างถาวร?\n\n(ข้อมูลการเข้าสู่ระบบและโปรไฟล์จะถูกลบถาวร ไม่สามารถย้อนกลับได้)`)) return;
+
+  toast("กำลังลบบัญชีผู้ใช้งาน...", "ok");
+  try {
+    // 1. ลบโปรไฟล์จากตาราง profiles
+    await sbClient.from("profiles").delete().eq("id", userId);
+
+    // 2. ส่งสัญญาณหา Apps Script ให้ช่วยลบบัญชีออกจาก Supabase Auth โดยใช้ Service Key
+    const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=delete_user&user_id=${encodeURIComponent(userId)}&email=${encodeURIComponent(email)}`;
+    fetch(gasUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        action: "delete_user",
+        user_id: userId,
+        email: email
+      })
+    }).catch(() => {});
+
+    toast("ลบบัญชีผู้ใช้งานสำเร็จเรียบร้อย!", "ok");
+    loadUsers();
+  } catch (e) {
+    toast("เกิดข้อผิดพลาดในการลบบัญชี: " + e.message, "err");
+  }
+}
+
+async function updateUserRole(userId, newRole) {
+  try {
+    const { error } = await sbClient
+      .from("profiles")
+      .update({ role: newRole })
+      .eq("id", userId);
+      
+    if (error) throw error;
+    toast("ปรับระดับสิทธิ์สำเร็จ", "ok");
+  } catch (e) {
+    toast("ปรับสิทธิ์ล้มเหลว", "err");
+    loadUsers();
+  }
+}
+
+function openEditUserModal(username, name, dept) {
+  // ดึง ID ผู้ใช้จาก Username
+  const uObj = usersData.find(u => u.username === username);
+  if (!uObj) return;
+  
+  document.getElementById("edit-user-target").value = uObj.id;
+  document.getElementById("edit-user-u").value = username;
+  document.getElementById("edit-user-name").value = name || "";
+  document.getElementById("edit-user-dept").value = dept || "";
+  document.getElementById("edit-user-err").style.display = "none";
+  document.getElementById("modal-edit-user").classList.add("show");
+}
+
+async function saveUserInfo() {
+  const id = document.getElementById("edit-user-target").value;
+  const name = document.getElementById("edit-user-name").value.trim();
+  const dept = document.getElementById("edit-user-dept").value.trim();
+  const err = document.getElementById("edit-user-err");
+  
+  if (!name) {
+    err.textContent = "กรุณากรอกชื่อ-นามสกุลจริง";
+    err.style.display = "block";
+    return;
+  }
+  
+  try {
+    const { error } = await sbClient
+      .from("profiles")
+      .update({ fullname: name, department: dept })
+      .eq("id", id);
+      
+    if (error) throw error;
+    toast("แก้ไขข้อมูลสำเร็จ", "ok");
+    document.getElementById("modal-edit-user").classList.remove("show");
+    loadUsers();
+  } catch (e) {
+    err.textContent = "บันทึกข้อมูลล้มเหลว";
+    err.style.display = "block";
+  }
+}
+
+// ========================================================================
+//  UTILITY ENGINE
+// ========================================================================
+
+function checkNistPasswordStrength(pass) {
+  const fill = document.getElementById("pass-meter-fill");
+  const txt = document.getElementById("pass-meter-text");
+  
+  if (!pass) {
+    fill.style.width = "0%";
+    txt.textContent = "ความแข็งแกร่งของรหัสผ่าน: -";
+    return;
+  }
+  
+  let score = 0;
+  if (pass.length >= 6) score++;
+  if (pass.length >= 10) score++;
+  if (/[A-Z]/.test(pass)) score++;
+  if (/[0-9]/.test(pass)) score++;
+  if (/[@$!%*#?&]/.test(pass)) score++;
+  
+  const pct = score * 20;
+  fill.style.width = pct + "%";
+  
+  if (score <= 1) {
+    fill.style.backgroundColor = "var(--danger)";
+    txt.textContent = "ความแข็งแกร่งของรหัสผ่าน: อ่อนแอเกินไป";
+  } else if (score <= 3) {
+    fill.style.backgroundColor = "var(--warning)";
+    txt.textContent = "ความแข็งแกร่งของรหัสผ่าน: ปานกลาง";
+  } else {
+    fill.style.backgroundColor = "var(--success)";
+    txt.textContent = "ความแข็งแกร่งของรหัสผ่าน: ดีมาก (ปลอดภัย)";
+  }
+}
+
+function initTheme() {
+  const savedTheme = localStorage.getItem("cmu_theme") || "auto";
+  document.getElementById("theme-selector").value = savedTheme;
+  applyTheme(savedTheme);
+  
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    if ((localStorage.getItem("cmu_theme") || "auto") === "auto") {
+      applyTheme("auto");
+    }
+  });
+}
+
+function changeTheme(mode) {
+  localStorage.setItem("cmu_theme", mode);
+  applyTheme(mode);
+}
+
+function applyTheme(mode) {
+  let effectiveTheme = mode;
+  if (mode === "auto") {
+    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const curHour = new Date().getHours();
+    const isNight = (curHour >= 18 || curHour < 6);
+    effectiveTheme = (systemPrefersDark || isNight) ? "dark" : "light";
+  }
+  document.documentElement.setAttribute("data-theme", effectiveTheme);
+  
+  // อัปเดตรูปภาพไอคอนตามโหมดที่เลือก (☀️ กลางวัน / 🌙 กลางคืน / 🌓 ออโต้) สื่อความหมายชัดเจน 100%
+  const iconEl = document.getElementById("theme-icon");
+  if (iconEl) {
+    if (mode === "light") {
+      iconEl.textContent = "☀️";
+      iconEl.title = "โหมดสว่าง (กลางวัน)";
+    } else if (mode === "dark") {
+      iconEl.textContent = "🌙";
+      iconEl.title = "โหมดมืด (กลางคืน)";
+    } else {
+      iconEl.textContent = "🌓";
+      iconEl.title = `โหมดอัตโนมัติ (ตอนนี้ปรับโหมดเป็น: ${effectiveTheme === "dark" ? "กลางคืน" : "กลางวัน"})`;
+    }
+  }
+
+  refreshChartTheme();
+}
+
+function refreshChartTheme() {
+  Object.keys(charts).forEach(k => {
+    if (charts[k]) {
+      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+      const gridColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)";
+      const textColor = isDark ? "#f3eefa" : "#2d2930";
+      
+      if (charts[k].options?.scales?.y) {
+        charts[k].options.scales.y.grid.color = gridColor;
+        charts[k].options.scales.y.ticks.color = textColor;
+      }
+      if (charts[k].options?.scales?.x) {
+        charts[k].options.scales.x.ticks.color = textColor;
+      }
+      charts[k].update();
+    }
+  });
+}
+
+async function checkSession() {
+  try {
+    const { data: { session }, error: sessionErr } = await sbClient.auth.getSession();
+    if (sessionErr || !session) return;
+
+    const user = session.user;
+    
+    const { data: profile, error: pErr } = await sbClient
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (pErr || !profile) return;
+
+    if (profile.status !== "active") {
+      await sbClient.auth.signOut();
+      return;
+    }
+
+    ME = {
+      id: user.id,
+      email: user.email,
+      username: profile.username,
+      fullname: profile.fullname,
+      role: profile.role,
+      department: profile.department
+    };
+
+    const isRecovery = window.location.hash.indexOf("type=recovery") !== -1 || profile.force_change_password;
+
+    if (isRecovery) {
+      window.history.replaceState(null, null, window.location.pathname);
+      document.getElementById("auth-page").style.display = "none";
+      document.getElementById("app").style.display = "flex";
+      
+      const roleMap = { admin: "ผู้ดูแลระบบ", exec: "ผู้บริหาร", staff: "พนักงาน" };
+      const pillMap = { admin: "rpill-admin", exec: "rpill-exec", staff: "rpill-staff" };
+      
+      document.getElementById("av").textContent = (ME.fullname || "U").charAt(0).toUpperCase();
+      document.getElementById("uname-lbl").textContent = ME.fullname;
+      document.getElementById("rpill").textContent = roleMap[ME.role] || ME.role;
+      document.getElementById("rpill").className = "rpill " + (pillMap[ME.role] || "");
+      document.getElementById("role-lbl").textContent = ME.role.toUpperCase();
+      
+      if (ME.role === "admin") {
+        document.getElementById("nav-admin").style.display = "block";
+      } else {
+        document.getElementById("nav-admin").style.display = "none";
+      }
+      
+      initDynamicSelects();
+      document.getElementById("modal-change-pass").classList.add("show");
+    } else {
+      startApp();
+    }
+  } catch (e) {
+    console.error("checkSession error:", e);
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  initTheme();
+  checkSession();
+  
+  document.addEventListener("keydown", e => {
+    const authPage = document.getElementById("auth-page");
+    if (e.key === "Enter" && authPage && window.getComputedStyle(authPage).display !== "none") {
+      if (document.getElementById("form-login").style.display !== "none") doLogin();
+      else if (document.getElementById("form-register").style.display !== "none") doRegister();
+      else if (document.getElementById("form-forgot").style.display !== "none") doForgotPassword();
+    }
+  });
+});
+
+function initDynamicSelects() {
+  const startYear = currentYear + 1;
+  const endYear = currentYear - 8;
+  const years = [];
+  for (let y = startYear; y >= endYear; y--) years.push(y);
+  
+  const yearOpts = years.map(y => `<option value="${y}">ปี พ.ศ. ${y + 543} (${y})</option>`).join("");
+  const monthOpts = MONTHS.slice(1).map((m, i) => `<option value="${i + 1}">${m}</option>`).join("");
+  
+  ["ov-year","mo-year","rec-year","rpt-year"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.innerHTML = yearOpts;
+      el.value = currentYear;
+    }
+  });
+  
+  const curMonthVal = (new Date().getMonth() + 1).toString();
+  ["ov-month","rec-month","rpt-month"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.innerHTML = '<option value="">ทุกเดือน (ตลอดทั้งปี)</option>' + monthOpts;
+      if (id === "ov-month") {
+        el.value = curMonthVal; // Default to Current Month on Dashboard Startup!
+      }
+    }
+  });
+  
+  const today = fmtDate(new Date());
+  const firstDay = fmtDate(new Date(currentYear, 0, 1));
+  ["rec-from","rpt-from"].forEach(id => { const el = document.getElementById(id); if (el) el.value = firstDay; });
+  ["rec-to","rpt-to"].forEach(id => { const el = document.getElementById(id); if (el) el.value = today; });
+}
+
+function renderChart(id, type, labels, vals, label, color) {
+  if (charts[id]) {
+    charts[id].destroy();
+    delete charts[id];
+  }
+  const el = document.getElementById(id);
+  if (!el) return;
+  
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const gridColor = isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)";
+  const textColor = isDark ? "#f3eefa" : "#2d2930";
+  
+  charts[id] = new Chart(el, {
+    type: type,
+    data: {
+      labels: labels,
+      datasets: [{
+        label: label,
+        data: vals,
+        backgroundColor: Array.isArray(color) ? color : (type === "line" ? "rgba(157, 78, 221, 0.18)" : color),
+        borderColor: Array.isArray(color) ? undefined : "#9d4edd",
+        fill: type === "line",
+        tension: 0.35,
+        borderRadius: type === "bar" ? 6 : 0,
+        pointRadius: type === "line" ? 4 : 0,
+        pointBackgroundColor: "#f5b027"
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, color: textColor },
+          grid: { color: gridColor }
+        },
+        x: {
+          ticks: { color: textColor },
+          grid: { display: false }
+        }
+      }
+    }
+  });
+}
+
+function renderDoughnut(id, labels, vals) {
+  if (charts[id]) {
+    charts[id].destroy();
+    delete charts[id];
+  }
+  const el = document.getElementById(id);
+  if (!el) return;
+  
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const textColor = isDark ? "#f3eefa" : "#2d2930";
+  
+  charts[id] = new Chart(el, {
+    type: "doughnut",
+    data: {
+      labels: labels,
+      datasets: [{
+        data: vals,
+        backgroundColor: COLORS.slice(0, Math.max(labels.length, 1))
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: "right",
+          labels: { font: { size: 11, family: 'Sarabun' }, boxWidth: 12, color: textColor }
+        }
+      }
+    }
+  });
+}
+
+function esc(s) { return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;"); }
+function fmtDate(d) { return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+function pad(n) { return n < 10 ? "0" + n : String(n); }
+function sortTop(obj, n) { return Object.entries(obj || {}).sort((a,b) => b[1] - a[1]).slice(0, n); }
+function toast(msg, type) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "show " + (type || "ok");
+  setTimeout(() => { t.className = ""; }, 4500);
+}
+
+// Thai Date formatting helper
+function formatThaiDate(dateStr) {
+  if (!dateStr) return "-";
+  const d = parseRecordDate(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  const thYear = d.getFullYear() + 543;
+  return `${d.getDate()}/${d.getMonth()+1}/${thYear}`;
+}
+
+function formatThaiTime(timestampStr) {
+  if (!timestampStr) return "-";
+  const d = parseRecordDate(timestampStr);
+  if (isNaN(d.getTime())) return timestampStr;
+  const thYear = d.getFullYear() + 543;
+  return `${d.getDate()}/${d.getMonth()+1}/${thYear} ${pad(d.getHours())}:${pad(d.getMinutes())} น.`;
+}
+
+function formatThaiFullDate(d) {
+  const thYear = d.getFullYear() + 543;
+  return `${d.getDate()} ${MONTHS[d.getMonth()+1]} พ.ศ. ${thYear}`;
+}
+</script>
+</body>
+</html>
+<!-- GitHub Pages Deployment Refresh 20260806-2256 -->

@@ -1,0 +1,20 @@
+# Security & Secret Exclusions
+.env
+*.secret
+*.key
+
+# Archives & ZIP Backups
+*.zip
+*.tar.gz
+*.rar
+
+# Scratch, Draft & Helper Script Files
+*.rtf
+index_good.html
+appsscript_sync_good.gs
+appsscript_sync.js
+tools/
+
+# OS Metadata
+.DS_Store
+Thumbs.db

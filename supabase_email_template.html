@@ -1,0 +1,39 @@
+<!-- 
+  ========================================================================
+  SmartCAD Messenger - Supabase Password Reset Email Template
+  กองบริหารงานกลาง สำนักงานมหาวิทยาลัย มหาวิทยาลัยเชียงใหม่
+  ========================================================================
+  
+  [วิธีนำไปใช้งาน]:
+  1. เข้าไปยัง Supabase Dashboard (https://supabase.com/dashboard)
+  2. เมนูซ้ายมือ เลือก Authentication -> Email Templates -> เลือกแท็บ Reset Password
+  3. ช่อง Subject ให้ใส่: [SmartCAD Messenger] ตั้งรหัสผ่านใหม่สำหรับบัญชีของคุณ
+  4. ช่อง Body ให้ก๊อปปี้โค้ด HTML ด้านล่างนี้ทั้งหมดไปวางแทนที่ของเดิมแล้วกด Save
+-->
+
+<div style="font-family: 'Kanit', sans-serif; max-width: 580px; margin: 0 auto; padding: 28px; border: 1px solid #e2e8f0; border-radius: 14px; background-color: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+  <div style="border-bottom: 3px solid #5c2483; padding-bottom: 12px; margin-bottom: 20px;">
+    <h2 style="color: #5c2483; margin: 0; font-size: 20px;">ตั้งรหัสผ่านใหม่ - SmartCAD Messenger</h2>
+  </div>
+  
+  <p style="color: #2d3748; font-size: 15px; line-height: 1.6;">เรียน คุณผู้ใช้งาน,</p>
+  <p style="color: #4a5568; font-size: 15px; line-height: 1.6;">เราได้รับคำขอรีเซ็ตรหัสผ่านสำหรับบัญชีของคุณในระบบ SmartCAD Messenger กรุณาคลิกปุ่มด้านล่างนี้เพื่อตั้งรหัสผ่านใหม่:</p>
+  
+  <div style="text-align: center; margin: 32px 0;">
+    <a href="{{ .ConfirmationURL }}" style="background-color: #5c2483; color: #ffffff; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 4px 10px rgba(92, 36, 131, 0.3);">ตั้งรหัสผ่านใหม่คลิกที่นี่</a>
+  </div>
+  
+  <p style="color: #718096; font-size: 13px; line-height: 1.5; background-color: #f7fafc; padding: 12px; border-radius: 6px; border-left: 4px solid #cbd5e0;">
+    * หากคุณไม่ได้เป็นผู้ส่งคำขอเปลี่ยนรหัสผ่าน กรุณาละเว้นอีเมลฉบับนี้ บัญชีของคุณยังคงปลอดภัยตามปกติ
+  </p>
+  
+  <hr style="border: 0; border-top: 1px solid #edf2f7; margin: 24px 0;" />
+  
+  <div style="color: #4a5568; font-size: 13px; line-height: 1.6;">
+    <strong style="color: #2d3748;">ติดต่อสอบถามเพิ่มเติมได้ที่:</strong><br />
+    <strong>ทีมงานพัฒนาระบบ SmartCAD Messenger</strong><br />
+    กองบริหารงานกลาง สำนักงานมหาวิทยาลัย มหาวิทยาลัยเชียงใหม่<br />
+    📞 <strong>โทรศัพท์:</strong> 053-943011-14<br />
+    ✉️ <strong>อีเมล:</strong> <a href="mailto:saraban@cmu.ac.th" style="color: #5c2483; text-decoration: underline;">saraban@cmu.ac.th</a>
+  </div>
+</div>

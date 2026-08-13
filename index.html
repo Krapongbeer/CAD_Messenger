@@ -3295,6 +3295,13 @@ async function setUserStatus(userId, status) {
     toast("เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่ทำรายการนี้ได้", "err");
     return;
   }
+  const targetUser = usersData.find(u => u.id === userId);
+  const targetRole = targetUser ? targetUser.role : "";
+  if (targetRole === "superadmin" && ME.role !== "superadmin") {
+    toast("สิทธิ์ของท่านไม่สูงพอในการจัดการบัญชีระดับ Super Admin", "err");
+    loadUsers();
+    return;
+  }
   if (!confirm(`ยืนยันการปรับสถานะผู้ใช้งานสิทธิ์นี้หรือไม่?`)) return;
   try {
     const { error } = await sbClient
@@ -3314,6 +3321,13 @@ async function setUserStatus(userId, status) {
 async function deleteUser(userId, fullname, email) {
   if (ME.role !== "admin" && ME.role !== "superadmin") {
     toast("เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่ทำรายการนี้ได้", "err");
+    return;
+  }
+  const targetUser = usersData.find(u => u.id === userId);
+  const targetRole = targetUser ? targetUser.role : "";
+  if (targetRole === "superadmin" && ME.role !== "superadmin") {
+    toast("สิทธิ์ของท่านไม่สูงพอในการลบบัญชีระดับ Super Admin", "err");
+    loadUsers();
     return;
   }
   if (userId === ME.id) {
@@ -3355,6 +3369,13 @@ async function updateUserRole(userId, newRole) {
     loadUsers();
     return;
   }
+  const targetUser = usersData.find(u => u.id === userId);
+  const targetRole = targetUser ? targetUser.role : "";
+  if (targetRole === "superadmin" && ME.role !== "superadmin") {
+    toast("สิทธิ์ของท่านไม่สูงพอในการสลับสิทธิ์ผู้ใช้ระดับ Super Admin", "err");
+    loadUsers();
+    return;
+  }
   if (ME.role !== "superadmin" && newRole === "superadmin") {
     toast("เฉพาะ Super Admin เท่านั้นที่มอบสิทธิ์ระดับนี้ได้", "err");
     loadUsers();
@@ -3393,6 +3414,15 @@ async function saveUserInfo() {
   const name = document.getElementById("edit-user-name").value.trim();
   const dept = document.getElementById("edit-user-dept").value.trim();
   const err = document.getElementById("edit-user-err");
+  
+  const targetUser = usersData.find(u => u.id === id);
+  const targetRole = targetUser ? targetUser.role : "";
+  if (targetRole === "superadmin" && ME.role !== "superadmin") {
+    toast("สิทธิ์ของท่านไม่สูงพอในการแก้ไขข้อมูลระดับ Super Admin", "err");
+    document.getElementById("modal-edit-user").classList.remove("show");
+    loadUsers();
+    return;
+  }
   
   if (!name) {
     err.textContent = "กรุณากรอกชื่อ-นามสกุลจริง";

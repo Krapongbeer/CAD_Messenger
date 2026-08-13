@@ -3218,7 +3218,8 @@ function renderAuditLogsTable(logs) {
 
   container.innerHTML = logs.map(l => {
     const actionBadge = formatAuditActionBadge(l.action);
-    const timeStr = formatThaiFullDate(l.timestamp) + " " + formatThaiTime(l.timestamp);
+    const d = new Date(l.timestamp);
+    const timeStr = !isNaN(d) ? formatThaiFullDate(d) + " " + formatThaiTime(l.timestamp) : "-";
     return `<tr>
       <td style="white-space:nowrap;font-size:11.5px;color:var(--text-muted)">${esc(timeStr)}</td>
       <td><strong>${esc(l.user_email || '-')}</strong><br><span class="tag tag-active" style="font-size:10px">${esc(l.user_role || 'guest')}</span></td>

@@ -1732,7 +1732,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
               <input id="user-search" placeholder="ค้นหา ชื่อ / Username / แผนก..." style="padding:6px 12px;font-size:12px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--card-bg);color:var(--text-main)" oninput="filterUsersTable()"/>
               <button class="btn btn-primary btn-sm" onclick="loadUsers()">โหลดใหม่</button>
-              <button class="btn btn-secondary btn-sm" onclick="openAuditLogModal()" style="background:var(--cmu-gold);color:#000;font-weight:600">📋 ประวัติกิจกรรม (Audit Log)</button>
+              <button id="btn-audit-log" class="btn btn-secondary btn-sm" onclick="openAuditLogModal()" style="display:none;background:var(--cmu-gold);color:#000;font-weight:600">📋 ประวัติกิจกรรม (Audit Log)</button>
             </div>
           </div>
 
@@ -2230,11 +2230,13 @@ function startApp() {
   roleLblEl.textContent = ME.role.toUpperCase();
   roleLblEl.className = "role-tag " + (roleTagMap[ME.role] || "role-tag-staff");
   
-  if (ME.role === "admin") {
+  if (ME.role === "admin" || ME.role === "superadmin") {
     document.getElementById("nav-admin").style.display = "block";
   } else {
     document.getElementById("nav-admin").style.display = "none";
   }
+  const btnAudit = document.getElementById("btn-audit-log");
+  if (btnAudit) btnAudit.style.display = ME.role === "superadmin" ? "inline-block" : "none";
   
   initDynamicSelects();
   loadOverview();
@@ -2863,7 +2865,7 @@ function generateReportPDF() {
 // ========================================================================
 
 async function loadUsers() {
-  if (ME.role !== "admin") return;
+  if (ME.role !== "admin" && ME.role !== "superadmin") return;
   try {
     const { data: profiles, error } = await sbClient
       .from("profiles")
@@ -2926,6 +2928,7 @@ function renderUsersTable(users) {
           <option value="staff" ${u.role==='staff'?'selected':''}>Staff (พนักงาน)</option>
           <option value="exec" ${u.role==='exec'?'selected':''}>Executive (ผู้บริหาร)</option>
           <option value="admin" ${u.role==='admin'?'selected':''}>Admin (ผู้ดูแล)</option>
+          ${ME.role === 'superadmin' ? `<option value="superadmin" ${u.role==='superadmin'?'selected':''}>Super Admin (สูงสุด)</option>` : (u.role === 'superadmin' ? `<option value="superadmin" selected disabled>Super Admin (สูงสุด)</option>` : '')}
         </select>
       </td>
       <td>${statusTag}</td>
@@ -2959,7 +2962,7 @@ function genTempPass() {
 
 // อนุมัติผู้ใช้ / รีเซ็ตรหัสผ่าน -> ทำงานผ่าน Supabase RPC โดยตรง และส่งสัญญาณหา Apps Script ในหลังบ้าน
 async function triggerUserWebhook(userId, fullname, email, action) {
-  if (ME.role !== "admin") {
+  if (ME.role !== "admin" && ME.role !== "superadmin") {
     toast("เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่ทำรายการนี้ได้", "err");
     return;
   }
@@ -3015,7 +3018,7 @@ async function triggerUserWebhook(userId, fullname, email, action) {
 }
 
 async function setUserStatus(userId, status) {
-  if (ME.role !== "admin") {
+  if (ME.role !== "admin" && ME.role !== "superadmin") {
     toast("เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่ทำรายการนี้ได้", "err");
     return;
   }
@@ -3036,7 +3039,7 @@ async function setUserStatus(userId, status) {
 }
 
 async function deleteUser(userId, fullname, email) {
-  if (ME.role !== "admin") {
+  if (ME.role !== "admin" && ME.role !== "superadmin") {
     toast("เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่ทำรายการนี้ได้", "err");
     return;
   }
@@ -3074,8 +3077,13 @@ async function deleteUser(userId, fullname, email) {
 }
 
 async function updateUserRole(userId, newRole) {
-  if (ME.role !== "admin") {
+  if (ME.role !== "admin" && ME.role !== "superadmin") {
     toast("เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สลับสิทธิ์ผู้ใช้ได้", "err");
+    loadUsers();
+    return;
+  }
+  if (ME.role !== "superadmin" && newRole === "superadmin") {
+    toast("เฉพาะ Super Admin เท่านั้นที่มอบสิทธิ์ระดับนี้ได้", "err");
     loadUsers();
     return;
   }
@@ -3172,8 +3180,8 @@ async function logAuditEvent(action, target, details) {
 }
 
 async function openAuditLogModal() {
-  if (!ME || ME.role !== "admin") {
-    toast("เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถดูประวัติกิจกรรมได้", "err");
+  if (!ME || ME.role !== "superadmin") {
+    toast("เฉพาะผู้ดูแลระบบสูงสุด (Super Admin) เท่านั้นที่สามารถดูประวัติกิจกรรมได้", "err");
     return;
   }
   document.getElementById("modal-audit-logs").classList.add("show");
@@ -3412,11 +3420,13 @@ async function checkSession() {
       document.getElementById("rpill").className = "rpill " + (pillMap[ME.role] || "");
       document.getElementById("role-lbl").textContent = ME.role.toUpperCase();
       
-      if (ME.role === "admin") {
+      if (ME.role === "admin" || ME.role === "superadmin") {
         document.getElementById("nav-admin").style.display = "block";
       } else {
         document.getElementById("nav-admin").style.display = "none";
       }
+      const btnAudit = document.getElementById("btn-audit-log");
+      if (btnAudit) btnAudit.style.display = ME.role === "superadmin" ? "inline-block" : "none";
       
       initDynamicSelects();
       document.getElementById("modal-change-pass").classList.add("show");

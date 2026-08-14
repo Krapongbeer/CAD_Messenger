@@ -2272,16 +2272,13 @@ function switchAuthTab(type) {
 }
 
 function hideAuthErr() {
-  document.getElementById("login-err").style.display = "none";
-  document.getElementById("reg-err").style.display = "none";
-  document.getElementById("reg-msg").style.display = "none";
-  document.getElementById("forgot-err").style.display = "none";
-  document.getElementById("forgot-msg").style.display = "none";
-  document.getElementById("change-pass-err").style.display = "none";
+  const loginErr = document.getElementById("login-err"); if (loginErr) loginErr.style.display = "none";
+  const forgotErr = document.getElementById("forgot-err"); if (forgotErr) forgotErr.style.display = "none";
+  const forgotMsg = document.getElementById("forgot-msg"); if (forgotMsg) forgotMsg.style.display = "none";
+  const changePassErr = document.getElementById("change-pass-err"); if (changePassErr) changePassErr.style.display = "none";
 }
 
-function showLoginErr(m) { const e = document.getElementById("login-err"); e.textContent = m; e.style.display = "block"; }
-function showRegErr(m) { const e = document.getElementById("reg-err"); e.textContent = m; e.style.display = "block"; }
+function showLoginErr(m) { const e = document.getElementById("login-err"); if (e) { e.textContent = m; e.style.display = "block"; } }
 
 function startApp() {
   document.getElementById("auth-page").style.display = "none";

@@ -1482,9 +1482,8 @@ tr:hover td { background: var(--cmu-purple-bg); }
     <div class="auth-logo"><span class="brand-title">SmartCAD<em>-Messenger</em></span></div>
     <div class="auth-sub">ระบบติดตามส่งเอกสาร/จดหมาย/พัสดุ<br><span class="auth-sub-bracket">(กองบริหารงานกลาง สำนักงานมหาวิทยาลัย)</span></div>
     
-    <div class="auth-tabs">
-      <div class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">เข้าสู่ระบบ</div>
-      <div class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">ลงทะเบียน</div>
+    <div style="background:var(--cmu-purple-subtle);border-left:3px solid var(--cmu-purple);padding:10px 12px;border-radius:8px;font-size:12px;color:var(--text-main);margin-bottom:16px;line-height:1.4">
+      📌 <strong>ประกาศ:</strong> หากท่านยังไม่มีบัญชีเข้าใช้งาน กรุณาติดต่อผู้ดูแลระบบ (Admin) เพื่อขอเปิดสิทธิ์การเข้าใช้งาน
     </div>
 
     <!-- Login Form -->
@@ -1519,34 +1518,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
       </div>
     </div>
 
-    <!-- Register Form -->
-    <div id="form-register" style="display:none">
-      <div class="form-group">
-        <label class="f-label">ชื่อ-นามสกุลจริง</label>
-        <input class="f-input" id="reg-fullname" placeholder="สมชาย ใจดี"/>
-      </div>
-      <div class="form-group">
-        <label class="f-label">Username ที่ต้องการใช้</label>
-        <input class="f-input" id="reg-u" placeholder="somchai_j"/>
-      </div>
-      <div class="form-group">
-        <label class="f-label">อีเมลติดต่อ (ใช้เพื่อส่งรหัสอนุมัติ)</label>
-        <input class="f-input" id="reg-email" type="email" placeholder="somchai@cmu.ac.th"/>
-      </div>
-      <div class="form-group">
-        <label class="f-label">แผนก / สังกัด</label>
-        <input class="f-input" id="reg-dept" placeholder="แผนก บริหารงานทั่วไป"/>
-      </div>
-      
-      <div style="background:var(--cmu-purple-subtle);border-left:3px solid var(--cmu-purple);padding:10px 12px;border-radius:8px;font-size:12px;color:var(--text-main);margin-bottom:16px;line-height:1.4">
-        📌 <strong>ขั้นตอนอนุมัติบัญชี:</strong><br>
-        หลังจากกดลงทะเบียนแล้ว บัญชีจะอยู่ในสถานะ "รออนุมัติ" กรุณาติดต่อผู้ดูแลระบบเพื่อทำการอนุมัติการใช้งาน และระบบจะส่งรหัสผ่านชั่วคราวให้ท่านผ่านทางอีเมลโดยอัตโนมัติ
-      </div>
 
-      <div class="f-err" id="reg-err"></div>
-      <div class="f-msg" id="reg-msg"></div>
-      <button class="auth-btn" id="reg-btn" onclick="doRegister()">ส่งคำขอลงทะเบียน</button>
-    </div>
   </div>
 </div>
 
@@ -1598,6 +1570,43 @@ tr:hover td { background: var(--cmu-purple-bg); }
     <div style="display:flex;gap:12px;margin-top:16px;">
       <button class="btn" style="flex:1;justify-content:center;height:42px" onclick="document.getElementById('modal-edit-user').classList.remove('show')">✕ ยกเลิก</button>
       <button class="btn btn-primary" style="flex:1;justify-content:center;height:42px" onclick="saveUserInfo()">💾 บันทึกการแก้ไข</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD NEW USER (ADMIN) -->
+<div class="modal-overlay" id="modal-create-user">
+  <div class="modal-box">
+    <div class="modal-title">+ เพิ่มผู้ใช้งานใหม่</div>
+    <div class="modal-sub">สร้างบัญชีผู้ใช้งานใหม่พร้อมส่งอีเมลแจ้งรหัสผ่านชั่วคราว</div>
+    
+    <div class="form-group">
+      <label class="f-label">ชื่อ-นามสกุลจริง</label>
+      <input class="f-input" id="new-user-name" placeholder="สมชาย ใจดี"/>
+    </div>
+    <div class="form-group">
+      <label class="f-label">อีเมลติดต่อ (ใช้เป็น Username ในการเข้าสู่ระบบ)</label>
+      <input class="f-input" id="new-user-email" type="email" placeholder="somchai@cmu.ac.th"/>
+    </div>
+    <div class="form-group">
+      <label class="f-label">แผนก / สังกัด</label>
+      <input class="f-input" id="new-user-dept" placeholder="บริหารงานทั่วไป"/>
+    </div>
+    <div class="form-group">
+      <label class="f-label">ระดับสิทธิ์</label>
+      <select class="f-input" id="new-user-role">
+        <option value="staff">Staff (เจ้าหน้าที่ผู้ปฏิบัติงาน)</option>
+        <option value="executive">Executive (ผู้บริหาร)</option>
+        <option value="admin">Admin (ผู้ดูแลระบบ)</option>
+      </select>
+    </div>
+    
+    <div class="f-err" id="new-user-err"></div>
+    <div class="f-msg" id="new-user-msg" style="display:none;color:var(--success);margin-bottom:12px;font-size:13px;line-height:1.4"></div>
+    
+    <div style="display:flex;gap:12px;margin-top:16px;">
+      <button class="btn" style="flex:1;justify-content:center;height:42px" onclick="document.getElementById('modal-create-user').classList.remove('show')">✕ ยกเลิก</button>
+      <button class="btn btn-success" id="btn-create-user" style="flex:1;justify-content:center;height:42px" onclick="adminCreateUser()">✨ ยืนยันการสร้างบัญชี</button>
     </div>
   </div>
 </div>
@@ -1837,6 +1846,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
             <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
               <input id="user-search" placeholder="ค้นหา ชื่อ / Username / แผนก..." style="padding:6px 12px;font-size:12px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--card-bg);color:var(--text-main)" oninput="filterUsersTable()"/>
               <button class="btn btn-primary btn-sm" onclick="loadUsers()">โหลดใหม่</button>
+              <button class="btn btn-success btn-sm" onclick="openAdminCreateUserModal()" style="font-weight:600">+ เพิ่มผู้ใช้ใหม่</button>
               <button id="btn-audit-log" class="btn btn-secondary btn-sm" onclick="openAuditLogModal()" style="display:none;background:var(--cmu-gold);color:#000;font-weight:600">📋 ประวัติกิจกรรม (Audit Log)</button>
             </div>
           </div>
@@ -2056,114 +2066,77 @@ async function doLogin() {
   }
 }
 
-async function doRegister() {
-  const fullname = document.getElementById("reg-fullname").value.trim();
-  const username = document.getElementById("reg-u").value.trim().toLowerCase();
-  const email = document.getElementById("reg-email").value.trim().toLowerCase();
-  const dept = document.getElementById("reg-dept").value.trim();
-  const btn = document.getElementById("reg-btn");
-  const err = document.getElementById("reg-err");
-  const msg = document.getElementById("reg-msg");
+function openAdminCreateUserModal() {
+  document.getElementById("new-user-name").value = "";
+  document.getElementById("new-user-email").value = "";
+  document.getElementById("new-user-dept").value = "";
+  document.getElementById("new-user-role").value = "staff";
+  document.getElementById("new-user-err").textContent = "";
+  document.getElementById("new-user-msg").style.display = "none";
+  document.getElementById("modal-create-user").classList.add("show");
+}
 
-  if (!fullname || !username || !email || !dept) {
-    showRegErr("กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง");
+async function adminCreateUser() {
+  if (ME.role !== "admin" && ME.role !== "superadmin") {
+    toast("เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่ทำรายการนี้ได้", "err");
     return;
   }
 
-  btn.textContent = "กำลังบันทึกข้อมูล...";
+  const fullname = document.getElementById("new-user-name").value.trim();
+  const email = document.getElementById("new-user-email").value.trim().toLowerCase();
+  const dept = document.getElementById("new-user-dept").value.trim();
+  const role = document.getElementById("new-user-role").value;
+  const username = email.split("@")[0];
+  const btn = document.getElementById("btn-create-user");
+  const err = document.getElementById("new-user-err");
+  const msg = document.getElementById("new-user-msg");
+
+  if (!fullname || !email || !dept) {
+    err.textContent = "กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง";
+    return;
+  }
+  
+  if (!confirm(`ยืนยันการสร้างบัญชีผู้ใช้งานใหม่ให้ ${fullname} (${email}) หรือไม่?`)) return;
+
+  btn.textContent = "⏳ กำลังดำเนินการสร้างบัญชี...";
   btn.disabled = true;
+  err.textContent = "";
+  msg.style.display = "none";
+  toast("กำลังดำเนินการสร้างบัญชีและส่งอีเมลแจ้งรหัสผ่าน...", "ok");
 
   try {
-    // 1. ตรวจสอบ Username / Email ซ้ำในตาราง profiles ก่อน
-    const { data: existingProfiles } = await sbClient
-      .from("profiles")
-      .select("username, email")
-      .or(`username.eq.${username},email.eq.${email}`);
-
-    if (existingProfiles && existingProfiles.length > 0) {
-      showRegErr("Username หรือ Email นี้มีผู้ใช้งานในระบบแล้ว");
-      btn.textContent = "ส่งคำขอลงทะเบียน";
-      btn.disabled = false;
-      return;
-    }
-
-    // 2. สมัครสมาชิกผ่าน Supabase Auth
-    let userId = null;
-    try {
-      const { data: authData } = await sbClient.auth.signUp({
-        email: email,
-        password: "TempPassInitial@123!",
-        options: {
-          data: {
-            username: username,
-            fullname: fullname,
-            department: dept,
-            status: "pending",
-            role: "staff"
-          }
-        }
-      });
-      if (authData && authData.user) userId = authData.user.id;
-    } catch(e) {
-      console.log("Supabase Auth signUp info:", e);
-    }
-
-    // 3. บันทึกโปรไฟล์ใหม่ลงตาราง profiles โดยตรง (การันตี Admin loadUsers() เห็นรายชื่อผู้สมัครใหม่ 100%)
-    try {
-      const profilePayload = {
+    const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=create_and_approve`;
+    const res = await fetch(gasUrl, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        action: "create_and_approve",
         email: email,
         username: username,
         fullname: fullname,
         department: dept,
-        role: "staff",
-        status: "pending",
-        updated_at: new Date().toISOString()
-      };
-      if (userId) profilePayload.id = userId;
+        role: role
+      })
+    });
 
-      const { error: profErr } = await sbClient
-        .from("profiles")
-        .upsert(profilePayload, { onConflict: "email" });
-
-      if (profErr) console.log("Profiles upsert notice:", profErr);
-    } catch(e) {
-      console.log("Profiles upsert exception:", e);
-    }
-
-    // 4. ส่งสัญญาณสร้างและบันทึกผู้ใช้ผ่าน Apps Script หลังบ้าน (ส่งอีเมลแจ้งเตือน/ซิงก์ระบบ)
-    try {
-      const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=register_user&email=${encodeURIComponent(email)}&username=${encodeURIComponent(username)}&fullname=${encodeURIComponent(fullname)}&department=${encodeURIComponent(dept)}&user_id=${encodeURIComponent(userId || '')}`;
-      fetch(gasUrl, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({
-          action: "register_user",
-          email: email,
-          username: username,
-          fullname: fullname,
-          department: dept,
-          user_id: userId
-        })
-      }).catch(() => {});
-    } catch(e) {}
-
-    msg.textContent = "ส่งคำขอลงทะเบียนสำเร็จแล้ว! บัญชีของท่านอยู่ในสถานะ 'รออนุมัติ' กรุณาแจ้งผู้ดูแลระบบเพื่อเปิดสิทธิ์การเข้าใช้ และรับรหัสผ่านชั่วคราวทางอีเมล";
+    msg.textContent = "✅ สร้างบัญชีผู้ใช้ใหม่และจัดส่งรหัสผ่านชั่วคราวทางอีเมลสำเร็จ!";
     msg.style.display = "block";
+    toast("สร้างบัญชีสำเร็จ!", "ok");
+    
+    setTimeout(() => {
+      document.getElementById("modal-create-user").classList.remove("show");
+      btn.textContent = "✨ ยืนยันการสร้างบัญชี";
+      btn.disabled = false;
+      loadUsers();
+    }, 2000);
 
-    // เคลียร์ฟอร์ม
-    document.getElementById("reg-fullname").value = "";
-    document.getElementById("reg-u").value = "";
-    document.getElementById("reg-email").value = "";
-    document.getElementById("reg-dept").value = "";
   } catch (e) {
-    showRegErr("เกิดข้อผิดพลาดระบบการลงทะเบียน: " + e.message);
-  } finally {
-    btn.textContent = "ส่งคำขอลงทะเบียน";
+    err.textContent = "เกิดข้อผิดพลาด: " + e.message;
+    btn.textContent = "✨ ยืนยันการสร้างบัญชี";
     btn.disabled = false;
   }
 }
-const signUp = doRegister;
 
 async function doForgotPassword() {
   const identifier = document.getElementById("forgot-identifier").value.trim();
@@ -2293,13 +2266,8 @@ async function doChangePassword() {
 // ========================================================================
 
 function switchAuthTab(type) {
-  document.getElementById("tab-login").classList.toggle("active", type === "login");
-  document.getElementById("tab-register").classList.toggle("active", type === "register");
-  
   document.getElementById("form-login").style.display = type === "login" ? "block" : "none";
-  document.getElementById("form-register").style.display = type === "register" ? "block" : "none";
   document.getElementById("form-forgot").style.display = type === "forgot" ? "block" : "none";
-  
   hideAuthErr();
 }
 
@@ -3764,7 +3732,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const authPage = document.getElementById("auth-page");
     if (e.key === "Enter" && authPage && window.getComputedStyle(authPage).display !== "none") {
       if (document.getElementById("form-login").style.display !== "none") doLogin();
-      else if (document.getElementById("form-register").style.display !== "none") doRegister();
       else if (document.getElementById("form-forgot").style.display !== "none") doForgotPassword();
     }
   });

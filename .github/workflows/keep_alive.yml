@@ -1,0 +1,31 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    # Run every day at 04:00 UTC (11:00 AM Bangkok Time)
+    - cron: '0 4 * * *'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase Database & GAS Webhook
+        run: |
+          echo "=== 1. Ping Supabase REST API directly ==="
+          SUPABASE_HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "apikey: sb_publishable_KI23ZdXEfUqImxTslnAJ3w_RrMwHDWM" \
+            -H "Authorization: Bearer sb_publishable_KI23ZdXEfUqImxTslnAJ3w_RrMwHDWM" \
+            "https://chtxxyrupftpoiooggvh.supabase.co/rest/v1/records?select=id&limit=1")
+          echo "Supabase Response HTTP Status: $SUPABASE_HTTP_STATUS"
+          
+          echo "=== 2. Ping Google Apps Script Sync Webhook ==="
+          GAS_HTTP_STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" \
+            "https://script.google.com/macros/s/AKfycbxntDj9JPOzRdX-RhJtLPSH6jlozS2OLSqsgDAmJy-pJWvMSWUYUEDeKa3RcftFqSPMHw/exec?action=sync")
+          echo "GAS Webhook Response HTTP Status: $GAS_HTTP_STATUS"
+
+          if [ "$SUPABASE_HTTP_STATUS" -eq 200 ] || [ "$SUPABASE_HTTP_STATUS" -eq 204 ]; then
+            echo "✅ Supabase is active and pinged successfully!"
+          else
+            echo "⚠️ Warning: Received HTTP Status $SUPABASE_HTTP_STATUS"
+          fi

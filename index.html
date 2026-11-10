@@ -9,56 +9,56 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Mitr:wght@400;500;600&family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* ── Reset & Theme Variables (SmartCAD DocFlow Deep Slate & Teal Palette) ── */
+/* ── Reset & Theme Variables (SmartCAD DocFlow Very Peri Palette #6868AC) ── */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
-  --cmu-purple-dark: #095C6B;
-  --cmu-purple: #0B7285;
-  --cmu-purple-light: #1098AD;
-  --cmu-purple-bg: rgba(11, 114, 133, 0.08);
-  --cmu-purple-subtle: #E3F4F7;
+  --cmu-purple-dark: #4E4D92;
+  --cmu-purple: #6868AC;
+  --cmu-purple-light: #8282C5;
+  --cmu-purple-bg: rgba(104, 104, 172, 0.09);
+  --cmu-purple-subtle: #F0EFFA;
   
-  --cmu-gold: #C2740C;
-  --cmu-gold-hover: #A66006;
-  --cmu-gold-light: #FEF3E0;
+  --cmu-gold: #3FA796;
+  --cmu-gold-hover: #2E8B7C;
+  --cmu-gold-light: #E6F6F3;
   
-  --bg-main: #F3F6F9;
+  --bg-main: #F1F2FA;
   --card-bg: #FFFFFF;
-  --text-main: #12263A;
-  --text-muted: #4B5D70;
-  --border-color: #E1E7ED;
+  --text-main: #1E1B3D;
+  --text-muted: #646280;
+  --border-color: #E2E3F0;
   
-  --danger: #d93838;
-  --danger-light: #fde8e8;
+  --danger: #D93838;
+  --danger-light: #FDE8E8;
   --warning: #C2740C;
   --warning-light: #FEF3E0;
   --success: #1B8A4B;
   --success-light: #E4F6EB;
   
-  --chart-grid: rgba(18, 38, 58, 0.06);
-  --chart-text: #12263A;
+  --chart-grid: rgba(104, 104, 172, 0.08);
+  --chart-text: #1E1B3D;
   
-  --shadow-sm: 0 2px 8px rgba(18, 38, 58, 0.05);
-  --shadow-md: 0 8px 24px rgba(18, 38, 58, 0.06);
-  --shadow-lg: 0 20px 50px rgba(18, 38, 58, 0.22);
+  --shadow-sm: 0 2px 10px rgba(104, 104, 172, 0.06);
+  --shadow-md: 0 8px 24px rgba(104, 104, 172, 0.10);
+  --shadow-lg: 0 20px 50px rgba(78, 77, 146, 0.18);
 }
 
 [data-theme="dark"] {
-  --cmu-purple-dark: #0B7285;
-  --cmu-purple: #15AABF;
-  --cmu-purple-light: #3BC9DB;
-  --cmu-purple-bg: rgba(21, 170, 191, 0.16);
-  --cmu-purple-subtle: #0D2D3A;
+  --cmu-purple-dark: #525194;
+  --cmu-purple: #7E7EC2;
+  --cmu-purple-light: #9E9ED9;
+  --cmu-purple-bg: rgba(126, 126, 194, 0.18);
+  --cmu-purple-subtle: #25244A;
   
-  --cmu-gold: #F59F00;
-  --cmu-gold-hover: #FCC419;
-  --cmu-gold-light: #3A2A0A;
+  --cmu-gold: #3FA796;
+  --cmu-gold-hover: #52C4B0;
+  --cmu-gold-light: #13312C;
   
-  --bg-main: #0B1622;
-  --card-bg: #12263A;
-  --text-main: #F3F6F9;
-  --text-muted: #9FB3C8;
-  --border-color: #243B53;
+  --bg-main: #13132B;
+  --card-bg: #1D1D3B;
+  --text-main: #F0EFFA;
+  --text-muted: #A4A3C4;
+  --border-color: #31305C;
   
   --danger: #f87171;
   --danger-light: #3f1818;
@@ -68,7 +68,7 @@
   --success-light: #0d3824;
   
   --chart-grid: rgba(255, 255, 255, 0.1);
-  --chart-text: #F3F6F9;
+  --chart-text: #F0EFFA;
   
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
@@ -175,7 +175,7 @@ input, select, textarea, button, .f-input, table, td, th, code {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0D1B2A 0%, #12263A 50%, #0B7285 100%);
+  background: linear-gradient(135deg, #F3F4FC 0%, #EAEBF8 50%, #E1E2F5 100%);
   padding: 20px;
   position: relative;
   overflow: hidden;
@@ -183,9 +183,9 @@ input, select, textarea, button, .f-input, table, td, th, code {
 #auth-page::before {
   content: '';
   position: absolute;
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, rgba(11, 114, 133, 0.25) 0%, transparent 70%);
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(104, 104, 172, 0.14) 0%, transparent 70%);
   top: -100px;
   right: -100px;
   border-radius: 50%;
@@ -317,7 +317,7 @@ input, select, textarea, button, .f-input, table, td, th, code {
 .auth-btn {
   width: 100%;
   padding: 12px;
-  background: linear-gradient(135deg, var(--cmu-purple) 0%, var(--cmu-purple-dark) 100%);
+  background: linear-gradient(135deg, #525194 0%, #7E7EC2 100%);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -326,11 +326,11 @@ input, select, textarea, button, .f-input, table, td, th, code {
   cursor: pointer;
   font-family: inherit;
   transition: all .2s;
-  box-shadow: 0 4px 12px rgba(92,36,131,0.25);
+  box-shadow: 0 4px 12px rgba(104, 104, 172, 0.28);
 }
 .auth-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(92,36,131,0.35);
+  box-shadow: 0 6px 16px rgba(104, 104, 172, 0.38);
 }
 .auth-btn:disabled {
   opacity: .6;
@@ -362,7 +362,7 @@ input, select, textarea, button, .f-input, table, td, th, code {
 
 /* ── Topbar ── */
 .topbar {
-  background: linear-gradient(90deg, #0D1B2A 0%, #12263A 100%);
+  background: linear-gradient(90deg, #4E4D92 0%, #6868AC 55%, #8282C5 100%);
   height: 58px;
   display: flex;
   align-items: center;
@@ -371,8 +371,7 @@ input, select, textarea, button, .f-input, table, td, th, code {
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: 0 2px 10px rgba(18, 38, 58, 0.25);
-  border-bottom: 2px solid #0B7285;
+  box-shadow: 0 4px 16px rgba(78, 77, 146, 0.22);
 }
 .t-logo {
   font-size: 18px;
@@ -805,15 +804,15 @@ select:focus, input[type=date]:focus {
 }
 
 .btn-act-primary {
-  background: rgba(11, 114, 133, 0.1);
+  background: rgba(104, 104, 172, 0.1);
   color: var(--cmu-purple);
-  border-color: rgba(11, 114, 133, 0.25);
+  border-color: rgba(104, 104, 172, 0.25);
 }
 .btn-act-primary:hover {
   background: var(--cmu-purple);
   color: #ffffff;
   transform: translateY(-1px);
-  box-shadow: 0 3px 10px rgba(11, 114, 133, 0.25);
+  box-shadow: 0 3px 10px rgba(104, 104, 172, 0.25);
 }
 
 .btn-act-success {
@@ -912,13 +911,13 @@ select:focus, input[type=date]:focus {
 }
 .kpi:hover {
   transform: translateY(-4px);
-  box-shadow: 0 10px 25px rgba(11, 114, 133, 0.15);
+  box-shadow: 0 10px 25px rgba(104, 104, 172, 0.15);
   border-color: var(--cmu-purple-light);
 }
 .kpi.active-kpi-filter {
   border-color: var(--cmu-purple) !important;
   background: var(--cmu-purple-bg) !important;
-  box-shadow: 0 0 15px rgba(11, 114, 133, 0.2) !important;
+  box-shadow: 0 0 15px rgba(104, 104, 172, 0.2) !important;
 }
 .kpi::before {
   content: '';
@@ -977,18 +976,18 @@ select:focus, input[type=date]:focus {
   align-items: center;
   padding: 3px 10px;
   border-radius: 7px;
-  background: linear-gradient(135deg, #12263A 0%, #0B7285 100%);
-  color: #E3F4F7;
+  background: linear-gradient(135deg, #4E4D92 0%, #6868AC 100%);
+  color: #FFFFFF;
   font-weight: 700;
   font-size: 11.5px;
-  box-shadow: 0 2px 6px rgba(11, 114, 133, 0.25);
+  box-shadow: 0 2px 6px rgba(104, 104, 172, 0.28);
   letter-spacing: 0.3px;
-  border: 1px solid rgba(11, 114, 133, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.25);
 }
 [data-theme="dark"] .kpi-badge {
-  background: linear-gradient(135deg, #0B7285 0%, #15AABF 100%);
+  background: linear-gradient(135deg, #6868AC 0%, #8282C5 100%);
   color: #FFFFFF;
-  border: 1px solid rgba(59, 201, 219, 0.5);
+  border: 1px solid rgba(158, 158, 217, 0.5);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
@@ -1308,7 +1307,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 }
 
 .report-header {
-  border-bottom: 2.5px solid #0B7285;
+  border-bottom: 2.5px solid #6868AC;
   padding-bottom: 16px;
   margin-bottom: 22px;
   display: flex;
@@ -1319,7 +1318,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 .report-title {
   font-size: 20px;
   font-weight: 700;
-  color: #12263A;
+  color: #373368;
   margin-bottom: 6px;
   letter-spacing: -0.3px;
 }
@@ -1356,7 +1355,7 @@ tr:hover td { background: var(--cmu-purple-bg); }
 
 .report-summary-item strong {
   font-size: 15.5px;
-  color: #0B7285;
+  color: #6868AC;
   margin-left: 6px;
   font-weight: 700;
 }
@@ -1948,7 +1947,7 @@ let debounceTimer;
 let autoRefreshInterval = null;
 
 const MONTHS = ["", "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-const COLORS = ["#0B7285", "#C2740C", "#1B8A4B", "#12263A", "#0284c7", "#d93838", "#095C6B", "#1098AD"];
+const COLORS = ["#6868AC", "#3FA796", "#C2740C", "#1B8A4B", "#4E4D92", "#8282C5", "#D93838", "#3B82F6"];
 
 // ========================================================================
 //  AUTH LOGIC (SUPABASE AUTH)
@@ -2703,7 +2702,7 @@ function renderOverview(records, year, month) {
   }).join("");
   
   // เรนเดอร์แผนภูมิรายเดือน
-  renderChart("ch-monthly", "bar", MONTHS.slice(1), monthlyData.slice(1), "จำนวนงาน", "#0B7285");
+  renderChart("ch-monthly", "bar", MONTHS.slice(1), monthlyData.slice(1), "จำนวนงาน", "#6868AC");
   
   // เรนเดอร์แผนภูมิผู้ส่ง (Top 5)
   const topSenders = sortTop(senders, 5);
@@ -2831,7 +2830,7 @@ async function loadMonthly() {
     }
     
     document.getElementById("mo-tb").innerHTML = tbody;
-    renderChart("ch-monthly2", "line", MONTHS.slice(1), monthlyData.slice(1), "จำนวนงาน", "#0B7285");
+    renderChart("ch-monthly2", "line", MONTHS.slice(1), monthlyData.slice(1), "จำนวนงาน", "#6868AC");
   } catch (e) {
     toast("โหลดสถิติรายเดือนล้มเหลว", "err");
   }
@@ -3819,12 +3818,12 @@ function renderChart(id, type, labels, vals, label, color) {
         label: label,
         data: vals,
         backgroundColor: Array.isArray(color) ? color : (type === "line" ? "rgba(157, 78, 221, 0.18)" : color),
-        borderColor: Array.isArray(color) ? undefined : "#0B7285",
+        borderColor: Array.isArray(color) ? undefined : "#6868AC",
         fill: type === "line",
         tension: 0.35,
         borderRadius: type === "bar" ? 6 : 0,
         pointRadius: type === "line" ? 4 : 0,
-        pointBackgroundColor: "#0B7285"
+        pointBackgroundColor: "#6868AC"
       }]
     },
     options: {

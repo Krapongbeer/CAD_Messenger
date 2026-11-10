@@ -21,7 +21,7 @@ jobs:
           
           echo "=== 2. Ping Google Apps Script Sync Webhook ==="
           GAS_HTTP_STATUS=$(curl -s -L -o /dev/null -w "%{http_code}" \
-            "https://script.google.com/macros/s/AKfycbxlqFhbUH-UzKAlkVxU3fQ4JPAm8mGnzO-6UdExKngLrW53k97nAQ32_MdksmmTW70RiQ/exec?action=sync")
+            "https://script.google.com/macros/s/AKfycbwJ6VBRM-bmksgOxynmdKjrx3dMZpm-TWZxGrcj1l-40peWlXNG0d8bB8yRCstmTvToxw/exec?action=sync")
           echo "GAS Webhook Response HTTP Status: $GAS_HTTP_STATUS"
 
           if [ "$SUPABASE_HTTP_STATUS" -eq 200 ] || [ "$SUPABASE_HTTP_STATUS" -eq 204 ]; then

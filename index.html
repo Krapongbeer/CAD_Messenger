@@ -2534,7 +2534,7 @@ async function loadOverview() {
   const month = document.getElementById("ov-month").value;
   
   try {
-    // ดึงสถิติรวมจากตาราง records (เรียงลำดับ ID ล่าสุดจากฐานข้อมูลโดยตรง)
+    // ดึงสถิติรวมจากตาราง records (เรียงลำดับ ID ล่าสุดจากฐานข้อมูลโดยตรง และกรองข้อมูลซ้ำตาม tracking_no)
     let query = sbClient.from("records").select("*").order("id", { ascending: false });
     
     if (ME.role === "staff") {
@@ -2544,7 +2544,16 @@ async function loadOverview() {
     const { data: rawRecords, error } = await query;
     if (error) throw error;
     
-    renderOverview(rawRecords || [], year, month);
+    const seenTrackings = new Set();
+    const uniqueRecords = (rawRecords || []).filter(r => {
+      const key = String(r.tracking_no || "").trim();
+      if (!key) return true;
+      if (seenTrackings.has(key)) return false;
+      seenTrackings.add(key);
+      return true;
+    });
+    
+    renderOverview(uniqueRecords, year, month);
   } catch (e) {
     toast("ไม่สามารถดึงข้อมูลสรุปได้", "err");
   }
@@ -2874,7 +2883,14 @@ async function loadRecords() {
       query = query.gte("date", startDate).lte("date", endDate);
       
       const { data } = await query;
-      recData = data || [];
+      const seenRec = new Set();
+      recData = (data || []).filter(r => {
+        const key = String(r.tracking_no || "").trim();
+        if (!key) return true;
+        if (seenRec.has(key)) return false;
+        seenRec.add(key);
+        return true;
+      });
       
       // กรองเดือนแบบ Client-side
       if (month) {
@@ -2889,7 +2905,14 @@ async function loadRecords() {
       if (to) query = query.lte("date", to);
       
       const { data } = await query;
-      recData = data || [];
+      const seenRec = new Set();
+      recData = (data || []).filter(r => {
+        const key = String(r.tracking_no || "").trim();
+        if (!key) return true;
+        if (seenRec.has(key)) return false;
+        seenRec.add(key);
+        return true;
+      });
     }
     
     filterRec();
@@ -2957,7 +2980,14 @@ async function renderReportPreview() {
     const { data: rawRecords, error } = await query;
     if (error) throw error;
 
-    const records = rawRecords || [];
+    const seenRpt = new Set();
+    const records = (rawRecords || []).filter(r => {
+      const key = String(r.tracking_no || "").trim();
+      if (!key) return true;
+      if (seenRpt.has(key)) return false;
+      seenRpt.add(key);
+      return true;
+    });
     let finalRecords = [];
     let filterDesc = "";
 

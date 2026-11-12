@@ -1476,73 +1476,29 @@ tr:hover td { background: var(--cmu-purple-bg); }
 </head>
 <body>
 
-<!-- AUTH PAGE -->
+<!-- AUTH PAGE (GOOGLE OAUTH ONLY) -->
 <div id="auth-page">
   <div class="auth-box">
     <div class="auth-logo"><span class="brand-title">SmartCAD<em>-Messenger</em></span></div>
     <div class="auth-sub">ระบบติดตามส่งเอกสาร/จดหมาย/พัสดุ<br><span class="auth-sub-bracket">(กองบริหารงานกลาง สำนักงานมหาวิทยาลัย)</span></div>
     
-    <div style="background:var(--cmu-purple-subtle);border-left:3px solid var(--cmu-purple);padding:10px 12px;border-radius:8px;font-size:12px;color:var(--text-main);margin-bottom:16px;line-height:1.4">
-      📌 <strong>ประกาศ:</strong> หากท่านยังไม่มีบัญชีเข้าใช้งาน กรุณาติดต่อผู้ดูแลระบบ (Admin) เพื่อขอเปิดสิทธิ์การเข้าใช้งาน
+    <div style="background:var(--cmu-purple-subtle);border-left:3px solid var(--cmu-purple);padding:10px 12px;border-radius:8px;font-size:12px;color:var(--text-main);margin-bottom:20px;line-height:1.5">
+      📌 <strong>ประกาศ:</strong> กรุณาเข้าสู่ระบบด้วยบัญชี Google ที่ได้รับอนุมัติสิทธิ์จากผู้ดูแลระบบ (Admin) หากยังไม่มีสิทธิ์ กรุณาติดต่อผู้ดูแลระบบ
     </div>
 
-    <!-- Login Form -->
     <div id="form-login">
-      <div class="form-group">
-        <label class="f-label">Username หรือ Email</label>
-        <input class="f-input" id="inp-u" placeholder="username หรือ somchai@cmu.ac.th" autocomplete="username"/>
-      </div>
-      <div class="form-group">
-        <label class="f-label">รหัสผ่าน (หรือรหัสผ่านชั่วคราวจากอีเมล)</label>
-        <input class="f-input" id="inp-p" type="password" placeholder="••••••••" autocomplete="current-password"/>
-      </div>
-      <a class="forgot-link" onclick="switchAuthTab('forgot')">ลืมรหัสผ่าน?</a>
       <div class="f-err" id="login-err"></div>
-      <button class="auth-btn" id="login-btn" onclick="doLogin()">เข้าสู่ระบบ</button>
+      <button class="auth-btn" id="google-login-btn" onclick="doGoogleLogin()" style="display:flex;align-items:center;justify-content:center;gap:10px;background:#ffffff;color:#1f2937;border:1.5px solid #d1d5db;box-shadow:0 2px 6px rgba(0,0,0,0.06)">
+        <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        <span>เข้าสู่ระบบด้วย Google</span>
+      </button>
     </div>
 
-    <!-- Forgot Password Form -->
-    <div id="form-forgot" style="display:none">
-      <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;text-align:center">
-        ระบุ Username หรือ Email ของท่าน ระบบผู้ดูแลจะจัดส่งรหัสผ่านใหม่ไปยังอีเมลที่บันทึกไว้ในระบบ
-      </div>
-      <div class="form-group">
-        <label class="f-label">Username หรือ Email</label>
-        <input class="f-input" id="forgot-identifier" placeholder="username หรือ somchai@cmu.ac.th"/>
-      </div>
-      <div class="f-err" id="forgot-err"></div>
-      <div class="f-msg" id="forgot-msg"></div>
-      <button class="auth-btn" id="forgot-btn" onclick="doForgotPassword()">ส่งคำขอรหัสผ่านใหม่</button>
-      <div style="text-align:center;margin-top:14px">
-        <a class="forgot-link" style="display:inline" onclick="switchAuthTab('login')">← กลับหน้าเข้าสู่ระบบ</a>
-      </div>
-    </div>
-
-
-  </div>
-</div>
-
-<!-- MODAL: FORCE CHANGE PASSWORD -->
-<div class="modal-overlay" id="modal-change-pass">
-  <div class="modal-box">
-    <div class="modal-title">บังคับเปลี่ยนรหัสผ่าน</div>
-    <div class="modal-sub">นี่คือการเข้าสู่ระบบครั้งแรก หรือรหัสผ่านของท่านถูกรีเซ็ตโดยผู้ดูแลระบบ กรุณาตั้งรหัสผ่านใหม่เพื่อความปลอดภัยระดับสูง</div>
-    
-    <div class="form-group">
-      <label class="f-label">รหัสผ่านใหม่ (ต้องมีความยาวอย่างน้อย 8 ตัวอักษร)</label>
-      <input class="f-input" id="new-p" type="password" placeholder="••••••••" oninput="checkNistPasswordStrength(this.value)"/>
-      <div class="pass-meter-wrap">
-        <div class="pass-meter-bar"><div class="pass-meter-fill" id="pass-meter-fill"></div></div>
-        <div class="pass-meter-text" id="pass-meter-text">ความแข็งแกร่งของรหัสผ่าน: -</div>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="f-label">ยืนยันรหัสผ่านใหม่</label>
-      <input class="f-input" id="confirm-new-p" type="password" placeholder="••••••••"/>
-    </div>
-    
-    <div class="f-err" id="change-pass-err"></div>
-    <button class="auth-btn" id="change-pass-btn" onclick="doChangePassword()">บันทึกและเปลี่ยนรหัสผ่าน</button>
   </div>
 </div>
 
@@ -1930,9 +1886,8 @@ const SUPABASE_ANON_KEY = "sb_publishable_KI23ZdXEfUqImxTslnAJ3w_RrMwHDWM";
 
 const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ลิงก์ Web App Google Apps Script ที่สร้างจากไฟล์ appsscript_sync.js (ใช้สำหรับส่งเมล/รีเซ็ตรหัสผ่านแบบหลังบ้าน)
+// ลิงก์ Web App Google Apps Script ที่สร้างจากไฟล์ appsscript_sync.js (ใช้สำหรับสร้าง/ลบบัญชีผู้ใช้ฝั่ง Admin โดยยืนยันสิทธิ์ด้วย Supabase JWT)
 const GAS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxsWdBWCoOlld6ihTfx-F6RxxUe7EeL2E0sPxAEIHIzEi-Ap3KhIL4f5FoYGKjlkJZSRA/exec";
-const WEBHOOK_SECRET = "my_super_secret_token_334477552266"; // ต้องตรงกับที่ตั้งไว้ใน Apps Script Script Properties
 
 
 // Global App State
@@ -1950,119 +1905,97 @@ const MONTHS = ["", "มกราคม", "กุมภาพันธ์", "ม
 const COLORS = ["#6868AC", "#3FA796", "#C2740C", "#1B8A4B", "#4E4D92", "#8282C5", "#D93838", "#3B82F6"];
 
 // ========================================================================
-//  AUTH LOGIC (SUPABASE AUTH)
+//  AUTH LOGIC (GOOGLE OAUTH VIA SUPABASE AUTH)
 // ========================================================================
 
-async function doLogin() {
-  const u = document.getElementById("inp-u").value.trim();
-  const p = document.getElementById("inp-p").value;
-  const btn = document.getElementById("login-btn");
-  
-  if (!u || !p) {
-    showLoginErr("กรุณากรอก Username หรือ Email และรหัสผ่าน");
-    return;
-  }
-  
-  btn.textContent = "กำลังตรวจสอบสิทธิ์...";
-  btn.disabled = true;
+const GOOGLE_BTN_HTML = `<svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>เข้าสู่ระบบด้วย Google</span>`;
+
+async function doGoogleLogin() {
+  const btn = document.getElementById("google-login-btn");
   hideAuthErr();
-  
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = "กำลังเชื่อมต่อไปยัง Google...";
+  }
   try {
-    let email = u;
-    
-    // ถ้าผู้ใช้กรอกเป็น Username (ไม่มี @) ให้ค้นหา Email ที่ผูกไว้อัตโนมัติเพื่อล็อกอิน
-    if (u.indexOf("@") === -1) {
-      try {
-        const { data: profileRow } = await sbClient
-          .from("profiles")
-          .select("email")
-          .eq("username", u)
-          .maybeSingle();
-          
-        if (profileRow && profileRow.email) {
-          email = profileRow.email;
-        } else {
-          showLoginErr("ไม่พบข้อมูล Username นี้ในระบบ กรุณาตรวจสอบหรือลองใช้ Email ในการเข้าสู่ระบบ");
-          btn.textContent = "เข้าสู่ระบบ";
-          btn.disabled = false;
-          return;
-        }
-      } catch(pe) {
-        showLoginErr("เกิดข้อผิดพลาดในการตรวจสอบบัญชี กรุณาใช้ Email ในการเข้าสู่ระบบ");
-        btn.textContent = "เข้าสู่ระบบ";
-        btn.disabled = false;
-        return;
-      }
-    }
-
-    // ทำการ Login ด้วย Email จริง
-    const { data: authData, error: authErr } = await sbClient.auth.signInWithPassword({
-      email: email,
-      password: p
+    const redirectUrl = window.location.origin + window.location.pathname;
+    const { error } = await sbClient.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: redirectUrl }
     });
-
-    if (authErr) {
-      showLoginErr("อีเมลหรือรหัสผ่านไม่ถูกต้อง หรือบัญชียังไม่ได้รับการอนุมัติ");
-      btn.textContent = "เข้าสู่ระบบ";
-      btn.disabled = false;
-      return;
+    if (error) {
+      showLoginErr("ไม่สามารถเชื่อมต่อ Google Login ได้: " + error.message);
+      if (btn) { btn.disabled = false; btn.innerHTML = GOOGLE_BTN_HTML; }
     }
+  } catch (err) {
+    showLoginErr("เกิดข้อผิดพลาดในการเชื่อมต่อ Google Login");
+    if (btn) { btn.disabled = false; btn.innerHTML = GOOGLE_BTN_HTML; }
+  }
+}
 
-    // อ่านโปรไฟล์จาก Database โดยตรงเพื่อเช็กสิทธิ์และสถานะบังคับเปลี่ยนรหัสผ่านที่แม่นยำที่สุด
-    const { data: profile } = await sbClient
+async function handleAuthenticatedUser(user) {
+  if (!user) return false;
+  try {
+    let { data: profile, error: pErr } = await sbClient
       .from("profiles")
-      .select("role, status, fullname, username, department, force_change_password")
-      .eq("id", authData.user.id)
+      .select("id, role, status, fullname, username, department")
+      .eq("id", user.id)
       .maybeSingle();
 
-    const jwtMeta  = authData.user.app_metadata || {};
-    const userMeta = authData.user.user_metadata || {};
+    if (!profile && user.email) {
+      const { data: emailProf } = await sbClient
+        .from("profiles")
+        .select("id, role, status, fullname, username, department")
+        .eq("email", user.email.toLowerCase())
+        .maybeSingle();
+      if (emailProf) profile = emailProf;
+    }
 
-    const role        = (profile && profile.role) || jwtMeta.role || userMeta.role || "staff";
-    const status      = (profile && profile.status) || jwtMeta.status || userMeta.status || "pending";
-    const fullname    = (profile && profile.fullname) || userMeta.fullname || authData.user.email;
-    const username    = (profile && profile.username) || userMeta.username || authData.user.email.split("@")[0];
-    const department  = (profile && profile.department) || userMeta.department || "";
-    const forceChange = (profile && profile.force_change_password !== undefined) ? profile.force_change_password : (userMeta.force_change_password || false);
+    if (pErr || !profile) {
+      showLoginErr(`บัญชี Google (${user.email}) ยังไม่ได้รับสิทธิ์เข้าใช้งาน กรุณาติดต่อผู้ดูแลระบบ (Admin)`);
+      await sbClient.auth.signOut();
+      return false;
+    }
 
-    if (status === "disabled") {
+    if (profile.status === "disabled") {
       showLoginErr("บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ");
       await sbClient.auth.signOut();
-      btn.textContent = "เข้าสู่ระบบ";
-      btn.disabled = false;
-      return;
+      return false;
     }
 
-    if (status === "pending") {
+    if (profile.status !== "active") {
       showLoginErr("บัญชีของท่านอยู่ระหว่างรอการอนุมัติสิทธิ์การใช้งานจากผู้ดูแลระบบ");
       await sbClient.auth.signOut();
-      btn.textContent = "เข้าสู่ระบบ";
-      btn.disabled = false;
-      return;
+      return false;
     }
 
+    const jwtMeta  = user.app_metadata || {};
+    const userMeta = user.user_metadata || {};
     ME = {
-      id: authData.user.id,
-      email: authData.user.email,
-      username: username,
-      fullname: fullname,
-      role: role,
-      department: department
+      id: user.id,
+      email: user.email,
+      username: profile.username || userMeta.username || user.email.split("@")[0],
+      fullname: profile.fullname || userMeta.full_name || userMeta.fullname || user.email,
+      role: profile.role || jwtMeta.role || "staff",
+      department: profile.department || userMeta.department || ""
     };
-    
-    await logAuditEvent("USER_LOGIN", ME.email, "User logged in successfully");
 
-    if (forceChange) {
-      startApp();
-      document.getElementById("modal-change-pass").classList.add("show");
-    } else {
-      startApp();
+    if (window.location.hash || window.location.search.indexOf("code=") !== -1) {
+      window.history.replaceState(null, null, window.location.pathname);
     }
 
-  } catch (err) {
-    showLoginErr("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์");
-    btn.textContent = "เข้าสู่ระบบ";
-    btn.disabled = false;
+    const logKey = "scad_logged_in_" + user.id;
+    if (!sessionStorage.getItem(logKey)) {
+      sessionStorage.setItem(logKey, "1");
+      logAuditEvent("USER_LOGIN", ME.email, "User logged in via Google OAuth").catch(() => {});
+    }
+
+    startApp();
+    return true;
+  } catch (e) {
+    console.error("handleAuthenticatedUser error:", e);
+    showLoginErr("เกิดข้อผิดพลาดในการตรวจสอบสิทธิ์ผู้ใช้งาน");
+    return false;
   }
 }
 
@@ -2102,16 +2035,21 @@ async function adminCreateUser() {
   btn.disabled = true;
   err.textContent = "";
   msg.style.display = "none";
-  toast("กำลังดำเนินการสร้างบัญชีและส่งอีเมลแจ้งรหัสผ่าน...", "ok");
+  toast("กำลังเพิ่มสิทธิ์ผู้ใช้งาน...", "ok");
 
   try {
-    const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=create_and_approve`;
-    const res = await fetch(gasUrl, {
+    const { data: { session } } = await sbClient.auth.getSession();
+    if (!session || !session.access_token) {
+      throw new Error("Session หมดอายุ กรุณาเข้าสู่ระบบใหม่");
+    }
+
+    await fetch(GAS_WEBHOOK_URL, {
       method: "POST",
       mode: "no-cors",
       headers: { "Content-Type": "text/plain" },
       body: JSON.stringify({
         action: "create_and_approve",
+        access_token: session.access_token,
         email: email,
         username: username,
         fullname: fullname,
@@ -2120,9 +2058,9 @@ async function adminCreateUser() {
       })
     });
 
-    msg.textContent = "✅ สร้างบัญชีผู้ใช้ใหม่และจัดส่งรหัสผ่านชั่วคราวทางอีเมลสำเร็จ!";
+    msg.textContent = "✅ เพิ่มสิทธิ์บัญชีผู้ใช้ใหม่เรียบร้อยแล้ว! ผู้ใช้สามารถเข้าสู่ระบบด้วย Google ได้ทันที";
     msg.style.display = "block";
-    toast("สร้างบัญชีสำเร็จ!", "ok");
+    toast("เพิ่มบัญชีผู้ใช้งานสำเร็จ!", "ok");
     
     setTimeout(() => {
       document.getElementById("modal-create-user").classList.remove("show");
@@ -2138,144 +2076,12 @@ async function adminCreateUser() {
   }
 }
 
-async function doForgotPassword() {
-  const identifier = document.getElementById("forgot-identifier").value.trim();
-  const btn = document.getElementById("forgot-btn");
-  const err = document.getElementById("forgot-err");
-  const msg = document.getElementById("forgot-msg");
-
-  if (!identifier) {
-    err.textContent = "กรุณากรอก Username หรือ Email";
-    err.style.display = "block";
-    return;
-  }
-
-  btn.textContent = "กำลังตรวจสอบ...";
-  btn.disabled = true;
-  err.style.display = "none";
-  msg.style.display = "none";
-
-  try {
-    const cleanId = identifier.toLowerCase();
-    
-    // 1. ตรวจสอบในตาราง profiles ก่อนว่ามี Username หรือ Email นี้จริงหรือไม่
-    const { data: profile, error: pErr } = await sbClient
-      .from("profiles")
-      .select("id, email, fullname, username")
-      .or(`username.eq.${cleanId},email.eq.${cleanId}`)
-      .maybeSingle();
-
-    if (pErr || !profile || !profile.email) {
-      err.textContent = "ไม่พบข้อมูลบัญชีหรืออีเมลนี้ในระบบ (กรุณาตรวจสอบหรือลงทะเบียนใหม่)";
-      err.style.display = "block";
-      btn.textContent = "ส่งคำขอรหัสผ่านใหม่";
-      btn.disabled = false;
-      return;
-    }
-
-    btn.textContent = "กำลังส่งคำขอ...";
-    const tempPass = genTempPass();
-
-    // 2. อัปเดตรหัสผ่านลง Supabase Auth 100% ทันทีผ่าน RPC (การันตีนำรหัสไปใช้ล็อกอินได้ทันทีแน่นอน)
-    try {
-      await sbClient.rpc("reset_user_password", { target_user_id: profile.id, temp_password: tempPass });
-      await sbClient.from("profiles").update({ force_change_password: true }).eq("id", profile.id);
-    } catch (rpce) {}
-
-    // 3. ยิงส่งอีเมลแจ้งรหัสผ่านภาษาไทยไปยัง Gmail หลังบ้าน
-    const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=reset_password&identifier=${encodeURIComponent(profile.email)}&temp_password=${encodeURIComponent(tempPass)}&user_id=${encodeURIComponent(profile.id)}&fullname=${encodeURIComponent(profile.fullname || profile.email)}`;
-    fetch(gasUrl, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({
-        action: "reset_password",
-        temp_password: tempPass,
-        identifier: profile.email,
-        user: { id: profile.id, email: profile.email, fullname: profile.fullname || profile.email }
-      })
-    }).catch(() => {});
-
-    msg.textContent = "ระบบได้จัดส่งอีเมลแจ้งรหัสผ่านชั่วคราวไปยัง " + profile.email + " เรียบร้อยแล้ว! (กรุณาเช็กในกล่องข้อความหรืออีเมลขยะ/Spam)";
-    msg.style.display = "block";
-    document.getElementById("forgot-identifier").value = "";
-
-  } catch (e) {
-    err.textContent = "เกิดข้อผิดพลาดในการส่งคำขอ: " + e.message;
-    err.style.display = "block";
-  } finally {
-    btn.textContent = "ส่งคำขอรหัสผ่านใหม่";
-    btn.disabled = false;
-  }
-}
-
-async function doChangePassword() {
-  const newP = document.getElementById("new-p").value;
-  const confirmP = document.getElementById("confirm-new-p").value;
-  const err = document.getElementById("change-pass-err");
-  const btn = document.getElementById("change-pass-btn");
-
-  const vRes = validatePasswordStrict(newP);
-  if (!vRes.valid) {
-    err.textContent = vRes.msg;
-    err.style.display = "block";
-    return;
-  }
-  if (newP !== confirmP) {
-    err.textContent = "การยืนยันรหัสผ่านใหม่ไม่ตรงกัน";
-    err.style.display = "block";
-    return;
-  }
-
-  btn.textContent = "กำลังบันทึกรหัสผ่านใหม่...";
-  btn.disabled = true;
-
-  try {
-    // 1. อัปเดตรหัสผ่านใหม่ในระบบ Supabase Auth พร้อมปลด force_change_password ใน user_metadata
-    const { error: authErr } = await sbClient.auth.updateUser({
-      password: newP,
-      data: { force_change_password: false }
-    });
-
-    if (authErr) {
-      err.textContent = "เปลี่ยนรหัสไม่สำเร็จ: " + authErr.message;
-      err.style.display = "block";
-      return;
-    }
-
-    // 2. ปลดสถานะบังคับเปลี่ยนรหัสผ่านใน profiles
-    await sbClient
-      .from("profiles")
-      .update({ force_change_password: false })
-      .eq("id", ME.id);
-
-    toast("เปลี่ยนรหัสผ่านสำเร็จแล้ว!", "ok");
-    document.getElementById("modal-change-pass").classList.remove("show");
-    startApp();
-  } catch (e) {
-    err.textContent = "เกิดข้อผิดพลาดในการบันทึกรหัสผ่านใหม่: " + e.message;
-    err.style.display = "block";
-  } finally {
-    btn.textContent = "บันทึกและเปลี่ยนรหัสผ่าน";
-    btn.disabled = false;
-  }
-}
-
 // ========================================================================
 //  UI INTERACTIONS & TAB CONTROL
 // ========================================================================
 
-function switchAuthTab(type) {
-  document.getElementById("form-login").style.display = type === "login" ? "block" : "none";
-  document.getElementById("form-forgot").style.display = type === "forgot" ? "block" : "none";
-  hideAuthErr();
-}
-
 function hideAuthErr() {
   const loginErr = document.getElementById("login-err"); if (loginErr) loginErr.style.display = "none";
-  const forgotErr = document.getElementById("forgot-err"); if (forgotErr) forgotErr.style.display = "none";
-  const forgotMsg = document.getElementById("forgot-msg"); if (forgotMsg) forgotMsg.style.display = "none";
-  const changePassErr = document.getElementById("change-pass-err"); if (changePassErr) changePassErr.style.display = "none";
 }
 
 function showLoginErr(m) { const e = document.getElementById("login-err"); if (e) { e.textContent = m; e.style.display = "block"; } }
@@ -3175,10 +2981,9 @@ function renderUsersTable(users) {
     
     let actionBtn = "";
     if (u.status === "pending") {
-      actionBtn = `<button class="btn-act btn-act-success" onclick="triggerUserWebhook('${u.id}', '${esc(u.fullname)}', '${u.email}', 'approve')" title="อนุมัติการใช้งาน">✅ อนุมัติ</button>`;
+      actionBtn = `<button class="btn-act btn-act-success" onclick="setUserStatus('${u.id}', 'active')" title="อนุมัติสิทธิ์เข้าใช้งานด้วย Google">✅ อนุมัติ</button>`;
     } else if (u.status === "active") {
-      actionBtn = `<button class="btn-act btn-act-primary" onclick="triggerUserWebhook('${u.id}', '${esc(u.fullname)}', '${u.email}', 'reset_password')" title="รีเซ็ตรหัสผ่านส่งอีเมล">🔑 รีเซ็ตรหัส</button>
-                   <button class="btn-act btn-act-warning" onclick="setUserStatus('${u.id}', 'disabled')" title="ระงับสิทธิ์การใช้งาน">🚫 บล็อก</button>`;
+      actionBtn = `<button class="btn-act btn-act-warning" onclick="setUserStatus('${u.id}', 'disabled')" title="ระงับสิทธิ์การใช้งาน">🚫 บล็อก</button>`;
     } else {
       actionBtn = `<button class="btn-act btn-act-primary" onclick="setUserStatus('${u.id}', 'active')" title="เปิดใช้งานอีกครั้ง">🔄 ปลดบล็อก</button>`;
     }
@@ -3219,70 +3024,6 @@ function filterUsersTable() {
     );
   });
   renderUsersTable(filtered);
-}
-
-function genTempPass() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789#@!";
-  let pass = "";
-  for (let i = 0; i < 10; i++) pass += chars.charAt(Math.floor(Math.random() * chars.length));
-  return pass;
-}
-
-// อนุมัติผู้ใช้ / รีเซ็ตรหัสผ่าน -> ทำงานผ่าน Supabase RPC โดยตรง และส่งสัญญาณหา Apps Script ในหลังบ้าน
-async function triggerUserWebhook(userId, fullname, email, action) {
-  if (ME.role !== "admin" && ME.role !== "superadmin") {
-    toast("เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่ทำรายการนี้ได้", "err");
-    return;
-  }
-  const confirmMsg = action === "approve"
-    ? `ยืนยันการอนุมัติการใช้งานบัญชี ${email} ?`
-    : `ยืนยันการรีเซ็ตรหัสผ่านของ ${email} ?`;
-    
-  if (!confirm(confirmMsg)) return;
-  
-  const tempPass = genTempPass();
-  toast("กำลังดำเนินการอนุมัติและตั้งค่ารหัสผ่าน...", "ok");
-  
-  try {
-    // 1. อัปเดตสถานะในตาราง profiles ทันที
-    if (action === "approve") {
-      await sbClient.from("profiles").update({ status: "active", force_change_password: true }).eq("id", userId);
-      logAuditEvent("USER_APPROVED", email, { target_id: userId, fullname: fullname });
-    } else {
-      await sbClient.from("profiles").update({ force_change_password: true }).eq("id", userId);
-      logAuditEvent("USER_PASSWORD_RESET_ADMIN", email, { target_id: userId, fullname: fullname });
-    }
-
-    // 2. เรียกใช้ RPC ใน Supabase (ถ้ามี)
-    try {
-      const rpcName = action === "approve" ? "approve_user" : "reset_user_password";
-      await sbClient.rpc(rpcName, { target_user_id: userId, temp_password: tempPass });
-    } catch(rpce) {}
-
-    // 3. ส่งคำขอหา Apps Script หลังบ้านเพื่ออัปเดตรหัสผ่านใน Supabase Auth และส่งอีเมลภาษาไทยผ่าน Gmail
-    try {
-      const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=${encodeURIComponent(action)}&identifier=${encodeURIComponent(email)}&temp_password=${encodeURIComponent(tempPass)}&user_id=${encodeURIComponent(userId)}&fullname=${encodeURIComponent(fullname)}`;
-      fetch(gasUrl, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({
-          action: action,
-          temp_password: tempPass,
-          identifier: email,
-          user: { id: userId, email: email, fullname: fullname }
-        })
-      }).catch(() => {});
-    } catch(e) {}
-
-    // 5. แสดง Alert แจ้ง Admin พร้อมรหัสผ่านชั่วคราว
-    alert(`✅ ดำเนินการอนุมัติ/รีเซ็ตรหัสผ่านเรียบร้อยแล้ว!\n\n• บัญชีผู้ใช้งาน: ${email}\n• รหัสผ่านชั่วคราว: ${tempPass}\n\n(ระบบได้จัดส่งอีเมลแจ้งรหัสผ่านชั่วคราวและลิงก์เข้าใช้งานไปยังผู้ใช้เรียบร้อยแล้ว)`);
-    toast("อนุมัติและจัดส่งอีเมลสำเร็จ!", "ok");
-    loadUsers();
-
-  } catch (e) {
-    toast("เกิดข้อผิดพลาด: " + e.message, "err");
-  }
 }
 
 async function setUserStatus(userId, status) {
@@ -3338,18 +3079,21 @@ async function deleteUser(userId, fullname, email) {
     await sbClient.from("profiles").delete().eq("id", userId);
     logAuditEvent("USER_DELETED", email, { target_id: userId, fullname: fullname });
 
-    // 2. ส่งสัญญาณหา Apps Script ให้ช่วยลบบัญชีออกจาก Supabase Auth โดยใช้ Service Key
-    const gasUrl = `${GAS_WEBHOOK_URL}?secret=${encodeURIComponent(WEBHOOK_SECRET)}&action=delete_user&user_id=${encodeURIComponent(userId)}&email=${encodeURIComponent(email)}`;
-    fetch(gasUrl, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify({
-        action: "delete_user",
-        user_id: userId,
-        email: email
-      })
-    }).catch(() => {});
+    // 2. ส่งสัญญาณหา Apps Script ให้ช่วยลบบัญชีออกจาก Supabase Auth โดยยืนยันสิทธิ์ด้วย Supabase JWT
+    const { data: { session } } = await sbClient.auth.getSession();
+    if (session && session.access_token) {
+      fetch(GAS_WEBHOOK_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({
+          action: "delete_user",
+          access_token: session.access_token,
+          user_id: userId,
+          email: email
+        })
+      }).catch(() => {});
+    }
 
     toast("ลบบัญชีผู้ใช้งานสำเร็จเรียบร้อย!", "ok");
     loadUsers();
@@ -3691,61 +3435,8 @@ function refreshChartTheme() {
 async function checkSession() {
   try {
     const { data: { session }, error: sessionErr } = await sbClient.auth.getSession();
-    if (sessionErr || !session) return;
-
-    const user = session.user;
-    
-    const { data: profile, error: pErr } = await sbClient
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (pErr || !profile) return;
-
-    if (profile.status !== "active") {
-      await sbClient.auth.signOut();
-      return;
-    }
-
-    ME = {
-      id: user.id,
-      email: user.email,
-      username: profile.username,
-      fullname: profile.fullname,
-      role: profile.role,
-      department: profile.department
-    };
-
-    const isRecovery = window.location.hash.indexOf("type=recovery") !== -1 || profile.force_change_password;
-
-    if (isRecovery) {
-      window.history.replaceState(null, null, window.location.pathname);
-      document.getElementById("auth-page").style.display = "none";
-      document.getElementById("app").style.display = "flex";
-      
-      const roleMap = { superadmin: "ผู้ดูแลระบบสูงสุด", admin: "ผู้ดูแลระบบ", exec: "ผู้บริหาร", staff: "พนักงาน" };
-      const pillMap = { superadmin: "rpill-superadmin", admin: "rpill-admin", exec: "rpill-exec", staff: "rpill-staff" };
-      
-      document.getElementById("av").textContent = (ME.fullname || "U").charAt(0).toUpperCase();
-      document.getElementById("uname-lbl").textContent = ME.fullname;
-      document.getElementById("rpill").textContent = roleMap[ME.role] || ME.role;
-      document.getElementById("rpill").className = "rpill " + (pillMap[ME.role] || "");
-      document.getElementById("role-lbl").textContent = ME.role.toUpperCase();
-      
-      if (ME.role === "admin" || ME.role === "superadmin") {
-        document.getElementById("nav-admin").style.display = "block";
-      } else {
-        document.getElementById("nav-admin").style.display = "none";
-      }
-      const btnAudit = document.getElementById("btn-audit-log");
-      if (btnAudit) btnAudit.style.display = ME.role === "superadmin" ? "inline-block" : "none";
-      
-      initDynamicSelects();
-      document.getElementById("modal-change-pass").classList.add("show");
-    } else {
-      startApp();
-    }
+    if (sessionErr || !session || !session.user) return;
+    await handleAuthenticatedUser(session.user);
   } catch (e) {
     console.error("checkSession error:", e);
   }
@@ -3754,12 +3445,10 @@ async function checkSession() {
 document.addEventListener("DOMContentLoaded", () => {
   initTheme();
   checkSession();
-  
-  document.addEventListener("keydown", e => {
-    const authPage = document.getElementById("auth-page");
-    if (e.key === "Enter" && authPage && window.getComputedStyle(authPage).display !== "none") {
-      if (document.getElementById("form-login").style.display !== "none") doLogin();
-      else if (document.getElementById("form-forgot").style.display !== "none") doForgotPassword();
+
+  sbClient.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_IN" && session && session.user && !ME) {
+      handleAuthenticatedUser(session.user);
     }
   });
 });

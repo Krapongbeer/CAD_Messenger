@@ -2061,13 +2061,13 @@ async function adminCreateUser() {
     msg.textContent = "✅ เพิ่มสิทธิ์บัญชีผู้ใช้ใหม่เรียบร้อยแล้ว! ผู้ใช้สามารถเข้าสู่ระบบด้วย Google ได้ทันที";
     msg.style.display = "block";
     toast("เพิ่มบัญชีผู้ใช้งานสำเร็จ!", "ok");
-    
+    loadUsers();
+
     setTimeout(() => {
       document.getElementById("modal-create-user").classList.remove("show");
       btn.textContent = "✨ ยืนยันการสร้างบัญชี";
       btn.disabled = false;
-      loadUsers();
-    }, 2000);
+    }, 700);
 
   } catch (e) {
     err.textContent = "เกิดข้อผิดพลาด: " + e.message;
@@ -3074,30 +3074,40 @@ async function deleteUser(userId, fullname, email) {
   if (!confirm(`⚠️ ยืนยันการลบบัญชีผู้ใช้งาน "${fullname || email}" (${email}) ออกจากระบบอย่างถาวร?\n\n(ข้อมูลการเข้าสู่ระบบและโปรไฟล์จะถูกลบถาวร ไม่สามารถย้อนกลับได้)`)) return;
 
   toast("กำลังลบบัญชีผู้ใช้งาน...", "ok");
-  try {
-    // 1. ลบโปรไฟล์จากตาราง profiles
-    await sbClient.from("profiles").delete().eq("id", userId);
-    logAuditEvent("USER_DELETED", email, { target_id: userId, fullname: fullname });
+  // อัปเดตตารางหน้าเว็บทันทีเพื่อความรวดเร็ว (Optimistic UI)
+  const prevUsers = usersData.slice();
+  usersData = usersData.filter(u => u.id !== userId);
+  renderUsersTable(usersData);
 
-    // 2. ส่งสัญญาณหา Apps Script ให้ช่วยลบบัญชีออกจาก Supabase Auth โดยยืนยันสิทธิ์ด้วย Supabase JWT
+  try {
+    // 1. ลบโปรไฟล์จากตาราง profiles (หาก RLS ไม่อนุญาต จะให้ Apps Script ลบซ้ำด้วย service_role)
+    const { error: delErr } = await sbClient.from("profiles").delete().eq("id", userId);
+    if (delErr) console.warn("Client profile delete skipped/failed:", delErr.message);
+
+    // 2. รอให้ Apps Script ลบทั้ง auth.users และ profiles ด้วย service_role ให้เสร็จสมบูรณ์ก่อนโหลดใหม่
     const { data: { session } } = await sbClient.auth.getSession();
-    if (session && session.access_token) {
-      fetch(GAS_WEBHOOK_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify({
-          action: "delete_user",
-          access_token: session.access_token,
-          user_id: userId,
-          email: email
-        })
-      }).catch(() => {});
+    if (!session || !session.access_token) {
+      throw new Error("Session หมดอายุ กรุณาเข้าสู่ระบบใหม่");
     }
 
+    await fetch(GAS_WEBHOOK_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "text/plain" },
+      body: JSON.stringify({
+        action: "delete_user",
+        access_token: session.access_token,
+        user_id: userId,
+        email: email
+      })
+    });
+
+    logAuditEvent("USER_DELETED", email, { target_id: userId, fullname: fullname }).catch(() => {});
     toast("ลบบัญชีผู้ใช้งานสำเร็จเรียบร้อย!", "ok");
-    loadUsers();
+    await loadUsers();
   } catch (e) {
+    usersData = prevUsers;
+    renderUsersTable(usersData);
     toast("เกิดข้อผิดพลาดในการลบบัญชี: " + e.message, "err");
   }
 }
